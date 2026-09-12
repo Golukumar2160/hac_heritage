@@ -246,12 +246,10 @@ export default function App() {
 
           {/* Right: Live Telemetry, IST Clock, Role Scope & Dark/Light Mode Switch */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Real-time System Status Pill (98,649 WORKS & Ping) */}
+            {/* Real-time System Status Pill (98,649 WORKS) */}
             <div className="flex items-center space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono" style={{ background: theme === 'light' ? 'rgba(241,245,249,0.9)' : 'rgba(0,0,0,0.35)', border: theme === 'light' ? '1px solid rgba(203,213,225,0.8)' : '1px solid rgba(255,255,255,0.06)' }}>
               <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ boxShadow: isOnline ? '0 0 8px rgba(52,211,153,0.8)' : '0 0 8px rgba(251,113,133,0.8)' }} />
               <span className={`font-bold font-mono tracking-wide ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>98,649 WORKS</span>
-              <span className="text-slate-400">|</span>
-              <span className="text-violet-500 font-semibold">{ping !== null ? `${ping}ms` : '40ms'}</span>
             </div>
 
 

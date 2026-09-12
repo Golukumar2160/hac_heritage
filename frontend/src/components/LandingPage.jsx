@@ -446,7 +446,7 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
           <div className="flex items-center space-x-3 font-mono text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-slate-300 font-medium">System Telemetry: Online (40ms)</span>
+              <span className="text-slate-300 font-medium">System Telemetry: Online</span>
             </span>
             <span>•</span>
             <span>Security Clearance: Official Vigilance Console</span>

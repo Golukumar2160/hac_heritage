@@ -165,7 +165,6 @@ export default function Header({
             <div className="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-mono">
               <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-400 shadow-glow-emerald' : 'bg-rose-500'}`} />
               <span className="text-slate-300">{isOnline ? 'CONNECTED' : 'OFFLINE'}</span>
-              {ping && <span className="text-cyan-400 text-[10px]">{ping}ms</span>}
             </div>
 
             {/* Theme Toggle Button */}
