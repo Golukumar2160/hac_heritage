@@ -15,6 +15,7 @@ import urllib.parse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 import pandas as pd
+import numpy as np
 import sqlite3
 import subprocess
 import sys
@@ -34,6 +35,8 @@ app = FastAPI(
 )
 
 ALLOWED_ORIGINS = [
+    "http://localhost:3333",
+    "http://127.0.0.1:3333",
     "http://localhost:3131",
     "http://127.0.0.1:3131",
     "http://localhost:5173",
@@ -45,7 +48,7 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +59,9 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(BASE_DIR)
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
+
+from dotenv import load_dotenv
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 FLAGS_FILE = os.path.join(ROOT_DIR, "data", "processed", "fraud_flags.csv")
 if not os.path.exists(FLAGS_FILE):
@@ -82,6 +88,9 @@ IMAGES_DIR = os.path.join(ROOT_DIR, "images")
 if os.path.exists(IMAGES_DIR):
     app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
     print(f"[*] Mounted /images directory from {IMAGES_DIR}")
+
+# ── Health check endpoint is registered at bottom with complete dependency telemetry ──
+
 
 # ── Benford's Law Forensic Module ──────────────────────────────────────────────
 try:
@@ -139,17 +148,26 @@ DEMO_USERS = {
 
 # ── Database Helper & WAL Mode ────────────────────────────────────────────────
 SUPABASE_DB_URL = os.getenv("DATABASE_URL")
+SUPABASE_POOLER_FALLBACK = "postgresql://postgres.gpjfxbvuzfshaxwkcnsx:Golukumar2160%40@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
 
 def get_supabase_conn():
-    """Connect to Supabase PostgreSQL for cloud tamper-evident audit ledger."""
-    if not SUPABASE_DB_URL:
-        return None
+    """Connect to Supabase PostgreSQL for cloud credentials and tamper-evident audit ledger."""
+    db_url = os.getenv("DATABASE_URL") or SUPABASE_POOLER_FALLBACK
     try:
         import psycopg2
-        conn = psycopg2.connect(SUPABASE_DB_URL, connect_timeout=5)
+        conn = psycopg2.connect(db_url, connect_timeout=6)
         conn.autocommit = True
         return conn
     except Exception as _e:
+        if db_url != SUPABASE_POOLER_FALLBACK:
+            try:
+                import psycopg2
+                conn = psycopg2.connect(SUPABASE_POOLER_FALLBACK, connect_timeout=6)
+                conn.autocommit = True
+                return conn
+            except Exception as _e2:
+                print(f"[!] Supabase connection warning (primary: {_e}, pooler: {_e2})")
+                return None
         print(f"[!] Supabase connection warning: {_e}")
         return None
 
@@ -195,10 +213,342 @@ def init_db():
             error TEXT
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS official_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            name TEXT NOT NULL,
+            designation TEXT,
+            state TEXT,
+            ida TEXT,
+            mp_name TEXT,
+            clearance_code TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    ''')
     conn.commit()
     conn.close()
 
 init_db()
+
+# ── Supabase & Local User Credentials Synchronization ────────────────────────
+INITIAL_OFFICIALS = [
+    {
+        "username": "ministry_admin",
+        "email": "ministry.admin@mospi.gov.in",
+        "password_hash": hash_password("Ministry@2026"),
+        "role": "ministry",
+        "name": "MoSPI Ministry Official",
+        "designation": "Central Vigilance & National Oversight",
+        "state": "",
+        "ida": "",
+        "mp_name": "",
+        "clearance_code": "SEC-CENTRAL-LVL5"
+    },
+    {
+        "username": "state_nodal_up",
+        "email": "nodal.up@planning.up.gov.in",
+        "password_hash": hash_password("StateUP@2026"),
+        "role": "state",
+        "name": "State Nodal Authority — UP",
+        "designation": "Principal Secretary (Planning)",
+        "state": "Uttar Pradesh",
+        "ida": "",
+        "mp_name": "",
+        "clearance_code": "SEC-STATE-LVL4"
+    },
+    {
+        "username": "district_pilibhit",
+        "email": "dm.pilibhit@nic.in",
+        "password_hash": hash_password("District@2026"),
+        "role": "district",
+        "name": "District Authority — Pilibhit",
+        "designation": "District Magistrate & Collector",
+        "state": "Uttar Pradesh",
+        "ida": "PILIBHIT",
+        "mp_name": "",
+        "clearance_code": "SEC-DIST-LVL3"
+    },
+    {
+        "username": "mp_javed",
+        "email": "javed.ali@sansad.nic.in",
+        "password_hash": hash_password("MP@2026"),
+        "role": "mp",
+        "name": "Shri Javed Ali Khan (MP)",
+        "designation": "Member of Parliament (Rajya Sabha)",
+        "state": "Uttar Pradesh",
+        "ida": "",
+        "mp_name": "Shri Javed Ali Khan",
+        "clearance_code": "SEC-PARL-WATCHDOG"
+    }
+]
+
+def init_supabase_users_table():
+    """Ensure official_users table exists in Supabase PostgreSQL and seed default officials."""
+    now_str = datetime.utcnow().isoformat()
+    # 1. Local SQLite Seeding
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        for u in INITIAL_OFFICIALS:
+            c.execute("""
+                INSERT OR IGNORE INTO official_users 
+                (username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                u["username"], u["email"], u["password_hash"], u["role"],
+                u["name"], u["designation"], u["state"], u["ida"], u["mp_name"],
+                u["clearance_code"], now_str, now_str
+            ))
+        conn.commit()
+        conn.close()
+    except Exception as _e:
+        print(f"[!] Warning seeding SQLite official_users: {_e}")
+
+    # 2. Supabase PostgreSQL Table & Seeding
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS official_users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(100) UNIQUE NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role VARCHAR(50) NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    designation VARCHAR(255),
+                    state VARCHAR(100),
+                    ida VARCHAR(100),
+                    mp_name VARCHAR(255),
+                    clearance_code VARCHAR(100),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_official_users_username ON official_users(LOWER(username));
+                CREATE INDEX IF NOT EXISTS idx_official_users_email ON official_users(LOWER(email));
+                CREATE INDEX IF NOT EXISTS idx_official_users_mp ON official_users(LOWER(mp_name));
+            """)
+            for u in INITIAL_OFFICIALS:
+                cur.execute("""
+                    INSERT INTO official_users 
+                    (username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (username) DO UPDATE 
+                    SET email = EXCLUDED.email,
+                        password_hash = EXCLUDED.password_hash,
+                        role = EXCLUDED.role,
+                        name = EXCLUDED.name,
+                        designation = EXCLUDED.designation,
+                        state = EXCLUDED.state,
+                        ida = EXCLUDED.ida,
+                        mp_name = EXCLUDED.mp_name;
+                """, (
+                    u["username"], u["email"], u["password_hash"], u["role"],
+                    u["name"], u["designation"], u["state"], u["ida"], u["mp_name"], u["clearance_code"]
+                ))
+            pg.commit()
+            pg.close()
+            print("[*] Supabase official_users table verified and seeded successfully.")
+        except Exception as _e:
+            print(f"[!] Warning initializing Supabase official_users: {_e}")
+
+init_supabase_users_table()
+
+def find_user_by_identifier(identifier: str) -> Optional[dict]:
+    """
+    Search official users across Supabase PostgreSQL first, then local SQLite, then DEMO_USERS.
+    Matches username, email, or MP name (case-insensitive).
+    """
+    clean_id = identifier.strip().lower()
+    if not clean_id:
+        return None
+
+    # 1. Primary: Query Supabase PostgreSQL
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            cur.execute("""
+                SELECT username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code
+                FROM official_users
+                WHERE LOWER(username) = %s OR LOWER(email) = %s OR LOWER(mp_name) = %s
+                LIMIT 1;
+            """, (clean_id, clean_id, clean_id))
+            row = cur.fetchone()
+            pg.close()
+            if row:
+                return {
+                    "username": row[0],
+                    "email": row[1],
+                    "password_hash": row[2],
+                    "role": row[3],
+                    "name": row[4],
+                    "designation": row[5] or "",
+                    "state": row[6] or "",
+                    "ida": row[7] or "",
+                    "mp_name": row[8] or "",
+                    "clearance_code": row[9] or "",
+                    "source": "supabase"
+                }
+        except Exception as _e:
+            print(f"[!] Warning finding user in Supabase: {_e}")
+
+    # 2. Secondary: Query Local SQLite
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            SELECT username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code
+            FROM official_users
+            WHERE LOWER(username) = ? OR LOWER(email) = ? OR LOWER(mp_name) = ?
+            LIMIT 1;
+        """, (clean_id, clean_id, clean_id))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return {
+                "username": row[0],
+                "email": row[1],
+                "password_hash": row[2],
+                "role": row[3],
+                "name": row[4],
+                "designation": row[5] or "",
+                "state": row[6] or "",
+                "ida": row[7] or "",
+                "mp_name": row[8] or "",
+                "clearance_code": row[9] or "",
+                "source": "sqlite"
+            }
+    except Exception as _e:
+        print(f"[!] Warning finding user in SQLite: {_e}")
+
+    # 3. Fallback: In-memory DEMO_USERS
+    for uname, udata in DEMO_USERS.items():
+        if uname.lower() == clean_id or udata.get("name", "").lower() == clean_id or udata.get("mp_name", "").lower() == clean_id:
+            return {
+                "username": uname,
+                "email": f"{uname}@mplads.gov.in",
+                "password_hash": udata["password_hash"],
+                "role": udata["role"],
+                "name": udata["name"],
+                "designation": udata.get("designation", ""),
+                "state": udata.get("state", ""),
+                "ida": udata.get("ida", ""),
+                "mp_name": udata.get("mp_name", ""),
+                "source": "demo"
+            }
+    return None
+
+def create_official_user(user_data: dict) -> dict:
+    """Insert a new official user into Supabase and local SQLite."""
+    now_str = datetime.utcnow().isoformat()
+    # 1. Supabase PostgreSQL
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            cur.execute("""
+                INSERT INTO official_users 
+                (username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (
+                user_data["username"], user_data["email"], user_data["password_hash"],
+                user_data["role"], user_data["name"], user_data.get("designation", ""),
+                user_data.get("state", ""), user_data.get("ida", ""),
+                user_data.get("mp_name", ""), user_data.get("clearance_code", "")
+            ))
+            pg.commit()
+            pg.close()
+        except Exception as _e:
+            print(f"[!] Warning writing user to Supabase: {_e}")
+
+    # 2. Local SQLite
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            INSERT OR REPLACE INTO official_users 
+            (username, email, password_hash, role, name, designation, state, ida, mp_name, clearance_code, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (
+            user_data["username"], user_data["email"], user_data["password_hash"],
+            user_data["role"], user_data["name"], user_data.get("designation", ""),
+            user_data.get("state", ""), user_data.get("ida", ""),
+            user_data.get("mp_name", ""), user_data.get("clearance_code", ""),
+            now_str, now_str
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as _e:
+        print(f"[!] Warning writing user to SQLite: {_e}")
+    return user_data
+
+def list_official_users() -> List[dict]:
+    """Retrieve all official accounts for directory verification (sanitizing password hash)."""
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            cur.execute("""
+                SELECT username, email, role, name, designation, state, ida, mp_name, created_at
+                FROM official_users
+                ORDER BY role, name;
+            """)
+            rows = cur.fetchall()
+            pg.close()
+            return [
+                {
+                    "username": r[0],
+                    "email": r[1],
+                    "role": r[2],
+                    "name": r[3],
+                    "designation": r[4] or "",
+                    "state": r[5] or "",
+                    "ida": r[6] or "",
+                    "mp_name": r[7] or "",
+                    "created_at": str(r[8])
+                }
+                for r in rows
+            ]
+        except Exception as _e:
+            print(f"[!] Warning listing users from Supabase: {_e}")
+
+    # SQLite fallback
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            SELECT username, email, role, name, designation, state, ida, mp_name, created_at
+            FROM official_users
+            ORDER BY role, name;
+        """)
+        rows = c.fetchall()
+        conn.close()
+        return [
+            {
+                "username": r[0],
+                "email": r[1],
+                "role": r[2],
+                "name": r[3],
+                "designation": r[4] or "",
+                "state": r[5] or "",
+                "ida": r[6] or "",
+                "mp_name": r[7] or "",
+                "created_at": str(r[8])
+            }
+            for r in rows
+        ]
+    except Exception as _e:
+        print(f"[!] Warning listing users from SQLite: {_e}")
+        return []
+
 
 # ── High-Performance Caching with Strict Typing ────────────────────────────────
 _flags_cache: Optional[pd.DataFrame] = None
@@ -253,7 +603,9 @@ def get_cached_flags() -> pd.DataFrame:
     return _flags_cache
 
 # ── Authentication & Security Helpers ──────────────────────────────────────────
-def create_token(username: str, role: str, extra: dict = {}) -> str:
+def create_token(username: str, role: str, extra: dict = None) -> str:
+    if extra is None:
+        extra = {}
     payload = {
         "sub": username,
         "role": role,
@@ -307,20 +659,114 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-@app.post("/api/login", tags=["Auth"])
-def login(req: LoginRequest):
-    user = DEMO_USERS.get(req.username)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: str
+    role: str
+    designation: Optional[str] = None
+    state: Optional[str] = None
+    ida: Optional[str] = None
+    mp_name: Optional[str] = None
+    house: Optional[str] = None
+    clearance_code: Optional[str] = None
+
+@app.post("/api/register", tags=["Auth"])
+def register_official(req: RegisterRequest):
+    """
+    Register a new official user, persisting credentials directly into Supabase PostgreSQL
+    with synchronized local SQLite storage and salted password hashing.
+    """
+    uname = req.username.strip().lower()
+    email = req.email.strip().lower()
+    name = req.name.strip()
+    role = req.role.strip().lower()
+
+    if not uname or len(uname) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters long.")
+    if not name:
+        raise HTTPException(status_code=400, detail="Official full name is required.")
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="A valid official email address is required.")
+    if role not in ("ministry", "state", "district", "mp"):
+        raise HTTPException(status_code=400, detail=f"Invalid official role: '{role}'.")
+    if len(req.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+
+    # Check for duplicate user
+    existing_user = find_user_by_identifier(uname)
+    if existing_user and existing_user.get("username", "").lower() == uname:
+        raise HTTPException(status_code=409, detail=f"Official username '{uname}' is already registered.")
     
-    if hash_password(req.password) != user["password_hash"]:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    
-    extra = {k: v for k, v in user.items() if k not in ("password_hash", "role")}
-    token = create_token(req.username, user["role"], extra)
+    existing_email = find_user_by_identifier(email)
+    if existing_email and existing_email.get("email", "").lower() == email:
+        raise HTTPException(status_code=409, detail=f"Email address '{email}' is already registered.")
+
+    pwd_hash = hash_password(req.password)
+    user_record = {
+        "username": uname,
+        "email": email,
+        "password_hash": pwd_hash,
+        "role": role,
+        "name": name,
+        "designation": (req.designation or "").strip(),
+        "state": (req.state or "").strip(),
+        "ida": (req.ida or "").strip(),
+        "mp_name": (req.mp_name or "").strip(),
+        "clearance_code": (req.clearance_code or "").strip()
+    }
+
+    create_official_user(user_record)
+
+    extra_claims = {
+        "name": name,
+        "email": email,
+        "state": user_record["state"],
+        "ida": user_record["ida"],
+        "mp_name": user_record["mp_name"],
+        "designation": user_record["designation"]
+    }
+    token = create_token(uname, role, extra_claims)
     return {
         "access_token": token,
         "token_type": "bearer",
+        "username": uname,
+        "role": role,
+        "name": name,
+        **extra_claims
+    }
+
+@app.post("/api/login", tags=["Auth"])
+def login(req: LoginRequest):
+    """
+    Authenticate official using username, official email, or MP name.
+    Queries Supabase PostgreSQL credentials first, with local SQLite fallback.
+    """
+    ident = req.username.strip()
+    if not ident or not req.password:
+        raise HTTPException(status_code=400, detail="Please enter your official username/email and password.")
+
+    user = find_user_by_identifier(ident)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid official credentials. Account not found.")
+
+    if hash_password(req.password) != user["password_hash"]:
+        raise HTTPException(status_code=401, detail="Invalid password for official credentials.")
+
+    extra = {
+        "name": user.get("name", ""),
+        "email": user.get("email", ""),
+        "state": user.get("state", "") or "",
+        "ida": user.get("ida", "") or "",
+        "mp_name": user.get("mp_name", "") or "",
+        "designation": user.get("designation", "") or "",
+    }
+    token = create_token(user["username"], user["role"], extra)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "username": user["username"],
         "role": user["role"],
         "name": user["name"],
         **extra
@@ -330,7 +776,111 @@ def login(req: LoginRequest):
 def get_current_user_profile(user: dict = Depends(decode_token)):
     return user
 
+_auth_options_cache = None
+
+@app.get("/api/auth/options", tags=["Auth"])
+def get_auth_options():
+    """
+    Return dynamic state, district, and MP directory options for official registration,
+    sourced directly from Supabase datasets with fallback to processed flags.
+    """
+    global _auth_options_cache
+    if _auth_options_cache is not None:
+        return _auth_options_cache
+
+    states_set = set()
+    districts_by_state = {}
+    mps_list = []
+
+    # 1. Primary: Load from Supabase PostgreSQL
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            # Fetch all MPs
+            cur.execute("""
+                SELECT mp_name, house, state, constituency 
+                FROM mps 
+                WHERE mp_name IS NOT NULL AND mp_name != ''
+                ORDER BY mp_name ASC;
+            """)
+            for row in cur.fetchall():
+                mps_list.append({
+                    "name": row[0],
+                    "house": row[1] or "LS",
+                    "state": row[2] or "",
+                    "constituency": row[3] or ""
+                })
+                if row[2]:
+                    states_set.add(row[2])
+
+            # Fetch distinct states and IDAs from works
+            cur.execute("""
+                SELECT DISTINCT state, ida 
+                FROM works 
+                WHERE state IS NOT NULL AND state != '' 
+                ORDER BY state, ida;
+            """)
+            for st, ida in cur.fetchall():
+                if not st:
+                    continue
+                states_set.add(st)
+                if st not in districts_by_state:
+                    districts_by_state[st] = []
+                if ida and ida not in districts_by_state[st]:
+                    districts_by_state[st].append(ida)
+            pg.close()
+        except Exception as _e:
+            print(f"[!] Warning reading auth options from Supabase: {_e}")
+
+    # 2. Fallback / augmentation from cached fraud flags
+    try:
+        df = get_cached_flags()
+        for st in df["state"].dropna().unique():
+            st_clean = str(st).strip()
+            if st_clean:
+                states_set.add(st_clean)
+                if st_clean not in districts_by_state:
+                    districts_by_state[st_clean] = []
+                for ida in df[df["state"] == st]["ida"].dropna().unique():
+                    ida_clean = str(ida).strip()
+                    if ida_clean and ida_clean not in districts_by_state[st_clean]:
+                        districts_by_state[st_clean].append(ida_clean)
+        if not mps_list and "mp_name" in df.columns:
+            for mp in df["mp_name"].dropna().unique():
+                mp_clean = str(mp).strip()
+                if mp_clean:
+                    m_row = df[df["mp_name"] == mp].iloc[0]
+                    mps_list.append({
+                        "name": mp_clean,
+                        "house": "LS",
+                        "state": str(m_row.get("state", "")),
+                        "constituency": str(m_row.get("ida", ""))
+                    })
+    except Exception:
+        pass
+
+    sorted_states = sorted(list(states_set))
+    for s in districts_by_state:
+        districts_by_state[s] = sorted(districts_by_state[s])
+
+    _auth_options_cache = {
+        "states": sorted_states,
+        "districts_by_state": districts_by_state,
+        "mps": mps_list
+    }
+    return _auth_options_cache
+
+@app.get("/api/auth/users", tags=["Auth"])
+def get_registered_users():
+    """Directory endpoint to inspect registered officials (sanitized)."""
+    return {"users": list_official_users()}
+
 # ── Non-Blocking Background Pipeline Execution (Persisted in SQLite) ────────────
+# BUG-013 FIX: Lock protects pipeline_state dict from concurrent thread mutations
+import threading
+_pipeline_lock = threading.Lock()
+
 def _load_latest_pipeline_state():
     try:
         conn = get_db()
@@ -351,28 +901,33 @@ pipeline_state = _load_latest_pipeline_state()
 
 def _execute_pipeline_task():
     global pipeline_state, _flags_cache, _flags_mtime
-    pipeline_state["is_running"] = True
-    pipeline_state["status"] = "running"
-    pipeline_state["error"] = None
+    with _pipeline_lock:  # BUG-013 FIX: thread-safe state mutation
+        pipeline_state["is_running"] = True
+        pipeline_state["status"] = "running"
+        pipeline_state["error"] = None
     try:
         res = subprocess.run(
             [VENV_PY, MODELS_PY],
             capture_output=True, text=True, timeout=600, cwd=ROOT_DIR
         )
         if res.returncode == 0:
-            pipeline_state["status"] = "success"
-            pipeline_state["last_run"] = datetime.now().isoformat()
+            with _pipeline_lock:
+                pipeline_state["status"] = "success"
+                pipeline_state["last_run"] = datetime.now().isoformat()
             # Invalidate cache so fresh data is loaded on next query
             _flags_cache = None
             _flags_mtime = None
         else:
-            pipeline_state["status"] = "failed"
-            pipeline_state["error"] = res.stderr[-500:]
+            with _pipeline_lock:
+                pipeline_state["status"] = "failed"
+                pipeline_state["error"] = res.stderr[-500:]
     except Exception as e:
-        pipeline_state["status"] = "error"
-        pipeline_state["error"] = str(e)
+        with _pipeline_lock:
+            pipeline_state["status"] = "error"
+            pipeline_state["error"] = str(e)
     finally:
-        pipeline_state["is_running"] = False
+        with _pipeline_lock:
+            pipeline_state["is_running"] = False
         try:
             conn = get_db()
             c = conn.cursor()
@@ -455,6 +1010,18 @@ def run_model_validation(background_tasks: BackgroundTasks, user=Depends(decode_
     return {"status": "started", "message": "Model validation engine started in background thread."}
 
 # ── Executive KPI & Summary Overview ───────────────────────────────────────────
+# BUG-003 FIX: Helper uses 'with' block so file handles are always closed.
+# Removed hardcoded fallback of 157 (fabricated data).
+def _get_duplicate_photos_count() -> int:
+    dup_path = os.path.join(ROOT_DIR, "forensics", "duplicate_photo_flags.json")
+    if not os.path.exists(dup_path):
+        return 0
+    try:
+        with open(dup_path, "r", encoding="utf-8") as f:
+            return len(json.load(f))
+    except Exception:
+        return 0
+
 @app.get("/api/kpis", tags=["Analytics"])
 def get_executive_kpis(user: Optional[dict] = Depends(get_current_user_optional)):
     """Return instant national or role-scoped executive KPI metrics."""
@@ -494,10 +1061,8 @@ def get_executive_kpis(user: Optional[dict] = Depends(get_current_user_optional)
         "premature_tranche_works": int(df["rule_premature_tranche"].sum()) if "rule_premature_tranche" in df.columns else 0,
         "stalled_execution_works": int(df["rule_stalled_execution"].sum()) if "rule_stalled_execution" in df.columns else 0,
         "split_tender_works": int(df["rule_split_tender"].sum()) if "rule_split_tender" in df.columns else 0,
-        "duplicate_photos_count": (
-            len(json.load(open(os.path.join(ROOT_DIR, "forensics", "duplicate_photo_flags.json"), "r", encoding="utf-8")))
-            if os.path.exists(os.path.join(ROOT_DIR, "forensics", "duplicate_photo_flags.json")) else 157
-        ),
+        # BUG-003 FIX: Uses helper with 'with' block — no file handle leak, no hardcoded fallback
+        "duplicate_photos_count": _get_duplicate_photos_count(),
         "average_risk_score": round(float(df["risk_score"].mean()), 2)
     }
 
@@ -588,13 +1153,272 @@ def get_flags(
         "items": items
     }
 
+# ── Logistic Regression Completion Prediction & Target Date Engine ─────────────
+def _compute_work_completion(work_id: str) -> dict:
+    df = get_cached_flags()
+    work_id_clean = urllib.parse.unquote(work_id.strip())
+    
+    match = df[df["work_id"] == work_id_clean]
+    if match.empty:
+        match = df[df["work_id"].astype(str).str.contains(work_id_clean, case=False, na=False, regex=False)]
+    if match.empty:
+        raise HTTPException(status_code=404, detail=f"Work '{work_id}' not found.")
+        
+    row = match.iloc[0]
+    prob = float(row.get("completion_probability", 0.5))
+    status_cat = (
+        "HIGH_LIKELIHOOD" if prob >= 0.70 
+        else "MODERATE_RISK" if prob >= 0.40 
+        else "CRITICAL_NON_COMPLETION_RISK"
+    )
+    
+    sanction = float(row.get("sanction_amount", 0.0))
+    spent = float(row.get("total_spent", 0.0))
+    spend_ratio = round((spent / sanction) if sanction > 0 else 0.0, 3)
+    remaining_spend = max(0.0, sanction - spent)
+    
+    days = int(row.get("days_since_sanction", 0))
+    effective_days = max(1, days)
+    work_status_str = str(row.get("work_status", ""))
+    is_completed = "complet" in work_status_str.lower() and "partially" not in work_status_str.lower()
+
+    # 1. Statutory 1-Year Execution Window (GFR Rule 144 / MPLADS Guidelines)
+    sanction_date_val = str(row.get("sanction_date", "")).strip()
+    statutory_deadline_str = None
+    sanction_dt = None
+    if sanction_date_val:
+        try:
+            sanction_dt = pd.to_datetime(sanction_date_val, errors="coerce")
+            if pd.notna(sanction_dt):
+                statutory_deadline_str = (sanction_dt + timedelta(days=365)).strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+    # 2. Daily burn rate calculation
+    daily_burn_rate = spent / effective_days if spent > 0 else 0.0
+
+    # 3. Projected Additional Days & Target Calendar Completion Date
+    if is_completed:
+        projected_additional_days = 0
+        comp_date_val = str(row.get("completion_date", "")).strip()
+        projected_completion_str = comp_date_val or (sanction_dt + timedelta(days=days)).strftime("%Y-%m-%d") if sanction_dt else datetime.now().strftime("%Y-%m-%d")
+        projected_delay_days = max(0, days - 365)
+        delay_status = "COMPLETED_ON_TIME" if days <= 365 else "COMPLETED_WITH_DELAY"
+    else:
+        # If incomplete, calculate remaining timeline adjusted by logistic risk factor
+        if daily_burn_rate > 0:
+            pace_factor = max(0.20, prob)
+            projected_additional_days = int((remaining_spend / daily_burn_rate) / pace_factor)
+        else:
+            projected_additional_days = int(365.0 / max(0.20, prob))
+
+        projected_additional_days = min(1825, max(14, projected_additional_days))  # 14 days to 5 years
+        projected_dt = datetime.now() + timedelta(days=projected_additional_days)
+        projected_completion_str = projected_dt.strftime("%Y-%m-%d")
+        
+        total_duration = days + projected_additional_days
+        projected_delay_days = total_duration - 365
+        
+        if projected_delay_days <= 0:
+            delay_status = "ON_TRACK"
+        elif projected_delay_days <= 90:
+            delay_status = "MINOR_DELAY"
+        elif projected_delay_days <= 270:
+            delay_status = "MODERATE_DELAY"
+        else:
+            delay_status = "CRITICAL_DELAY"
+
+    # 4. Required daily burn rate to meet statutory deadline
+    days_left_in_statutory = max(1, 365 - days)
+    if days > 365:
+        required_burn_rate = remaining_spend / 90.0  # 90-day recovery plan
+    else:
+        required_burn_rate = remaining_spend / days_left_in_statutory
+
+    factors = []
+    if spend_ratio >= 0.70:
+        factors.append(f"Strong financial disbursement: {spend_ratio*100:.1f}% of funds utilized.")
+    elif spend_ratio < 0.20:
+        factors.append(f"Low fund disbursement: Only {spend_ratio*100:.1f}% of sanction utilized.")
+        
+    if days > 365:
+        factors.append(f"Statutory deadline elapsed: {days} days elapsed (> 365-day GFR statutory window).")
+    else:
+        factors.append(f"Within statutory window: {days} days elapsed since sanction.")
+        
+    comp_score = float(row.get("compliance_score", 0.0))
+    if comp_score > 0:
+        factors.append(f"Compliance penalty: Statutory rule violation score of {comp_score:.1f}.")
+    else:
+        factors.append("Clean compliance profile: Zero statutory rule infractions.")
+
+    if not is_completed and projected_delay_days > 0:
+        factors.append(f"Forecasted delay: Project estimated to overrun statutory schedule by ~{projected_delay_days} days.")
+        
+    return {
+        "work_id": str(row["work_id"]),
+        "mp_name": str(row.get("mp_name", "")),
+        "state": str(row.get("state", "")),
+        "work_status": str(row.get("work_status", "")),
+        "sanction_amount": sanction,
+        "total_spent": spent,
+        "remaining_funds_inr": round(remaining_spend, 2),
+        "days_since_sanction": days,
+        "statutory_deadline_date": statutory_deadline_str,
+        "projected_completion_date": projected_completion_str,
+        "projected_additional_days": projected_additional_days,
+        "projected_delay_days": int(projected_delay_days),
+        "projected_delay_status": delay_status,
+        "current_daily_burn_rate_inr": round(daily_burn_rate, 2),
+        "required_daily_burn_rate_inr": round(required_burn_rate, 2),
+        "completion_probability": round(prob, 3),
+        "completion_likelihood_pct": round(prob * 100, 1),
+        "prediction": "LIKELY_COMPLETE" if prob >= 0.50 else "AT_RISK_DELAY",
+        "predicted_outcome": status_cat,
+        "key_drivers": factors,
+        "model_metadata": {
+            "algorithm": "Binary Logistic Regression with Trajectory Estimation",
+            "loss": "log-loss",
+            "solver": "lbfgs",
+            "class_weight": "balanced",
+            "benchmark_auc_roc": 0.9563
+        }
+    }
+
+# ── Core Vision & ELA Forensic Executor ───────────────────────────────────────
+def _execute_work_vision_audit(work_id: str, sample_file: Optional[str] = None):
+    """Internal executor for Vision Auditor & ELA tamper forensics."""
+    import urllib.parse
+    import re
+    from forensics.vision_auditor import run_full_vision_audit
+    
+    df = get_cached_flags()
+    work_id_clean = urllib.parse.unquote(work_id.strip())
+    match = df[df["work_id"] == work_id_clean]
+    if match.empty:
+        match = df[df["work_id"].astype(str).str.contains(work_id_clean, case=False, na=False, regex=False)]
+    
+    work_desc = "Civil Construction Work"
+    sanction_amt = 0.0
+    category = "Civil Works"
+    canon_id = work_id_clean
+    
+    if not match.empty:
+        row = match.iloc[0]
+        canon_id = str(row["work_id"])
+        work_desc = str(row.get("work_description") or row.get("work_title") or "Civil Construction Work")
+        sanction_amt = float(row.get("sanction_amount", 0.0) or 0.0)
+        category = str(row.get("work_category") or "Civil Works")
+    
+    # 1. Locate photo for this work
+    extracted_dir = os.path.join(ROOT_DIR, "images", "extracted")
+    target_img_path = None
+    is_sample = False
+    sample_note = None
+    
+    # If client passed an explicit sample_file
+    if sample_file:
+        candidate = os.path.join(extracted_dir, os.path.basename(sample_file))
+        if os.path.exists(candidate):
+            target_img_path = candidate
+            is_sample = True
+            sample_note = f"Audited using selected physical site photograph: {os.path.basename(candidate)}"
+    
+    # Check duplicate flags JSON for directly associated photos
+    if not target_img_path:
+        dup_path = os.path.join(ROOT_DIR, "forensics", "duplicate_photo_flags.json")
+        if os.path.exists(dup_path):
+            try:
+                with open(dup_path, "r", encoding="utf-8") as f:
+                    all_dups = json.load(f)
+                for d in all_dups:
+                    w1 = str(d.get("numeric_work_id_1") or "").strip()
+                    w2 = str(d.get("numeric_work_id_2") or "").strip()
+                    cw1 = str(d.get("work_id_1") or "").strip()
+                    cw2 = str(d.get("work_id_2") or "").strip()
+                    if work_id_clean in (w1, w2) or canon_id in (cw1, cw2):
+                        f1 = os.path.join(extracted_dir, d.get("file_1", ""))
+                        f2 = os.path.join(extracted_dir, d.get("file_2", ""))
+                        if os.path.exists(f1):
+                            target_img_path = f1
+                            break
+                        elif os.path.exists(f2):
+                            target_img_path = f2
+                            break
+            except Exception:
+                pass
+
+    # Search extracted directory for matching numeric id
+    if not target_img_path and os.path.exists(extracted_dir):
+        tokens = re.findall(r"\d+", canon_id)
+        for t in reversed(tokens):
+            if len(t) >= 4:
+                matches = [f for f in os.listdir(extracted_dir) if t in f and f.lower().endswith(('.jpeg', '.jpg', '.png')) and not f.endswith('_ela.png')]
+                if matches:
+                    target_img_path = os.path.join(extracted_dir, matches[0])
+                    break
+                    
+    # Fallback to benchmark image if work lacks photos
+    available_samples = []
+    if os.path.exists(extracted_dir):
+        all_imgs = [f for f in os.listdir(extracted_dir) if f.lower().endswith(('.jpeg', '.jpg', '.png')) and not f.endswith('_ela.png')]
+        available_samples = all_imgs[:12]
+        if not target_img_path and all_imgs:
+            target_img_path = os.path.join(extracted_dir, all_imgs[0])
+            is_sample = True
+            sample_note = f"Notice: This work had no physical site photo attached on the portal (Rule 3.12 non-compliance). Auditing against benchmark site photo ({all_imgs[0]})."
+
+    if not target_img_path or not os.path.exists(target_img_path):
+        return {
+            "success": False,
+            "error": "No site completion photograph found for this work or in evidence vault.",
+            "photo_available": False,
+            "work_id": canon_id,
+            "available_samples": available_samples
+        }
+
+    # Run unified vision & ELA audit
+    audit_res = run_full_vision_audit(
+        image_path=target_img_path,
+        work_title=work_desc,
+        sanction_amount=sanction_amt,
+        category=category
+    )
+    
+    filename = os.path.basename(target_img_path)
+    audit_res["work_id"] = canon_id
+    audit_res["work_title"] = work_desc
+    audit_res["sanction_amount"] = sanction_amt
+    audit_res["category"] = category
+    audit_res["filename"] = filename
+    audit_res["image_url"] = f"/images/extracted/{filename}"
+    audit_res["is_sample"] = is_sample
+    audit_res["sample_note"] = sample_note
+    audit_res["available_samples"] = available_samples
+
+    return audit_res
+
 # ── 360° Single Work Inspection ────────────────────────────────────────────────
+# BUG-012 NOTE: The `:path` wildcard here WILL shadow /api/work/{id}/vision-audit
+# and /api/work/{id}/qr-code if they were registered after this route.
+# The vision-audit and QR routes are handled INSIDE this function via string suffix checks.
+# If you add a new sub-route, always handle it inside get_work_detail() or
+# register it BEFORE this decorator in the file.
 @app.get("/api/work/{work_id:path}", tags=["Alerts"])
-def get_work_detail(work_id: str, user: Optional[dict] = Depends(get_current_user_optional)):
+def get_work_detail(
+    work_id: str,
+    sample_file: Optional[str] = Query(None, description="Optional sample file for vision audit"),
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
     """Fetch complete forensic profile, multi-model scoring, or citizen transparency QR code."""
     df = get_cached_flags()
     work_id_clean = urllib.parse.unquote(work_id.strip())
     
+    # Handle /vision-audit subpath cleanly to avoid FastAPI wildcard path conflicts
+    if work_id_clean.endswith("/vision-audit"):
+        target_id = work_id_clean[:-13].strip()
+        return _execute_work_vision_audit(work_id=target_id, sample_file=sample_file)
+
     # Handle /qr-code subpath cleanly to avoid FastAPI wildcard path conflicts
     if work_id_clean.endswith("/qr-code"):
         target_id = work_id_clean[:-8].strip()
@@ -736,6 +1560,12 @@ def get_work_detail(work_id: str, user: Optional[dict] = Depends(get_current_use
         work_record["risk_tier"] = "CRITICAL"
         work_record["risk_label"] = "CRITICAL"
     
+    # Attach rich predictive completion metrics
+    try:
+        work_record["predictive_completion"] = _compute_work_completion(canon_id)
+    except Exception as _e:
+        work_record["predictive_completion"] = None
+
     return {
         "work": work_record,
         "audit_history": audit_history_list,
@@ -780,67 +1610,25 @@ def get_work_qr_code(work_id: str):
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png")
 
-# ── Logistic Regression Completion Prediction Endpoint ────────────────────────
-def _compute_work_completion(work_id: str) -> dict:
-    df = get_cached_flags()
-    work_id_clean = urllib.parse.unquote(work_id.strip())
-    
-    match = df[df["work_id"] == work_id_clean]
-    if match.empty:
-        match = df[df["work_id"].astype(str).str.contains(work_id_clean, case=False, na=False, regex=False)]
-    if match.empty:
-        raise HTTPException(status_code=404, detail=f"Work '{work_id}' not found.")
-        
-    row = match.iloc[0]
-    prob = float(row.get("completion_probability", 0.5))
-    status_cat = (
-        "HIGH_LIKELIHOOD" if prob >= 0.70 
-        else "MODERATE_RISK" if prob >= 0.40 
-        else "CRITICAL_NON_COMPLETION_RISK"
-    )
-    
-    sanction = float(row.get("sanction_amount", 0.0))
-    spent = float(row.get("total_spent", 0.0))
-    spend_ratio = round((spent / sanction) if sanction > 0 else 0.0, 3)
-    
-    factors = []
-    if spend_ratio >= 0.70:
-        factors.append(f"Strong financial disbursement: {spend_ratio*100:.1f}% of funds utilized.")
-    elif spend_ratio < 0.20:
-        factors.append(f"Low fund disbursement: Only {spend_ratio*100:.1f}% of sanction utilized.")
-        
-    days = int(row.get("days_since_sanction", 0))
-    if days > 365:
-        factors.append(f"Statutory delay: Elapsed {days} days since sanction (> 1 year window).")
-    else:
-        factors.append(f"Fresh project execution: {days} days elapsed since sanction.")
-        
-    comp_score = float(row.get("compliance_score", 0.0))
-    if comp_score > 0:
-        factors.append(f"Compliance penalty: Statutory rule violation score of {comp_score:.1f}.")
-    else:
-        factors.append("Clean compliance profile: Zero statutory rule infractions.")
-        
-    return {
-        "work_id": str(row["work_id"]),
-        "mp_name": str(row.get("mp_name", "")),
-        "state": str(row.get("state", "")),
-        "work_status": str(row.get("work_status", "")),
-        "sanction_amount": sanction,
-        "total_spent": spent,
-        "days_since_sanction": days,
-        "completion_probability": round(prob, 3),
-        "completion_likelihood_pct": round(prob * 100, 1),
-        "predicted_outcome": status_cat,
-        "key_drivers": factors,
-        "model_metadata": {
-            "algorithm": "Binary Logistic Regression",
-            "loss": "log-loss",
-            "solver": "lbfgs",
-            "class_weight": "balanced",
-            "benchmark_auc_roc": 0.9563
-        }
-    }
+# ── On-Demand Neural Vision Auditor & ELA Tamper Heatmap Lab ──────────────────
+@app.get("/api/work-vision-audit/{work_id:path}", tags=["Alerts"])
+@app.get("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
+@app.post("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
+def get_work_vision_audit(
+    work_id: str,
+    sample_file: Optional[str] = Query(None, description="Optional specific image filename to audit"),
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    On-Demand Multi-Modal Vision & Error Level Analysis (ELA) Forensic Audit.
+    Audits physical site completion photography for:
+      1. Digital tampering / Photoshop splicing (JPEG DCT compression variance matrix)
+      2. Ground reality scene mismatch vs declared work title (Gemini Multimodal Vision)
+      3. Ghost asset verification
+    """
+    return _execute_work_vision_audit(work_id=work_id, sample_file=sample_file)
+
+# ── Logistic Regression Completion Prediction Endpoints ───────────────────────
 
 @app.get("/api/predict/completion/{work_id:path}", tags=["Analytics"])
 def predict_work_completion_path(work_id: str, user: Optional[dict] = Depends(get_current_user_optional)):
@@ -851,6 +1639,105 @@ def predict_work_completion_path(work_id: str, user: Optional[dict] = Depends(ge
 def predict_work_completion_query(work_id: str = Query(..., description="Target Work ID"), user: Optional[dict] = Depends(get_current_user_optional)):
     """Dedicated Logistic Regression completion probability inference by query parameter."""
     return _compute_work_completion(work_id)
+
+
+# ── Early Warning: At-Abandonment-Risk Works ───────────────────────────────────
+@app.get("/api/works/early-warning", tags=["Analytics"])
+def get_early_warning_works(
+    state: Optional[str] = Query(None, description="Filter by state (for district/state role scoping)"),
+    threshold: float = Query(0.40, description="Completion probability upper bound (default 0.40)"),
+    limit: int = Query(500, description="Max works to return"),
+    user: Optional[dict] = Depends(get_current_user_optional),
+):
+    """
+    Early Warning Engine — Predictive Abandonment Risk (PS-26102 Requirement).
+    Returns all in-progress works with completion_probability below threshold,
+    sorted by abandonment risk (lowest completion_probability first).
+    Supports role-scoped filtering: pass ?state= to narrow to a district/state view.
+    """
+    df = get_cached_flags()
+
+    # Only include non-completed works that have a completion_probability score
+    mask = (
+        (df["completion_probability"] < threshold) &
+        (df["completion_probability"] > 0) &
+        (~df["work_status"].str.contains("Completed", case=False, na=False))
+    )
+    at_risk = df[mask].copy()
+
+    # Optional state filter for district/state role
+    if state:
+        state_clean = state.strip().lower()
+        at_risk = at_risk[at_risk["state"].str.lower().str.contains(state_clean, na=False)]
+
+    # Sort: most critical (lowest completion_probability) first
+    at_risk = at_risk.sort_values("completion_probability", ascending=True).head(limit)
+
+    # Severity bucket
+    def severity(prob: float) -> str:
+        if prob < 0.20:
+            return "CRITICAL_RISK"
+        return "HIGH_RISK"
+
+    results = []
+    for _, row in at_risk.iterrows():
+        prob = float(row.get("completion_probability", 0.0))
+        sanction = float(row.get("sanction_amount", 0.0))
+        spent = float(row.get("total_spent", 0.0))
+        days = int(row.get("days_since_sanction", 0))
+        # Compute projected delay and completion target date
+        statutory_duration = 365
+        projected_delay = max(0, days - statutory_duration) if days > statutory_duration else int((1.0 - prob) * 180)
+        sanc_date_str = str(row.get("sanction_date", ""))
+        try:
+            sanc_dt = datetime.strptime(sanc_date_str, "%Y-%m-%d")
+        except Exception:
+            sanc_dt = datetime.now() - timedelta(days=days)
+        target_comp_dt = sanc_dt + timedelta(days=statutory_duration + projected_delay)
+
+        results.append({
+            "work_id": str(row.get("work_id", "")),
+            "work_title": str(row.get("work_title", row.get("work_description", f"Work #{row.get('work_id')}"))),
+            "mp_name": str(row.get("mp_name", "")),
+            "state": str(row.get("state", "")),
+            "district": str(row.get("district", "")),
+            "work_status": str(row.get("work_status", "")),
+            "sanction_amount": round(sanction, 2),
+            "total_spent": round(spent, 2),
+            "completion_probability": round(prob, 3),
+            "completion_probability_pct": round(prob * 100, 1),
+            "abandonment_severity": severity(prob),
+            "projected_delay_days": projected_delay,
+            "projected_completion_date": target_comp_dt.strftime("%Y-%m-%d"),
+            "risk_score": round(float(row.get("risk_score", 0.0)), 1),
+            "risk_label": str(row.get("risk_label", "")),
+            "days_since_sanction": days,
+            "progress_pct": round(float(row.get("progress_pct", 0.0)), 1),
+            "rule_stalled_execution": bool(row.get("rule_stalled_execution", False)),
+            "rule_premature_tranche": bool(row.get("rule_premature_tranche", False)),
+            "m1_reason": str(row.get("m1_reason", "")),
+            "m4_reason": str(row.get("m4_reason", "")),
+        })
+
+    critical_count = sum(1 for r in results if r["abandonment_severity"] == "CRITICAL_RISK")
+    high_count = len(results) - critical_count
+    total_funds_at_risk = sum(r["sanction_amount"] for r in results)
+    avg_prob = (sum(r["completion_probability"] for r in results) / len(results)) if results else 0.0
+
+    return {
+        "summary": {
+            "total_at_risk_works": len(results),
+            "critical_risk_works": critical_count,
+            "high_risk_works": high_count,
+            "total_funds_at_risk": round(total_funds_at_risk, 2),
+            "total_funds_at_risk_cr": round(total_funds_at_risk / 10_000_000, 2),
+            "avg_completion_probability": round(avg_prob, 3),
+            "threshold_used": threshold,
+            "state_filter": state or "all",
+        },
+        "works": results,
+        "items": results,
+    }
 
 
 # ── Export Official Statutory Audit PDF Dossier ───────────────────────────────
@@ -1220,14 +2107,164 @@ def get_mp_data(mp_name: str, user: Optional[dict] = Depends(get_current_user_op
         "works": mp_df.sort_values("risk_score", ascending=False).to_dict(orient="records")
     }
 
-# ── Trend Analysis (Master Plan View 6) ────────────────────────────────────────
-@app.get("/api/trends", tags=["Analytics"])
-def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)):
-    """Time-series & seasonal anomaly analytics as required by Master Plan View 6."""
+# ── Constituency Unspent Balance & Fund Lapsing Forecaster (PS 26102) ──────────
+@app.get("/api/constituency/unspent-forecast", tags=["Analytics"])
+def get_constituency_unspent_forecast(
+    state: Optional[str] = Query(None, description="Filter by State"),
+    limit: int = Query(50, ge=5, le=500, description="Max records to return"),
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Constituency Unspent Balance Forecaster (Problem Statement 26102 Requirement).
+    Forecasts fund exhaustion velocity and predicts unspent balance carryovers
+    at the end of an MP's tenure to prevent public fund idling.
+    """
     df = get_cached_flags()
     df = apply_role_scope(df, user)
     
-    # 1. Monthly Sanctions & March Seasonality Spikes
+    if state:
+        df = df[df["state"].astype(str).str.contains(state.strip(), case=False, na=False, regex=False)]
+        
+    valid_mps = df[df["mp_name"] != ""].copy()
+    if valid_mps.empty:
+        return {"summary": {}, "constituencies": []}
+        
+    grouped = valid_mps.groupby(["mp_name", "state"]).agg(
+        total_works=("work_id", "count"),
+        total_sanctioned=("sanction_amount", "sum"),
+        total_spent=("total_spent", "sum"),
+        avg_risk=("risk_score", "mean"),
+        max_days=("days_since_sanction", "max"),
+        min_days=("days_since_sanction", "min")
+    ).reset_index()
+    
+    # Statutory entitlement: ₹5 Cr/year → ₹25 Cr for 5-year tenure (MPLADS Rule 2019)
+    # BUG-002 FIX: Build alloc_map with BOTH true_budget AND constituency
+    # BUG-009 FIX: Use case-insensitive lookup to handle name normalisation mismatches
+    alloc_map = {}   # mp_name_lower -> {"true_budget": float, "constituency": str, "elected_nominated": str}
+    alloc_csv = os.path.join(ROOT_DIR, "data", "processed", "clean_allocated.csv")
+    if os.path.exists(alloc_csv):
+        try:
+            alloc_df = pd.read_csv(alloc_csv, encoding="utf-8-sig")
+            for _, r in alloc_df.iterrows():
+                name_clean = str(r.get("mp_name", "")).strip()
+                if not name_clean:
+                    continue
+                tb = pd.to_numeric(r.get("true_budget"), errors="coerce")
+                # BUG-008 FIX: For RS MPs who have no constituency, use elected_nominated + state
+                const = str(r.get("constituency", "")).strip()
+                elected = str(r.get("elected_nominated", "")).strip()
+                r_state = str(r.get("state", "")).strip()
+                if not const or const == "nan":
+                    # RS Senator — show Elected/Nominated status + state
+                    const = f"{elected} — {r_state}" if elected and elected != "nan" else r_state
+                alloc_map[name_clean.lower()] = {
+                    "true_budget": float(tb) if pd.notna(tb) and tb > 0 else 250_000_000.0,
+                    "constituency": const,
+                }
+        except Exception:
+            pass
+
+    results = []
+    for _, row in grouped.iterrows():
+        mp_n = row["mp_name"]
+        st = row["state"]
+        sanc = float(row["total_sanctioned"])
+        spent = float(row["total_spent"])
+
+        # BUG-009 FIX: Try exact match first, then case-insensitive, then ₹25 Cr statutory default
+        alloc_entry = (
+            alloc_map.get(mp_n.lower()) or
+            alloc_map.get(mp_n.strip().lower()) or
+            {"true_budget": 250_000_000.0, "constituency": ""}
+        )
+        entitlement = alloc_entry["true_budget"]
+        # BUG-002 FIX: constituency comes from clean_allocated.csv, not mp_name
+        constituency_display = alloc_entry["constituency"] or mp_n  # fallback to mp_name only if totally missing
+        unspent_balance = max(0.0, entitlement - spent)
+
+        # Calculate active elapsed duration in months
+        days_span = max(90, int(row["max_days"]))
+        active_months = max(3.0, round(days_span / 30.4, 1))
+
+        # Monthly burn rate
+        monthly_burn = spent / active_months if active_months > 0 else 0.0
+
+        # Months to exhaust remaining balance
+        months_to_exhaust = round(unspent_balance / monthly_burn, 1) if monthly_burn > 0 else 999.0
+
+        # Standard tenure is 60 months (5 years)
+        remaining_tenure_months = max(1.0, 60.0 - active_months)
+
+        # Projected unspent balance at tenure end
+        projected_spend_in_remaining = monthly_burn * remaining_tenure_months
+        projected_tenure_end_unspent = max(0.0, unspent_balance - projected_spend_in_remaining)
+
+        unspent_pct_at_end = (projected_tenure_end_unspent / entitlement) * 100.0 if entitlement > 0 else 0.0
+
+        if unspent_pct_at_end >= 40.0 or months_to_exhaust > 72.0:
+            lapse_status = "CRITICAL_LAPSE_RISK"
+        elif unspent_pct_at_end >= 15.0 or months_to_exhaust > 48.0:
+            lapse_status = "MODERATE_RISK"
+        else:
+            lapse_status = "OPTIMAL_UTILIZATION"
+
+        req_burn_rate = unspent_balance / remaining_tenure_months if remaining_tenure_months > 0 else 0.0
+
+        results.append({
+            "mp_name": mp_n,
+            "state": st,
+            "constituency": constituency_display,   # BUG-002 FIX: real constituency name
+            "total_works": int(row["total_works"]),
+            "entitlement_cr": round(entitlement / 10_000_000, 2),
+            "true_budget_cr": round(entitlement / 10_000_000, 2),
+            "total_spent_cr": round(spent / 10_000_000, 2),
+            "current_unspent_cr": round(unspent_balance / 10_000_000, 2),
+            "current_balance_cr": round(unspent_balance / 10_000_000, 2),
+            "monthly_burn_rate_lakhs": round(monthly_burn / 100_000, 2),
+            "monthly_burn_rate_lakh": round(monthly_burn / 100_000, 2),
+            "months_to_exhaustion": months_to_exhaust,
+            "exhaustion_months": months_to_exhaust,
+            "remaining_tenure_months": round(remaining_tenure_months, 0),
+            "projected_unspent_at_tenure_end_cr": round(projected_tenure_end_unspent / 10_000_000, 2),
+            "unspent_ratio_pct": round(unspent_pct_at_end, 1),
+            "lapse_risk": "HIGH" if "CRITICAL" in lapse_status else ("MODERATE" if "MODERATE" in lapse_status else "LOW"),
+            "lapse_risk_status": lapse_status,
+            "required_monthly_burn_lakhs": round(req_burn_rate / 100_000, 2),
+            "avg_risk_score": round(float(row["avg_risk"]), 1)
+        })
+        
+    results.sort(key=lambda x: x["projected_unspent_at_tenure_end_cr"], reverse=True)
+    top_results = results[:limit]
+    
+    crit_count = sum(1 for r in results if r["lapse_risk_status"] == "CRITICAL_LAPSE_RISK")
+    mod_count = sum(1 for r in results if r["lapse_risk_status"] == "MODERATE_RISK")
+    total_unspent_cr = sum(r["projected_unspent_at_tenure_end_cr"] for r in results)
+    
+    return {
+        "summary": {
+            "total_mps_analyzed": len(results),
+            "critical_lapse_risk_count": crit_count,
+            "moderate_lapse_risk_count": mod_count,
+            "total_projected_idle_funds_cr": round(total_unspent_cr, 2),
+            "state_filter": state or "all"
+        },
+        "constituencies": top_results,
+        "forecasts": top_results
+    }
+
+# ── Trend Analysis & Time-Series Expenditure Forecasting (PS 26102) ───────────
+@app.get("/api/trends", tags=["Analytics"])
+def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)):
+    """
+    Time-series & predictive expenditure forecasting as required by PS 26102.
+    Provides 36 months of historical trends plus a forward-looking 6-month statistical
+    forecast modeling the statutory March Fiscal Year-End surge.
+    """
+    df = get_cached_flags()
+    df = apply_role_scope(df, user)
+    
+    # 1. Historical Monthly Sanctions & Spend Velocity
     monthly_trends = []
     if "sanction_date" in df.columns:
         valid_dates = df[df["sanction_date"] != ""].copy()
@@ -1243,12 +2280,107 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
             ).reset_index().sort_values("year_month")
             
             monthly_agg["sanctioned_amount"] = monthly_agg["sanctioned_amount"].round(2)
+            monthly_agg["month"] = monthly_agg["year_month"]
+            monthly_agg["spent_cr"] = (monthly_agg["sanctioned_amount"] / 10_000_000.0).round(2)
+            monthly_agg["sanctioned_cr"] = (monthly_agg["sanctioned_amount"] / 10_000_000.0).round(2)
             monthly_agg["avg_risk"] = monthly_agg["avg_risk"].round(1)
+            monthly_agg["is_forecast"] = False
             monthly_trends = monthly_agg.to_dict(orient="records")
         except Exception:
             pass
 
-    # 2. Category Delay & Cost Overrun Breakdown
+    # 2. 6-Month Forward Predictive Time-Series Forecasting
+    forecast_trends = []
+    forecast_summary = {}
+    if len(monthly_trends) >= 6:
+        amounts = [m["sanctioned_amount"] for m in monthly_trends]
+        works = [m["works_count"] for m in monthly_trends]
+        months_labels = [m["year_month"] for m in monthly_trends]
+        
+        # Calculate empirical March Fiscal Year-End surge multiplier
+        march_amounts = [m["sanctioned_amount"] for m in monthly_trends if m["year_month"].endswith("-03")]
+        non_march_amounts = [m["sanctioned_amount"] for m in monthly_trends if not m["year_month"].endswith("-03")]
+        march_surge_mult = 2.15
+        if march_amounts and non_march_amounts:
+            avg_march = np.mean(march_amounts)
+            avg_non_march = np.mean(non_march_amounts)
+            if avg_non_march > 0:
+                march_surge_mult = max(1.2, min(4.0, avg_march / avg_non_march))
+        
+        # Recent baseline and linear slope over last 6 months
+        recent_amounts = amounts[-6:]
+        recent_works = works[-6:]
+        x = np.arange(len(recent_amounts))
+        slope, _ = np.polyfit(x, recent_amounts, 1)
+        slope_w, _ = np.polyfit(x, recent_works, 1)
+        
+        base_amt = max(10_000_000.0, float(recent_amounts[-1]))
+        base_wrk = max(10, float(recent_works[-1]))
+        
+        last_ym = months_labels[-1]
+        try:
+            last_dt = datetime.strptime(last_ym, "%Y-%m")
+        except Exception:
+            last_dt = datetime.now()
+            
+        next_quarter_sum = 0.0
+        next_quarter_works = 0
+        
+        for step in range(1, 7):
+            future_dt = last_dt + timedelta(days=step * 30.5)
+            f_ym = future_dt.strftime("%Y-%m")
+            
+            proj_amt = max(5_000_000.0, base_amt + (slope * 0.4 * step))
+            proj_wrk = max(5, int(base_wrk + (slope_w * 0.4 * step)))
+            
+            is_march = f_ym.endswith("-03")
+            seasonal_factor = march_surge_mult if is_march else 1.0
+            proj_amt *= seasonal_factor
+            if is_march:
+                proj_wrk = int(proj_wrk * 1.6)
+                
+            upper_bound = proj_amt * 1.25
+            lower_bound = proj_amt * 0.75
+            
+            if step <= 3:
+                next_quarter_sum += proj_amt
+                next_quarter_works += proj_wrk
+                
+            forecast_trends.append({
+                "year_month": f_ym,
+                "month": f_ym,
+                "sanctioned_amount": round(proj_amt, 2),
+                "projected_expenditure_inr": round(proj_amt, 2),
+                "projected_expenditure_cr": round(proj_amt / 10_000_000.0, 2),
+                "confidence_upper_cr": round(upper_bound / 10_000_000.0, 2),
+                "confidence_lower_cr": round(lower_bound / 10_000_000.0, 2),
+                "works_count": int(proj_wrk),
+                "avg_risk": round(float(np.mean([m["avg_risk"] for m in monthly_trends[-6:]])), 1),
+                "is_forecast": True,
+                "march_fiscal_surge": is_march,
+                "seasonal_factor": round(float(seasonal_factor), 2),
+                "surge_multiplier": round(float(seasonal_factor), 2),
+                "confidence_upper": round(upper_bound, 2),
+                "confidence_lower": round(lower_bound, 2),
+                "forecast_tag": "MARCH_FISCAL_SURGE_PREDICTED" if is_march else "STATISTICAL_TREND_PROJECTION"
+            })
+            
+        total_6m = sum(f["sanctioned_amount"] for f in forecast_trends)
+        forecast_summary = {
+            # BUG-014 FIX: Correctly labeled — implementation uses linear trend (np.polyfit deg-1)
+            # + empirically calibrated March fiscal year-end surge multiplier
+            "model": "Linear Trend Regression + March Fiscal Year-End Surge Multiplier (Seasonal Adjustment)",
+            "march_surge_multiplier": round(float(march_surge_mult), 2),
+            "base_monthly_burn_rate_cr": round(float(base_amt) / 10_000_000, 2),
+            "next_6m_projected_disbursements_cr": round(total_6m / 10_000_000, 2),
+            "march_surge_detected": any(f.get("forecast_tag") == "MARCH_FISCAL_SURGE_PREDICTED" for f in forecast_trends),
+            "projected_next_quarter_cr": round(next_quarter_sum / 10_000_000, 2),
+            "projected_next_quarter_amount": round(next_quarter_sum, 2),
+            "projected_next_quarter_works": int(next_quarter_works),
+            "forecast_horizon_months": 6
+        }
+
+    # 3. Category Delay & Cost Overrun Breakdown
     category_trends = []
     if "work_category" in df.columns:
         cat_agg = df.groupby("work_category").agg(
@@ -1262,9 +2394,16 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
         cat_agg["avg_spent_pct"] = cat_agg["avg_spent_pct"].round(1)
         category_trends = cat_agg.sort_values("total_works", ascending=False).to_dict(orient="records")
 
+    hist_slice = monthly_trends[-36:]
     return {
-        "monthly_trends": monthly_trends[-36:],  # Last 3 years
-        "category_trends": category_trends
+        "monthly_trends": hist_slice,
+        "forecast_trends": forecast_trends,
+        "combined_trends": hist_slice[-18:] + forecast_trends,
+        "forecast_summary": forecast_summary,
+        "category_trends": category_trends,
+        "historical": hist_slice,
+        "forecast": forecast_trends,
+        "monthly": hist_slice
     }
 
 # ── Official CSV Export ────────────────────────────────────────────────────────
@@ -1446,6 +2585,9 @@ def get_audit_log(user: Optional[dict] = Depends(get_current_user_optional)):
             print(f"[!] Warning querying Supabase audit_ledger: {_e}")
 
     # 2. Fallback: Local SQLite dismissals
+    # BUG-016 FIX: Explicitly log that Supabase is unavailable so ops team sees the gap.
+    print("[!] WARNING: Supabase audit_ledger unavailable. Serving from local SQLite fallback. "
+          "Audit records written only to this node — NOT replicated to cloud.")
     conn = get_db()
     df = pd.read_sql_query("SELECT * FROM dismissals ORDER BY timestamp DESC", conn)
     conn.close()
@@ -1622,36 +2764,57 @@ _last_supabase_check = {"connected": False, "checked_at": 0.0}
 
 def is_supabase_alive() -> bool:
     now = time.time()
-    if now - _last_supabase_check["checked_at"] < 60:
+    if now - _last_supabase_check["checked_at"] < 30:
         return _last_supabase_check["connected"]
     
+    # 1. Test PostgreSQL connection
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            cur = pg.cursor()
+            cur.execute("SELECT 1;")
+            pg.close()
+            _last_supabase_check["connected"] = True
+            _last_supabase_check["checked_at"] = now
+            return True
+        except Exception:
+            pass
+
+    # 2. Test Supabase Python client SDK
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not (url and key):
-        _last_supabase_check["connected"] = False
-        _last_supabase_check["checked_at"] = now
-        return False
-    try:
-        from supabase import create_client
-        sp = create_client(url, key)
-        sp.storage.from_("raw-mplads-archives").list("", {"limit": 1})
-        _last_supabase_check["connected"] = True
-    except Exception:
-        _last_supabase_check["connected"] = False
+    if url and key:
+        try:
+            from supabase import create_client
+            sp = create_client(url, key)
+            sp.table("audit_ledger").select("log_id").limit(1).execute()
+            _last_supabase_check["connected"] = True
+            _last_supabase_check["checked_at"] = now
+            return True
+        except Exception:
+            pass
+
+    _last_supabase_check["connected"] = False
     _last_supabase_check["checked_at"] = now
-    return _last_supabase_check["connected"]
+    return False
 
 @app.get("/api/health", tags=["System"])
 def health():
     flags_ready = os.path.exists(FLAGS_FILE)
     total_records = len(_flags_cache) if _flags_cache is not None else 0
+    db_ok = os.path.exists(DB_FILE)
+    users = list_official_users()
     return {
-        "status": "ok",
+        "status": "ok" if flags_ready else "degraded",
+        "fraud_flags_loaded": flags_ready,
         "fraud_flags_ready": flags_ready,
         "cached_records": total_records,
-        "pipeline_running": pipeline_state["is_running"],
-        "forensics_running": forensics_state["is_running"],
+        "audit_db_ready": db_ok,
+        "pipeline_running": pipeline_state.get("is_running", False),
+        "forensics_running": forensics_state.get("is_running", False),
         "supabase_connected": is_supabase_alive(),
+        "registered_officials": len(users),
+        "version": "2.2",
         "timestamp": datetime.now().isoformat()
     }
 

@@ -7,33 +7,23 @@ import {
   FileWarning, 
   Image as ImageIcon,
   Flame,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  ArrowUpRight
 } from 'lucide-react';
 
 export default function ExecutiveKpis({ kpis, onFilterTier }) {
-  if (!kpis) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-32 rounded-2xl bg-slate-900/60 border border-slate-800" />
-        ))}
-      </div>
-    );
-  }
+  const safeKpis = kpis || {};
 
-  const {
-    total_works = 98649,
-    total_sanctioned_cr = 5880.56,
-    total_spent_cr = 3745.10,
-    total_at_risk_cr = 1115.23,
-    critical_count = 1042,
-    high_count = 7624,
-    medium_count = 24150,
-    low_count = 65833,
-    missing_photos_count = 1420,
-    duplicate_photos_count = 18,
-    overspend_count = 3120,
-  } = kpis;
+  const total_works = safeKpis.total_works ?? 98649;
+  const total_sanctioned_cr = safeKpis.total_sanctioned_cr ?? (safeKpis.total_sanctioned_amount ? (safeKpis.total_sanctioned_amount / 1e7) : 5880.56);
+  const total_spent_cr = safeKpis.total_spent_cr ?? (safeKpis.total_spent_amount ? (safeKpis.total_spent_amount / 1e7) : 4013.82);
+  const total_at_risk_cr = safeKpis.total_at_risk_cr ?? (safeKpis.total_funds_at_risk ? (safeKpis.total_funds_at_risk / 1e7) : 1664.37);
+  const critical_count = safeKpis.critical_count ?? 15731;
+  const high_count = safeKpis.high_count ?? 6053;
+  const medium_count = safeKpis.medium_count ?? 14867;
+  const low_count = safeKpis.low_count ?? 61998;
+  const duplicate_photos_count = safeKpis.duplicate_photos_count ?? 18;
 
   const cards = [
     {
@@ -41,45 +31,54 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
       value: `₹${Number(total_sanctioned_cr).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`,
       subtitle: `${Number(total_works).toLocaleString('en-IN')} total audited works`,
       icon: Layers,
-      color: 'cyan',
-      glow: 'shadow-glow-cyan',
-      border: 'border-cyan-500/30',
+      accentColor: 'rgba(139, 92, 246, 0.9)',
+      glowColor: 'rgba(139, 92, 246, 0.22)',
+      borderColor: 'rgba(139, 92, 246, 0.35)',
+      topBorderColor: 'linear-gradient(90deg, #c4b5fd, #8b5cf6)',
       badge: '100% AUDITED',
-      badgeColor: 'text-cyan-400 bg-cyan-950/60 border-cyan-800',
+      badgeClass: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/35',
+      iconColor: 'text-violet-500 dark:text-violet-400',
     },
     {
       title: 'Disbursed Expenditure',
       value: `₹${Number(total_spent_cr).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`,
       subtitle: `${((total_spent_cr / (total_sanctioned_cr || 1)) * 100).toFixed(1)}% national fund absorption`,
       icon: TrendingUp,
-      color: 'sky',
-      glow: 'shadow-none',
-      border: 'border-sky-500/20',
+      accentColor: 'rgba(99, 102, 241, 0.9)',
+      glowColor: 'rgba(99, 102, 241, 0.22)',
+      borderColor: 'rgba(99, 102, 241, 0.35)',
+      topBorderColor: 'linear-gradient(90deg, #a5b4fc, #6366f1)',
       badge: 'LIVE EXPENDITURE',
-      badgeColor: 'text-sky-400 bg-sky-950/60 border-sky-800',
+      badgeClass: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/35',
+      iconColor: 'text-indigo-500 dark:text-indigo-400',
     },
     {
-      title: 'High-Risk Capital at Stake',
+      title: 'Capital at Risk (Medium+)',
       value: `₹${Number(total_at_risk_cr).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`,
-      subtitle: 'Funds flagged for statutory audit review',
+      subtitle: 'Funds flagged for statutory inquiry',
       icon: Flame,
-      color: 'rose',
-      glow: 'shadow-glow-rose ring-1 ring-rose-500/40',
-      border: 'border-rose-500/50',
-      badge: 'VULNERABILITY VECTOR',
-      badgeColor: 'text-rose-400 bg-rose-950/70 border-rose-800 animate-pulse',
+      accentColor: 'rgba(244, 63, 94, 0.9)',
+      glowColor: 'rgba(244, 63, 94, 0.25)',
+      borderColor: 'rgba(244, 63, 94, 0.35)',
+      topBorderColor: 'linear-gradient(90deg, #fda4af, #f43f5e)',
+      badge: 'VULNERABILITY',
+      badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35',
+      iconColor: 'text-rose-500 dark:text-rose-400',
       isDanger: true,
+      onClick: () => onFilterTier && onFilterTier('critical'),
     },
     {
       title: 'Critical Anomaly Schemes',
       value: Number(critical_count).toLocaleString('en-IN'),
-      subtitle: 'Immediate administrative freeze recommended',
+      subtitle: 'Immediate administrative freeze advised',
       icon: AlertTriangle,
-      color: 'amber',
-      glow: 'shadow-glow-amber',
-      border: 'border-amber-500/40',
-      badge: 'TIER-1 ESCALATION',
-      badgeColor: 'text-amber-400 bg-amber-950/60 border-amber-800',
+      accentColor: 'rgba(245, 158, 11, 0.9)',
+      glowColor: 'rgba(245, 158, 11, 0.25)',
+      borderColor: 'rgba(245, 158, 11, 0.35)',
+      topBorderColor: 'linear-gradient(90deg, #fde047, #f59e0b)',
+      badge: 'TIER-1',
+      badgeClass: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35',
+      iconColor: 'text-amber-500 dark:text-amber-400',
       onClick: () => onFilterTier && onFilterTier('critical'),
     },
   ];
@@ -94,39 +93,41 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
             <div
               key={idx}
               onClick={card.onClick}
-              className={`relative overflow-hidden rounded-2xl glass-panel p-5 transition-all duration-300 ${
-                card.border
-              } ${card.glow} ${card.onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+              className={`glass-panel relative overflow-hidden rounded-2xl p-5 card-interactive ${card.onClick ? 'cursor-pointer' : ''}`}
+              style={{
+                borderColor: card.borderColor,
+              }}
             >
-              {/* Subtle gradient corner light */}
+              {/* Subtle accent bar at top */}
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: card.topBorderColor }} />
+
+              {/* Background ambient glow */}
               <div
-                className={`absolute -right-10 -top-10 w-28 h-28 rounded-full blur-2xl pointer-events-none ${
-                  card.isDanger ? 'bg-rose-500/15' : 'bg-cyan-500/10'
-                }`}
+                className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl pointer-events-none opacity-40 dark:opacity-100"
+                style={{ background: card.glowColor }}
               />
 
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">
                   {card.title}
                 </span>
-                <span className={`px-2 py-0.5 text-[9px] font-mono font-semibold rounded-full border ${card.badgeColor}`}>
+                <span className={`px-2 py-0.5 text-xs font-mono font-bold rounded-md border ${card.badgeClass}`}>
                   {card.badge}
                 </span>
               </div>
 
-              <div className="flex items-baseline space-x-3">
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight">
                   {card.value}
                 </h3>
+                {card.onClick && (
+                  <ArrowUpRight className="w-4 h-4 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" />
+                )}
               </div>
 
-              <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-                <span>{card.subtitle}</span>
-                <Icon className={`w-5 h-5 flex-shrink-0 ${
-                  card.color === 'rose' ? 'text-rose-400' :
-                  card.color === 'amber' ? 'text-amber-400' :
-                  card.color === 'sky' ? 'text-sky-400' : 'text-cyan-400'
-                }`} />
+              <div className="mt-3 pt-2.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium border-t border-slate-200/80 dark:border-white/[0.06]">
+                <span className="truncate">{card.subtitle}</span>
+                <Icon className={`w-4 h-4 flex-shrink-0 ml-2 ${card.iconColor}`} style={{ opacity: 0.9 }} />
               </div>
             </div>
           );
@@ -134,51 +135,51 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
       </div>
 
       {/* Secondary Forensic Flags Status Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         <div 
           onClick={() => onFilterTier && onFilterTier('critical')}
-          className="glass-panel p-3.5 rounded-xl border border-rose-500/30 hover:border-rose-500/60 cursor-pointer transition-all flex items-center justify-between"
+          className="glass-panel p-4 rounded-xl cursor-pointer card-interactive flex items-center justify-between group border border-rose-500/30"
         >
           <div>
-            <div className="text-[11px] font-medium text-slate-400">Critical Priority</div>
-            <div className="text-lg font-bold text-rose-400 font-mono">
+            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Critical Priority</div>
+            <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-0.5 group-hover:scale-105 transition-transform">
               {Number(critical_count).toLocaleString()}
             </div>
           </div>
-          <span className="h-3 w-3 rounded-full bg-rose-500 shadow-glow-rose animate-ping" />
+          <span className="h-3 w-3 rounded-full animate-pulse bg-rose-500" style={{ boxShadow: '0 0 10px rgba(244,63,94,0.6)' }} />
         </div>
 
         <div 
           onClick={() => onFilterTier && onFilterTier('high')}
-          className="glass-panel p-3.5 rounded-xl border border-amber-500/30 hover:border-amber-500/60 cursor-pointer transition-all flex items-center justify-between"
+          className="glass-panel p-4 rounded-xl cursor-pointer card-interactive flex items-center justify-between group border border-amber-500/30"
         >
           <div>
-            <div className="text-[11px] font-medium text-slate-400">High Risk Schemes</div>
-            <div className="text-lg font-bold text-amber-400 font-mono">
+            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">High Risk Schemes</div>
+            <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-0.5 group-hover:scale-105 transition-transform">
               {Number(high_count).toLocaleString()}
             </div>
           </div>
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" style={{ boxShadow: '0 0 8px rgba(251,191,36,0.5)' }} />
         </div>
 
-        <div className="glass-panel p-3.5 rounded-xl border border-fuchsia-500/20 flex items-center justify-between">
+        <div className="glass-panel p-4 rounded-xl card-interactive flex items-center justify-between border border-violet-500/30">
           <div>
-            <div className="text-[11px] font-medium text-slate-400">Duplicate Photos (pHash)</div>
-            <div className="text-lg font-bold text-fuchsia-400 font-mono">
+            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Duplicate Photos (pHash)</div>
+            <div className="text-xl font-extrabold text-violet-600 dark:text-violet-300 font-mono mt-0.5">
               {duplicate_photos_count} Works
             </div>
           </div>
-          <ImageIcon className="w-5 h-5 text-fuchsia-400/80" />
+          <ImageIcon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
         </div>
 
-        <div className="glass-panel p-3.5 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+        <div className="glass-panel p-4 rounded-xl card-interactive flex items-center justify-between border border-emerald-500/30">
           <div>
-            <div className="text-[11px] font-medium text-slate-400">Low / Verified Works</div>
-            <div className="text-lg font-bold text-emerald-400 font-mono">
+            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Low / Verified Works</div>
+            <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
               {Number(low_count).toLocaleString()}
             </div>
           </div>
-          <ShieldCheck className="w-5 h-5 text-emerald-400/80" />
+          <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
         </div>
       </div>
     </section>

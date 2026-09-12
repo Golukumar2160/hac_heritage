@@ -95,29 +95,29 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
     const score = Number(riskScore) || 0;
     if (score >= 0.85 || tierName === 'critical') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-rose-500/15 text-rose-400 border border-rose-500/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-rose-500/15 text-rose-300 border border-rose-500/30">
+          <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
           CRITICAL ({score.toFixed(2)})
         </span>
       );
     }
     if (score >= 0.65 || tierName === 'high') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5" />
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
+          <span className="w-2 h-2 rounded-full bg-amber-400 mr-1.5" />
           HIGH ({score.toFixed(2)})
         </span>
       );
     }
     if (score >= 0.4 || tierName === 'medium') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-sky-500/15 text-sky-400 border border-sky-500/30">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold font-mono bg-violet-500/15 text-violet-300 border border-violet-500/30">
           MED ({score.toFixed(2)})
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
         LOW ({score.toFixed(2)})
       </span>
     );
@@ -126,15 +126,15 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-sans">
       
       {/* Search & Filter Command Ribbon */}
-      <div className="glass-panel p-4 rounded-2xl space-y-3">
+      <div className="glass-panel p-5 rounded-2xl space-y-3.5 border border-slate-200/80 dark:border-white/[0.06]">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           
           {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={search}
@@ -143,12 +143,12 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                 setPage(1);
               }}
               placeholder="Search by Work ID, Scheme Title, MP Name, District..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl glass-input text-xs placeholder:text-slate-500 focus:ring-1 focus:ring-cyan-500"
+              className="w-full pl-11 pr-4 py-2.5 rounded-xl glass-input text-sm placeholder:text-slate-400 font-sans"
             />
             {search && (
               <button 
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-white"
               >
                 ✕
               </button>
@@ -156,18 +156,18 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
           </div>
 
           {/* State Dropdown */}
-          <div className="w-full md:w-56">
+          <div className="w-full md:w-60">
             <select
               value={stateFilter}
               onChange={(e) => {
                 setStateFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 rounded-xl glass-input text-xs cursor-pointer"
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm cursor-pointer font-sans bg-white dark:bg-navy-900"
             >
-              <option value="all" className="bg-slate-900 text-white">All Indian States</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Indian States</option>
               {states.map((s, idx) => (
-                <option key={idx} value={s} className="bg-slate-900 text-white">{s}</option>
+                <option key={idx} value={s} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{s}</option>
               ))}
             </select>
           </div>
@@ -175,19 +175,19 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
           {/* Reload Button */}
           <button
             onClick={() => loadData()}
-            className="px-3 py-2 rounded-xl glass-input hover:bg-slate-800 text-slate-300 transition-colors flex items-center justify-center gap-1 text-xs"
+            className="px-4 py-2.5 rounded-xl glass-input hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
             title="Refresh feed"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
 
         {/* Tier & Trigger Filter Chips */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-white/[0.06]">
           {/* Risk Tier Chips */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-slate-400 mr-1">Risk Tier:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mr-1">Risk Tier:</span>
             {[
               { id: 'all', label: 'All Tiers' },
               { id: 'critical', label: 'Critical' },
@@ -201,14 +201,14 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                   setTier(t.id);
                   setPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   tier === t.id
                     ? t.id === 'critical'
-                      ? 'bg-rose-500 text-white shadow-glow-rose font-bold'
+                      ? 'bg-rose-600 text-white font-bold shadow-lg shadow-rose-500/30'
                       : t.id === 'high'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-glow-amber'
-                      : 'bg-cyan-500 text-slate-950 font-bold'
-                    : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/30'
+                      : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold shadow-lg shadow-violet-500/30'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-black/30 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-400 dark:hover:text-white border border-slate-200 dark:border-white/5'
                 }`}
               >
                 {t.label}
@@ -218,12 +218,12 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
 
           {/* Trigger Tags */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-slate-400 mr-1">Anomaly Type:</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mr-1">Anomaly Type:</span>
             {[
               { id: 'all', label: 'Any Flag', icon: null },
               { id: 'premature_tranche', label: 'Clause 4.3 Tranche Gate', icon: AlertOctagon },
               { id: 'split_tender', label: 'GFR Split Tender', icon: FileSearch },
-              { id: 'stalled', label: 'Stalled Execution (>1y)', icon: Clock },
+              { id: 'stalled', label: 'Stalled (>1y)', icon: Clock },
               { id: 'duplicate', label: 'Duplicate Photo', icon: ImageIcon },
               { id: 'missing_photo', label: 'Missing Photo', icon: CameraOff },
               { id: 'overspend', label: 'Cost Overrun', icon: TrendingDown },
@@ -237,13 +237,13 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                     setTriggerFilter(trig.id);
                     setPage(1);
                   }}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                     triggerFilter === trig.id
-                      ? 'bg-violet-600/30 text-violet-300 border border-violet-500/50'
-                      : 'bg-slate-900/40 text-slate-400 hover:text-slate-300 border border-slate-800/60'
+                      ? 'bg-violet-600 text-white font-semibold shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-black/20 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-white/5'
                   }`}
                 >
-                  {Icon && <Icon className="w-3 h-3" />}
+                  {Icon && <Icon className={`w-3.5 h-3.5 ${triggerFilter === trig.id ? 'text-white' : 'text-violet-600 dark:text-violet-300'}`} />}
                   {trig.label}
                 </button>
               );
@@ -254,25 +254,25 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
       </div>
 
       {/* Table Feed / Results Card */}
-      <div className="glass-panel overflow-hidden rounded-2xl border border-slate-800">
+      <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/[0.06]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400">
-                <th className="py-3 px-4">Scheme Dossier</th>
-                <th className="py-3 px-4">Constituency & MP</th>
-                <th className="py-3 px-4">Sanction vs Disbursed</th>
-                <th className="py-3 px-4">Risk Severity</th>
-                <th className="py-3 px-4">Violation Triggers</th>
-                <th className="py-3 px-4 text-right">Forensic Action</th>
+              <tr className="text-xs font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-black/30 border-b border-slate-200 dark:border-white/[0.06]">
+                <th className="py-4 px-4">Scheme Dossier</th>
+                <th className="py-4 px-4">Constituency & MP</th>
+                <th className="py-4 px-4">Sanction vs Disbursed</th>
+                <th className="py-4 px-4">Risk Severity</th>
+                <th className="py-4 px-4">Violation Triggers</th>
+                <th className="py-4 px-4 text-right">Forensic Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="text-sm" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td colSpan={6} className="py-4 px-4">
-                      <div className="h-6 bg-slate-800/40 rounded w-full" />
+                      <div className="h-7 bg-slate-800/40 rounded w-full" />
                     </td>
                   </tr>
                 ))
@@ -293,63 +293,64 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                   return (
                     <tr 
                       key={work.work_id} 
-                      className={`hover:bg-slate-800/40 transition-colors group ${
-                        isCritical ? 'bg-rose-950/5' : ''
+                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-100 dark:border-white/[0.03] ${
+                        isCritical ? 'bg-rose-50/60 dark:bg-rose-950/10' : ''
                       }`}
                     >
                       {/* Work ID & Title */}
-                      <td className="py-3.5 px-4 max-w-xs">
-                        <div className="font-mono text-cyan-400 font-semibold text-xs tracking-tight group-hover:underline cursor-pointer"
+                      <td className="py-4 px-4 max-w-xs">
+                        <div 
+                          className="font-mono font-bold text-sm tracking-tight cursor-pointer text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
                           onClick={() => onSelectWork(work.work_id)}
                         >
                           #{work.work_id}
                         </div>
-                        <div className="text-slate-200 text-xs line-clamp-1 font-medium mt-0.5" title={work.work_title}>
+                        <div className="text-slate-900 dark:text-white text-sm line-clamp-1 font-semibold mt-0.5" title={work.work_title}>
                           {work.work_title || 'Public Works Scheme'}
                         </div>
-                        <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
                           {work.category || 'General Infrastructure'}
                         </div>
                       </td>
 
                       {/* Constituency & MP */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-200 font-medium">
+                      <td className="py-4 px-4">
+                        <div className="text-slate-900 dark:text-white font-semibold text-sm">
                           {work.district || 'District N/A'}, {work.state || 'State N/A'}
                         </div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-[180px]" title={work.mp_name}>
+                        <div className="text-xs text-slate-600 dark:text-slate-300 truncate max-w-[180px] mt-0.5" title={work.mp_name}>
                           MP: {work.mp_name || 'Constituency Rep'}
                         </div>
                       </td>
 
                       {/* Sanction vs Disbursed */}
-                      <td className="py-3.5 px-4 font-mono">
-                        <div className="text-white font-medium">
+                      <td className="py-4 px-4 font-mono">
+                        <div className="text-slate-900 dark:text-white font-bold text-sm">
                           ₹{(sanction / 100000).toFixed(2)} Lakhs
                         </div>
-                        <div className={`text-[11px] flex items-center gap-1 ${spent > sanction ? 'text-rose-400 font-bold' : 'text-slate-400'}`}>
+                        <div className={`text-xs flex items-center gap-1.5 mt-0.5 ${spent > sanction ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                           <span>Spent: ₹{(spent / 100000).toFixed(2)}L</span>
-                          {overrun > 0 && <span>(+{overrun}%)</span>}
+                          {overrun > 0 && <span className="text-rose-600 dark:text-rose-400 font-bold">(+{overrun}%)</span>}
                         </div>
                       </td>
 
                       {/* Risk Score */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-4">
                         <div>
                           {getTierBadge(work.risk_score, work.risk_tier)}
                         </div>
-                        <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                        <div className="w-28 bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
                           <div
                             className={`h-full rounded-full ${
                               isCritical ? 'bg-rose-500' :
                               (Number(work.risk_score) || 0) >= 0.65 ? 'bg-amber-400' :
-                              'bg-cyan-400'
+                              'bg-violet-400'
                             }`}
                             style={{ width: `${Math.min(100, (Number(work.risk_score) || 0) * 100)}%` }}
                           />
                         </div>
                         {work.completion_probability !== undefined && (
-                          <div className="text-[10px] font-mono text-slate-400 mt-1 flex items-center gap-1" title="Logistic Regression Completion Likelihood">
+                          <div className="text-xs font-mono text-slate-300 mt-1.5 flex items-center gap-1" title="Logistic Regression Completion Likelihood">
                             <span>Comp:</span>
                             <span className={`font-semibold ${
                               Number(work.completion_probability) >= 0.70 ? 'text-emerald-400' :
@@ -363,45 +364,45 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                       </td>
 
                       {/* Anomaly Triggers Badges */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
+                      <td className="py-4 px-4">
+                        <div className="flex flex-wrap gap-1.5 max-w-xs">
                           {work.rule_premature_tranche && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/40" title="Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40" title="Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)">
                               ⚖️ Cl. 4.3 Tranche Gate
                             </span>
                           )}
                           {work.rule_split_tender && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/40" title="GFR 2017 Rules 149/155: Evasion of ₹5L/₹10L tender threshold">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40" title="GFR 2017 Rules 149/155: Evasion of ₹5L/₹10L tender threshold">
                               ✂️ GFR Split Tender
                             </span>
                           )}
                           {work.rule_stalled_execution && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40" title="Disbursed public funds but stalled >1 year">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40" title="Disbursed public funds but stalled >1 year">
                               ⏳ Stalled (&gt;1y)
                             </span>
                           )}
                           {work.is_duplicate && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
                               📸 Duplicate pHash
                             </span>
                           )}
                           {work.rule_missing_photo && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40">
                               ⚠️ Missing Photo
                             </span>
                           )}
                           {work.rule_overspend && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                               💸 Overspend
                             </span>
                           )}
                           {work.work_vendor_flag && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/40">
                               🏢 Monopoly
                             </span>
                           )}
                           {!work.rule_premature_tranche && !work.rule_split_tender && !work.rule_stalled_execution && !work.is_duplicate && !work.rule_missing_photo && !work.rule_overspend && !work.work_vendor_flag && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400">
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400">
                               ML Statistical Anomaly
                             </span>
                           )}
@@ -409,12 +410,13 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                       </td>
 
                       {/* Action Button */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-4 px-4 text-right">
                         <button
                           onClick={() => onSelectWork(work.work_id)}
-                          className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95 shadow-sm"
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer text-violet-200 hover:text-white"
+                          style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}
                         >
-                          <FileSearch className="w-3.5 h-3.5" />
+                          <FileSearch className="w-4 h-4 text-violet-300" />
                           <span>Case File</span>
                         </button>
                       </td>
@@ -427,29 +429,29 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
         </div>
 
         {/* Pagination Footer */}
-        <div className="px-4 py-3 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-5 py-3.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-black/20 border-t border-slate-200/80 dark:border-white/[0.06]">
           <div>
-            Showing <span className="text-white font-mono">{flags.length}</span> of{' '}
-            <span className="text-white font-mono">{Number(totalCount).toLocaleString('en-IN')}</span> flagged works
+            Showing <span className="text-slate-900 dark:text-white font-mono font-bold">{flags.length}</span> of{' '}
+            <span className="text-slate-900 dark:text-white font-mono font-bold">{Number(totalCount).toLocaleString('en-IN')}</span> flagged works
           </div>
           
           <div className="flex items-center space-x-2">
             <button
               disabled={page <= 1 || loading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs font-semibold shadow-xs"
             >
-              <ChevronLeft className="w-4 h-4" />
+              Previous
             </button>
-            <span className="font-mono text-slate-300 px-2">
+            <span className="font-mono text-slate-600 dark:text-slate-400 text-xs px-2">
               Page {page} of {totalPages}
             </span>
             <button
               disabled={page >= totalPages || loading}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs font-semibold shadow-xs"
             >
-              <ChevronRight className="w-4 h-4" />
+              Next
             </button>
           </div>
         </div>

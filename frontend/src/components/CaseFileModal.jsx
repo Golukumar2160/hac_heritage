@@ -26,12 +26,9 @@ import {
   AlertOctagon,
   CheckCircle2,
   Hash,
-  ExternalLink,
-  QrCode
+  ExternalLink
 } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
-import JanDrishtiPlaque from './JanDrishtiPlaque';
-import IntegrityRadarTab from './IntegrityRadarTab';
 
 export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const maskAccountNo = (acc) => {
@@ -46,7 +43,6 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const [activeTab, setActiveTab] = useState('ai_memo');
   const [showSampleOcr, setShowSampleOcr] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
-  const [showJanDrishti, setShowJanDrishti] = useState(false);
   
   // AI Explainer state
   const [aiData, setAiData] = useState(null);
@@ -163,53 +159,44 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const isCritical = riskScore >= 0.85;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-2xl glass-panel-glow border border-slate-700 bg-slate-950/95 flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-2xl glass-panel-glow border border-violet-500/35 bg-slate-950/95 flex flex-col shadow-2xl">
         
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/80">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-xl border ${
-              isCritical ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-900/90">
+          <div className="flex items-center space-x-3.5">
+            <div className={`p-2.5 rounded-xl border ${
+              isCritical ? 'bg-rose-500/15 border-rose-500/40 text-rose-400' : 'bg-violet-500/15 border-violet-500/40 text-violet-300'
             }`}>
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold">
                   MoSPI Statutory Vigilance Dossier
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] font-mono text-cyan-300">
+                <span className="px-2 py-0.5 rounded-md bg-violet-500/15 text-xs font-mono font-bold text-violet-300 border border-violet-500/30">
                   ID: #{workId}
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-white font-display truncate max-w-xl">
+              <h2 className="text-lg sm:text-xl font-extrabold text-white font-display truncate max-w-xl">
                 {workObj?.work_title || `Loading Dossier #${workId}...`}
               </h2>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => api.downloadWorkPdf(workId)}
-              className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:shadow-glow-cyan transition-all"
+              className="hidden sm:flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-200 border border-violet-500/40 hover:shadow-glow-violet transition-all"
               title="Download Official MoSPI Statutory Audit PDF Dossier"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4 text-violet-400" />
               <span>Download Statutory Audit PDF</span>
             </button>
             <button
-              onClick={() => setShowJanDrishti(true)}
-              id="btn-open-jan-drishti"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:shadow-glow-amber transition-all cursor-pointer"
-              title="Open Jan-Drishti Citizen Transparency Plaque & Offline QR Code"
-            >
-              <QrCode className="w-3.5 h-3.5 text-amber-400" />
-              <span>📱 Jan-Drishti Citizen QR</span>
-            </button>
-            <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -221,76 +208,75 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
           
           {loading ? (
             <div className="py-20 text-center space-y-3">
-              <div className="inline-block w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-              <div className="text-xs text-slate-400 font-mono">Retrieving forensic indicators & models...</div>
+              <div className="inline-block w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              <div className="text-sm text-slate-400 font-mono">Retrieving forensic indicators & models...</div>
             </div>
           ) : (
             <>
               {/* Case Metadata Banner */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-[10px] font-medium text-slate-400 uppercase">Sanctioned Outlay</div>
-                  <div className="text-base font-bold text-white font-mono mt-0.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Sanctioned Outlay</div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">
                     ₹{(sanctionAmt / 100000).toFixed(2)} L
                   </div>
-                  <div className="text-[10px] text-slate-400">Approved Budget</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Approved Budget</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-[10px] font-medium text-slate-400 uppercase">Total Disbursed</div>
-                  <div className={`text-base font-bold font-mono mt-0.5 ${spentAmt > sanctionAmt ? 'text-rose-400' : 'text-slate-200'}`}>
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Total Disbursed</div>
+                  <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${spentAmt > sanctionAmt ? 'text-rose-400' : 'text-slate-100'}`}>
                     ₹{(spentAmt / 100000).toFixed(2)} L
                   </div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-xs text-slate-400 mt-0.5">
                     {overrunPct > 0 ? `+${overrunPct.toFixed(1)}% Overrun` : 'Within Sanction'}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-[10px] font-medium text-slate-400 uppercase">Physical Progress</div>
-                  <div className="text-base font-bold text-sky-400 font-mono mt-0.5">
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Physical Progress</div>
+                  <div className="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono mt-1">
                     {progressPct.toFixed(0)}%
                   </div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-xs text-slate-400 mt-0.5">
                     {progressPct === 0 && spentAmt > 0 ? (
-                      <span className="text-rose-400 font-semibold">Ghost Scheme Alert</span>
+                      <span className="text-rose-400 font-bold">Ghost Scheme Alert</span>
                     ) : 'Site Velocity'}
                   </div>
                 </div>
 
-                <div className={`p-3 rounded-xl border ${
+                <div className={`p-4 rounded-xl border ${
                   isCritical ? 'bg-rose-950/40 border-rose-500/40' : 'bg-slate-900/80 border-slate-800'
                 }`}>
-                  <div className="text-[10px] font-medium text-slate-400 uppercase">Composite Risk Score</div>
-                  <div className={`text-base font-bold font-mono mt-0.5 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`}>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Composite Risk Score</div>
+                  <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`}>
                     {riskScore.toFixed(3)} / 1.000
                   </div>
-                  <div className="text-[10px] text-slate-400 uppercase">
+                  <div className="text-xs font-bold font-mono text-slate-300 uppercase mt-0.5">
                     {workObj?.risk_tier || 'FLAGGED'}
                   </div>
                 </div>
               </div>
 
               {/* Administrative Info Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs text-slate-300">
-                <div className="flex items-center space-x-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-xl bg-slate-900/70 border border-slate-800 text-sm text-slate-300">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-violet-400" />
                   <span><strong>Constituency:</strong> {workObj?.district || 'District'}, {workObj?.state || 'State'}</span>
                 </div>
-                <div className="flex items-center space-x-1.5">
-                  <Building className="w-3.5 h-3.5 text-amber-400" />
+                <div className="flex items-center space-x-2">
+                  <Building className="w-4 h-4 text-amber-400" />
                   <span><strong>MP:</strong> {workObj?.mp_name || 'Member of Parliament'}</span>
                 </div>
-                <div className="flex items-center space-x-1.5 font-mono text-[11px] text-slate-400">
+                <div className="flex items-center space-x-2 font-mono text-xs text-slate-400">
                   <span>Implementing Agency: {workObj?.implementing_agency || 'District Rural Development Agency (DRDA)'}</span>
                 </div>
               </div>
 
               {/* Navigation Tabs within Modal */}
-              <div className="flex items-center space-x-2 border-b border-slate-800 overflow-x-auto">
+              <div className="flex items-center space-x-2 border-b border-slate-800">
                 {[
-                  { id: 'ai_memo', label: 'AI Gemini CAG Memo', icon: Sparkles },
-                  { id: 'integrity_radar', label: 'Integrity Diagnostic Matrix', icon: Compass },
+                  { id: 'ai_memo', label: 'AI CAG Audit Memo', icon: Sparkles },
                   { id: 'models', label: 'ML Forensic Scores', icon: Cpu },
                   { id: 'images', label: 'Visual & OCR Forensics', icon: ImageIcon },
                   { id: 'action', label: 'Auditor Action & Resolution', icon: Scale },
@@ -300,9 +286,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     <button
                       key={t.id}
                       onClick={() => setActiveTab(t.id)}
-                      className={`flex items-center space-x-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all ${
+                      className={`flex items-center space-x-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all ${
                         activeTab === t.id
-                          ? 'border-cyan-400 text-cyan-300 bg-cyan-500/5'
+                          ? 'border-violet-500 text-violet-300 bg-violet-500/10'
                           : 'border-transparent text-slate-400 hover:text-slate-200'
                       }`}
                     >
@@ -313,17 +299,17 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 })}
               </div>
 
-              {/* TAB 1: AI Gemini Explainer & CAG Audit Memo */}
+              {/* TAB 1: AI Explainer & CAG Audit Memo */}
               {activeTab === 'ai_memo' && (
                 <div className="space-y-4">
                   
                   {/* Live Streaming Button Header */}
-                  <div className="flex items-center justify-between bg-violet-950/30 p-3.5 rounded-xl border border-violet-500/30">
-                    <div className="flex items-center space-x-2.5">
+                  <div className="flex items-center justify-between bg-violet-950/30 p-4 rounded-xl border border-violet-500/35 shadow-lg">
+                    <div className="flex items-center space-x-3">
                       <Sparkles className="w-5 h-5 text-violet-400" />
                       <div>
-                        <div className="text-xs font-bold text-white">Gemini 2.5 Flash Autonomous CAG Explainer</div>
-                        <div className="text-[11px] text-slate-300">
+                        <div className="text-sm sm:text-base font-bold text-white font-display">National CAG Autonomous Audit Memo Engine</div>
+                        <div className="text-xs text-slate-300">
                           Synthesizes MPLADS Para 3.12, GFR Rule 144, and anomaly indicators into legal audit memo.
                         </div>
                       </div>
@@ -332,7 +318,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     <button
                       onClick={startStreamingExplainer}
                       disabled={isStreaming}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-all disabled:opacity-50 flex items-center space-x-1.5 shadow-glow-violet"
+                      className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-500 text-white transition-all disabled:opacity-50 flex items-center space-x-2 shadow-lg shadow-violet-500/30"
                     >
                       <span className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-emerald-400 animate-ping' : 'bg-white'}`} />
                       <span>{isStreaming ? 'Streaming Tokens...' : 'Stream Live Memo'}</span>
@@ -341,68 +327,74 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
 
                   {/* Streaming Output Display */}
                   {isStreaming || streamedContent ? (
-                    <div className="p-4 rounded-xl bg-slate-900 border border-violet-500/40 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-violet-500/40 font-mono text-sm text-slate-100 whitespace-pre-wrap leading-relaxed shadow-inner">
                       {streamedContent}
-                      {isStreaming && <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1">▍</span>}
+                      {isStreaming && <span className="inline-block w-2 h-4 bg-violet-400 animate-pulse ml-1">▍</span>}
                     </div>
                   ) : null}
 
                   {/* Structured CAG Audit Memo */}
                   {aiLoading ? (
-                    <div className="py-8 text-center text-slate-400 font-mono text-xs">
+                    <div className="py-12 text-center text-slate-400 font-mono text-sm">
                       Formulating CAG Audit Finding Memorandum...
                     </div>
                   ) : aiData ? (
-                    <div className="space-y-3">
-                      <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                        <div className="text-xs font-mono font-bold uppercase text-cyan-400">
-                          1. Executive Finding & Violation Type
+                    <div className="space-y-4">
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                        <div className="text-sm font-mono font-bold uppercase text-violet-400 tracking-wide">
+                          1. Executive Finding &amp; Violation Type
                         </div>
-                        <p className="text-xs text-slate-200 leading-relaxed">
+                        <p className="text-sm sm:text-base text-slate-100 leading-relaxed">
                           {typeof aiData?.explanation === 'string'
                             ? aiData.explanation
                             : (aiData?.explanation?.case_summary || aiData?.explanation?.primary_finding || aiData?.case_summary || 'Composite statistical anomaly detected exceeding statutory variance thresholds.')}
                         </p>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                        <div className="text-xs font-mono font-bold uppercase text-amber-400">
-                          2. Statutory Contraventions & Forensic Red Flags
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                        <div className="text-sm font-mono font-bold uppercase text-amber-400 tracking-wide">
+                          2. Statutory Contraventions &amp; Forensic Red Flags
                         </div>
-                        <div className="text-xs text-slate-300 space-y-1">
+                        <div className="text-sm text-slate-200 space-y-2">
                           {Array.isArray(aiData?.explanation?.red_flags) && aiData.explanation.red_flags.length > 0 ? (
                             aiData.explanation.red_flags.map((flag, idx) => (
-                              <p key={idx}>• {typeof flag === 'string' ? flag : JSON.stringify(flag)}</p>
+                              <p key={idx} className="flex items-start gap-2">
+                                <span className="text-amber-400 font-bold">•</span>
+                                <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
+                              </p>
                             ))
                           ) : (
                             <>
-                              <p>• <strong>GFR 2017 Rule 144:</strong> Breach of competitive public procurement guidelines.</p>
-                              <p>• <strong>MPLADS Guidelines 2023 (Para 3.12):</strong> Mandate for geo-tagged completion proofs prior to final tranche disbursement.</p>
-                              <p>• <strong>CAG Manual of Standing Orders (Audit):</strong> Discrepancy between reported physical execution and ledger withdrawals.</p>
+                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>GFR 2017 Rule 144:</strong> Breach of competitive public procurement guidelines.</span></p>
+                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>MPLADS Guidelines 2023 (Para 3.12):</strong> Mandate for geo-tagged completion proofs prior to final tranche disbursement.</span></p>
+                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>CAG Manual of Standing Orders (Audit):</strong> Discrepancy between reported physical execution and ledger withdrawals.</span></p>
                             </>
                           )}
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                        <div className="text-xs font-mono font-bold uppercase text-rose-400">
-                          3. Recommended Administrative & Legal Directives
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                        <div className="text-sm font-mono font-bold uppercase text-rose-400 tracking-wide">
+                          3. Recommended Administrative &amp; Legal Directives
                         </div>
-                        <div className="text-xs text-slate-300 space-y-1">
+                        <div className="text-sm text-slate-200 space-y-2">
                           {aiData?.explanation?.recommended_action ? (
-                            <p>• {typeof aiData.explanation.recommended_action === 'string' ? aiData.explanation.recommended_action : JSON.stringify(aiData.explanation.recommended_action)}</p>
+                            <p className="flex items-start gap-2">
+                              <span className="text-rose-400 font-bold">•</span>
+                              <span>{typeof aiData.explanation.recommended_action === 'string' ? aiData.explanation.recommended_action : JSON.stringify(aiData.explanation.recommended_action)}</span>
+                            </p>
                           ) : (
                             <>
-                              <p>1. Immediate freezing of 3rd and subsequent tranches under District Authority account.</p>
-                              <p>2. Physical inspection warrant assigned to Sub-Divisional Magistrate (SDM).</p>
-                              <p>3. Summons to Implementing Agency for reconciliation of contractor muster rolls.</p>
+                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">1.</span><span>Immediate freezing of 3rd and subsequent tranches under District Authority account.</span></p>
+                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">2.</span><span>Physical inspection warrant assigned to Sub-Divisional Magistrate (SDM).</span></p>
+                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">3.</span><span>Summons to Implementing Agency for reconciliation of contractor muster rolls.</span></p>
                             </>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-400 p-4">AI audit memo ready to be generated.</div>
+                    <div className="text-sm text-slate-400 p-5">AI audit memo ready to be generated.</div>
                   )}
 
                 </div>
@@ -413,86 +405,86 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-300 font-semibold">Isolation Forest Unsupervised Score</span>
-                        <span className="font-mono text-rose-400 font-bold">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-200 font-bold">Isolation Forest Unsupervised Score</span>
+                        <span className="font-mono text-rose-400 font-extrabold text-base">
                           {(Number(work?.anomaly_score) || 0.82).toFixed(3)}
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
                         <div 
                           className="bg-rose-500 h-full rounded-full"
                           style={{ width: `${Math.min(100, (Number(work?.anomaly_score) || 0.82) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Multi-dimensional feature vector distance from national benchmark distribution.
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-300 font-semibold">Vendor Concentration Score</span>
-                        <span className="font-mono text-amber-400 font-bold">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-200 font-bold">Vendor Concentration Score</span>
+                        <span className="font-mono text-amber-400 font-extrabold text-base">
                           {(Number(work?.vendor_score) || 0.74).toFixed(3)}
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
                         <div 
                           className="bg-amber-400 h-full rounded-full"
                           style={{ width: `${Math.min(100, (Number(work?.vendor_score) || 0.74) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Measures single-contractor dominance and repeated award pattern in district.
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-300 font-semibold">Rule-Based Statutory Violation Score</span>
-                        <span className="font-mono text-cyan-400 font-bold">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-200 font-bold">Rule-Based Statutory Violation Score</span>
+                        <span className="font-mono text-violet-400 font-extrabold text-base">
                           {(Number(work?.rule_score) || 0.90).toFixed(3)}
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
                         <div 
-                          className="bg-cyan-400 h-full rounded-full"
+                          className="bg-violet-500 h-full rounded-full"
                           style={{ width: `${Math.min(100, (Number(work?.rule_score) || 0.90) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Deterministic checks: Missing inspection photograph, overspend &gt; 20%, timeline lag.
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-300 font-semibold">Timeline Velocity Index</span>
-                        <span className="font-mono text-sky-400 font-bold">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-200 font-bold">Timeline Velocity Index</span>
+                        <span className="font-mono text-sky-400 font-extrabold text-base">
                           {(Number(work?.timeline_score) || 0.65).toFixed(3)}
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
                         <div 
                           className="bg-sky-400 h-full rounded-full"
                           style={{ width: `${Math.min(100, (Number(work?.timeline_score) || 0.65) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Discrepancy between elapsed calendar days and ground construction milestones.
                       </p>
                     </div>
 
                     {/* Model 6: Logistic Regression Completion Prediction */}
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 col-span-1 sm:col-span-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-200 font-semibold flex items-center gap-1.5">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5 col-span-1 sm:col-span-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-200 font-bold flex items-center gap-2">
                           <TrendingUp className="w-4 h-4 text-emerald-400" />
                           Model 6: Logistic Regression Completion Likelihood
                         </span>
-                        <span className={`font-mono font-bold text-xs ${
+                        <span className={`font-mono font-extrabold text-sm sm:text-base ${
                           (Number(workObj?.completion_probability) || 0) >= 0.70
                             ? 'text-emerald-400'
                             : (Number(workObj?.completion_probability) || 0) >= 0.40
@@ -502,7 +494,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                           {((Number(workObj?.completion_probability) || 0) * 100).toFixed(1)}% Probability
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full transition-all duration-500 ${
                             (Number(workObj?.completion_probability) || 0) >= 0.70
@@ -514,7 +506,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                           style={{ width: `${Math.max(3, Math.min(100, (Number(workObj?.completion_probability) || 0) * 100))}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Binary Logistic Regression (AUC-ROC: 0.956) trained on statutory execution timelines, financial disbursement pace, and compliance signals.
                       </p>
                     </div>
@@ -566,35 +558,35 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                       <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                        <span className="text-slate-400 font-mono text-[10px] uppercase">Registered Hardware Coordinates</span>
-                        <div className="text-white font-mono">
+                        <span className="text-slate-400 font-mono text-xs uppercase font-semibold">Registered Hardware Coordinates</span>
+                        <div className="text-white font-mono text-sm font-semibold">
                           {workObj?.exif_latitude ? `${workObj.exif_latitude}° N, ${workObj.exif_longitude}° E` : 'No Hardware EXIF (Missing Geotag)'}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-xs text-slate-400">
                           Expected Constituency: {workObj?.district || 'Target Boundary'}
                         </div>
                       </div>
 
                       <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                        <span className="text-slate-400 font-mono text-[10px] uppercase">Visual Hash Distance</span>
-                        <div className="text-white font-mono">
+                        <span className="text-slate-400 font-mono text-xs uppercase font-semibold">Visual Hash Distance</span>
+                        <div className="text-white font-mono text-sm font-semibold">
                           {dupEvidence.length > 0 
                             ? `Hamming Distance: ${dupEvidence[0]?.hamming_distance} (${dupEvidence[0]?.similarity_pct}% Match)` 
                             : (workObj?.is_duplicate ? 'Hamming Distance: 0 (100% Match)' : 'Hamming Distance: Unique (> 15)')}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-xs text-slate-400">
                           Cross-checked across 109 persistent perceptual fingerprints in vault.
                         </div>
                       </div>
                     </div>
 
                     {(workObj?.is_duplicate || dupEvidence.length > 0) && (
-                      <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs space-y-2">
-                        <div className="flex items-center gap-2 font-bold">
+                      <div className="p-3.5 rounded-lg bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs space-y-2">
+                        <div className="flex items-center gap-2 font-bold text-sm">
                           <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
                           <span>Severe Audit Violation: Recycled Ground Photography</span>
                         </div>
-                        <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                        <p className="text-xs text-rose-200/90 leading-relaxed">
                           {dupEvidence[0]?.verdict || 'The uploaded ground photo matches an identical photograph submitted for an earlier scheme. High likelihood of recycled proof of completion.'}
                         </p>
                       </div>
@@ -603,8 +595,8 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     {/* Twin Photo Comparison Cards if Duplicate Evidence Exists */}
                     {dupEvidence.length > 0 && (
                       <div className="space-y-3 pt-2 border-t border-slate-800/80">
-                        <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        <div className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-400" />
                           Visual Evidence: Recycled Ground Photo Collisions ({dupEvidence.length} Matches Found)
                         </div>
                         <div className="grid grid-cols-1 gap-4">
@@ -612,14 +604,14 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                             <div key={dIdx} className="p-3.5 rounded-xl bg-slate-950/90 border border-rose-500/30 space-y-3">
                               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                                 <div className="flex items-center gap-2">
-                                  <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[10px] font-bold border border-rose-500/40">
+                                  <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-xs font-bold border border-rose-500/40">
                                     HAMMING: {dup.hamming_distance} ({dup.similarity_pct}% MATCH)
                                   </span>
-                                  <span className="text-[11px] text-slate-300 font-mono">
+                                  <span className="text-xs text-slate-300 font-mono">
                                     {dup.collision_type || 'EXACT_PERCEPTUAL_TWIN'}
                                   </span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-mono">
+                                <span className="text-xs text-slate-400 font-mono">
                                   Algorithm: 64-bit DCT pHash
                                 </span>
                               </div>
@@ -676,7 +668,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                 </div>
                               </div>
 
-                              <p className="text-[11px] text-rose-200/90 bg-rose-950/40 p-2.5 rounded-lg border border-rose-500/20 leading-relaxed">
+                              <p className="text-xs text-rose-200/90 bg-rose-950/40 p-2.5 rounded-lg border border-rose-500/20 leading-relaxed">
                                 <strong>Ground Reality:</strong> {dup.verdict}
                               </p>
                             </div>
@@ -690,11 +682,11 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                   <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                       <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <div className="text-sm font-bold text-white flex items-center gap-2">
                           <FileSearch className="w-4 h-4 text-amber-400" />
                           Pillar 2: Scanned Document OCR (Portal vs. Paper Deception Detector)
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-400 mt-0.5">
                           PyMuPDF high-res layout extraction + RapidOCR ONNX Neural Engine auditing physical stamps, handwriting, and bank tables.
                         </p>
                       </div>
@@ -703,9 +695,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                         <button
                           type="button"
                           onClick={() => setShowSampleOcr(!showSampleOcr)}
-                          className="px-3 py-1 text-[11px] font-semibold rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all self-start sm:self-auto flex items-center gap-1.5"
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all self-start sm:self-auto flex items-center gap-1.5"
                         >
-                          <Eye className="w-3 h-3" />
+                          <Eye className="w-3.5 h-3.5" />
                           <span>{showSampleOcr ? 'Hide Live OCR Sample' : 'Inspect Sample Audited Certificate (Work #62689)'}</span>
                         </button>
                       )}
@@ -816,10 +808,10 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                         {hasMismatch ? (
                                           <span className="text-[10px] text-rose-400 font-mono font-bold">MISMATCH FLAGGED</span>
                                         ) : (
-                                          <span className="text-[10px] text-emerald-400 font-mono">ALIGNED</span>
+                                          <span className="text-xs text-emerald-400 font-mono">ALIGNED</span>
                                         )}
                                       </div>
-                                      <div className="text-[11px] text-slate-400 space-y-0.5">
+                                      <div className="text-xs text-slate-400 space-y-0.5">
                                         <div>Portal Disbursed: <strong className="text-slate-200">₹{portalAmt.toLocaleString('en-IN')}</strong></div>
                                         <div>Paper Approved: <strong className="text-amber-300 font-mono">₹{paperAmt.toLocaleString('en-IN')}</strong></div>
                                         {hasMismatch && (
@@ -842,14 +834,14 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                           Task 2: Scheme Origin
                                         </span>
                                         {hasCrossScheme ? (
-                                          <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[10px] font-bold border border-rose-500/40 animate-pulse">
+                                          <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-xs font-bold border border-rose-500/40 animate-pulse">
                                             🚨 CROSS-SCHEME
                                           </span>
                                         ) : (
-                                          <span className="text-[10px] text-emerald-400 font-mono">MPLADS VERIFIED</span>
+                                          <span className="text-xs text-emerald-400 font-mono">MPLADS VERIFIED</span>
                                         )}
                                       </div>
-                                      <div className="text-[11px] text-slate-400 space-y-1">
+                                      <div className="text-xs text-slate-400 space-y-1">
                                         <div>
                                           Header Extracted:{' '}
                                           <strong className={hasCrossScheme ? 'text-rose-300 font-bold' : 'text-slate-200'}>
@@ -857,11 +849,11 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                           </strong>
                                         </div>
                                         {hasCrossScheme ? (
-                                          <div className="text-[10px] text-rose-300 font-medium bg-rose-950/40 p-1.5 rounded border border-rose-500/30">
+                                          <div className="text-xs text-rose-300 font-medium bg-rose-950/40 p-2 rounded border border-rose-500/30">
                                             ⚠️ <strong>Double-dipping scam:</strong> State Assembly funds (KLLAD / Vidhayak Nidhi) unlawfully claimed under Central MPLADS.
                                           </div>
                                         ) : (
-                                          <div className="text-[10px] text-slate-500 mt-1">
+                                          <div className="text-xs text-slate-500 mt-1">
                                             Cross-check against State MLA funds passed.
                                           </div>
                                         )}
@@ -876,15 +868,15 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                           Task 3: Contractor Trace
                                         </span>
                                         {doc.paper_extracted?.vendor_name ? (
-                                          <span className="text-[10px] text-amber-400 font-mono font-bold">BENEFICIARY UNCOVERED</span>
+                                          <span className="text-xs text-amber-400 font-mono font-bold">BENEFICIARY UNCOVERED</span>
                                         ) : (
-                                          <span className="text-[10px] text-slate-400 font-mono">STANDARD</span>
+                                          <span className="text-xs text-slate-400 font-mono">STANDARD</span>
                                         )}
                                       </div>
-                                      <div className="text-[11px] text-slate-400 space-y-0.5">
+                                      <div className="text-xs text-slate-400 space-y-0.5">
                                         <div>Paper Contractor: <strong className="text-amber-300">{doc.paper_extracted?.vendor_name || 'N/A'}</strong></div>
-                                        <div>Bank A/C: <span className="font-mono text-emerald-300">{maskAccountNo(doc.paper_extracted?.account_no)}</span> <span className="px-1 py-0.2 rounded text-[9px] bg-slate-800 text-slate-400 font-mono border border-slate-700">DPDP MASKED</span></div>
-                                        <div>UTR: <span className="font-mono text-cyan-300">{doc.paper_extracted?.utr_number || 'N/A'}</span></div>
+                                        <div>Bank A/C: <span className="font-mono text-emerald-300">{maskAccountNo(doc.paper_extracted?.account_no)}</span> <span className="px-1 py-0.2 rounded text-xs bg-slate-800 text-slate-400 font-mono border border-slate-700">DPDP MASKED</span></div>
+                                        <div>UTR: <span className="font-mono text-violet-300">{doc.paper_extracted?.utr_number || 'N/A'}</span></div>
                                       </div>
                                     </div>
 
@@ -892,20 +884,20 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                     <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
                                       <div className="flex items-center justify-between font-semibold">
                                         <span className="text-slate-300 flex items-center gap-1">
-                                          <Compass className="w-3.5 h-3.5 text-cyan-400" />
+                                          <Compass className="w-3.5 h-3.5 text-violet-400" />
                                           Task 4: Ground Location
                                         </span>
                                         {hasLocationMismatch ? (
-                                          <span className="text-[10px] text-rose-400 font-mono font-bold">CONFLICT DETECTED</span>
+                                          <span className="text-xs text-rose-400 font-mono font-bold">CONFLICT DETECTED</span>
                                         ) : (
-                                          <span className="text-[10px] text-emerald-400 font-mono">VERIFIED</span>
+                                          <span className="text-xs text-emerald-400 font-mono">VERIFIED</span>
                                         )}
                                       </div>
-                                      <div className="text-[11px] text-slate-400 space-y-0.5">
+                                      <div className="text-xs text-slate-400 space-y-0.5">
                                         <div>Certificate Site: <strong className="text-amber-300">{doc.paper_extracted?.location || 'Unknown'}</strong></div>
                                         <div className="truncate">Portal Site: <span className="text-slate-300">{doc.portal_record?.work_description?.substring(0, 35)}...</span></div>
                                         {hasLocationMismatch && (
-                                          <div className="text-rose-400 font-semibold pt-0.5 text-[10px]">
+                                          <div className="text-rose-400 font-semibold pt-0.5 text-xs">
                                             Site substitution alert: Work certified at completely different site!
                                           </div>
                                         )}
@@ -919,15 +911,15 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                               {/* Statutory Alerts from Findings */}
                               {doc.findings?.length > 0 && (
                                 <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                                  <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 font-semibold">
+                                  <span className="text-xs uppercase font-mono tracking-wider text-slate-400 font-semibold">
                                     Automated Statutory Violations Detected by Neural OCR:
                                   </span>
                                   {doc.findings.map((f, fIdx) => (
                                     <div key={fIdx} className="p-2.5 rounded-lg bg-rose-950/20 border border-rose-500/30 text-rose-200 text-xs flex items-start gap-2">
                                       <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
                                       <div>
-                                        <strong className="text-rose-300 font-mono text-[11px]">[{f.code}] {f.title}:</strong>
-                                        <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">{f.detail}</p>
+                                        <strong className="text-rose-300 font-mono text-xs">[{f.code}] {f.title}:</strong>
+                                        <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{f.detail}</p>
                                       </div>
                                     </div>
                                   ))}
@@ -982,9 +974,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                     <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                                     Task 1: Financial Gap
                                   </span>
-                                  <span className="text-[10px] text-rose-400 font-mono font-bold">MISMATCH FLAGGED</span>
+                                  <span className="text-xs text-rose-400 font-mono font-bold">MISMATCH FLAGGED</span>
                                 </div>
-                                <div className="text-[11px] text-slate-300 space-y-1">
+                                <div className="text-xs text-slate-300 space-y-1">
                                   <div>Portal Disbursed: <strong className="text-white">₹9,95,046.00</strong></div>
                                   <div>Physical Paper Approved: <strong className="text-amber-400 font-mono">₹7,28,528.00</strong></div>
                                   <div className="text-rose-400 font-bold">Unaccounted Retained Balance: +₹2,66,518.00</div>
@@ -998,11 +990,11 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                     <ShieldAlert className="w-3.5 h-3.5 text-sky-400" />
                                     Task 2: Scheme Origin
                                   </span>
-                                  <span className="text-[10px] text-emerald-400 font-mono">MPLADS VERIFIED</span>
+                                  <span className="text-xs text-emerald-400 font-mono">MPLADS VERIFIED</span>
                                 </div>
-                                <div className="text-[11px] text-slate-300">
+                                <div className="text-xs text-slate-300">
                                   <div>Header: <strong className="text-white">Central MPLADS (Annexure-VI)</strong></div>
-                                  <div className="text-[10px] text-slate-400 mt-1">Cross-check against State MLA passed.</div>
+                                  <div className="text-xs text-slate-400 mt-1">Cross-check against State MLA passed.</div>
                                 </div>
                               </div>
 
@@ -1013,12 +1005,12 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                     <Users className="w-3.5 h-3.5 text-purple-400" />
                                     Task 3: Contractor Disclosure
                                   </span>
-                                  <span className="text-[10px] text-purple-400 font-mono font-bold">PRIVATE BENEFICIARY</span>
+                                  <span className="text-xs text-purple-400 font-mono font-bold">PRIVATE BENEFICIARY</span>
                                 </div>
-                                <div className="text-[11px] text-slate-300 space-y-1">
+                                <div className="text-xs text-slate-300 space-y-1">
                                   <div>Extracted Vendor: <strong className="text-purple-300">V914400022814 Siddhi Associates</strong></div>
-                                  <div>Bank A/C: <span className="font-mono text-emerald-300">XXXX-XXXX-7586</span> <span className="px-1 py-0.2 rounded text-[9px] bg-slate-800 text-slate-400 font-mono border border-slate-700">DPDP MASKED</span></div>
-                                  <div>UTR: <span className="font-mono text-cyan-300">0150129426</span></div>
+                                  <div>Bank A/C: <span className="font-mono text-emerald-300">XXXX-XXXX-7586</span> <span className="px-1 py-0.2 rounded text-xs bg-slate-800 text-slate-400 font-mono border border-slate-700">DPDP MASKED</span></div>
+                                  <div>UTR: <span className="font-mono text-violet-300">0150129426</span></div>
                                 </div>
                               </div>
 
@@ -1026,15 +1018,15 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                               <div className="p-3 rounded-lg bg-slate-900 border border-rose-500/40 space-y-1.5">
                                 <div className="flex items-center justify-between font-semibold">
                                   <span className="text-slate-300 flex items-center gap-1">
-                                    <Compass className="w-3.5 h-3.5 text-cyan-400" />
+                                    <Compass className="w-3.5 h-3.5 text-violet-400" />
                                     Task 4: Location Integrity
                                   </span>
-                                  <span className="text-[10px] text-rose-400 font-mono font-bold">LOCATION CONFLICT</span>
+                                  <span className="text-xs text-rose-400 font-mono font-bold">LOCATION CONFLICT</span>
                                 </div>
-                                <div className="text-[11px] text-slate-300 space-y-1">
+                                <div className="text-xs text-slate-300 space-y-1">
                                   <div>Paper Certificate Site: <strong className="text-amber-400 font-mono">Bhabokara</strong></div>
                                   <div>Portal Claimed Site: <strong className="text-white">Gram Bhogpur (80m drain)</strong></div>
-                                  <div className="text-rose-400 font-semibold text-[10px]">Site substitution alert: Work certified at completely different village!</div>
+                                  <div className="text-rose-400 font-semibold text-xs">Site substitution alert: Work certified at completely different village!</div>
                                 </div>
                               </div>
                             </div>
@@ -1043,18 +1035,18 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
 
                         <div className="p-3 rounded-lg bg-rose-950/20 border border-rose-500/30 text-rose-200 text-xs">
                           <strong className="text-rose-300 font-mono">[PORTAL_PAPER_AMOUNT_MISMATCH] Live Audit Finding:</strong>
-                          <p className="text-[11px] text-slate-300 mt-0.5">
+                          <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
                             Portal records claim ₹9,95,046.00 disbursed, but physical engineer's certificate approved only ₹7,28,528.00. Unaccounted retained balance: ₹2,66,518.00.
                           </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
+                      <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
                           <span>No physical completion PDF file uploaded on Central portal for this work (Rule 3.12 non-compliance).</span>
                         </div>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Click "Inspect Sample Audited Certificate" above to view live Neural OCR extraction on active scanned certificates from Gautam Buddha Nagar.
                         </p>
                       </div>
@@ -1072,7 +1064,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                       <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">
                         Official Auditor Resolution & Action
                       </h4>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Any dismissal or escalation of an automated vigilance flag is permanently written to an immutable SQLite audit log with cryptographic timestamps and auditor credentials.
                       </p>
                     </div>
@@ -1218,78 +1210,20 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                         value={justification}
                         onChange={(e) => setJustification(e.target.value)}
                         placeholder="Provide detailed statutory and ground verification findings explaining this administrative action..."
-                        className="w-full p-3 rounded-xl glass-input text-xs leading-relaxed focus:ring-1 focus:ring-cyan-500"
+                        className="w-full p-3.5 rounded-xl glass-input text-sm leading-relaxed focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={submittingAction || justification.trim().length < 50}
-                      className="w-full py-2.5 rounded-xl font-semibold text-xs bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-slate-950 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-glow-cyan"
+                      className="w-full py-3.5 rounded-xl font-extrabold text-sm sm:text-base bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-xl shadow-violet-500/30"
                     >
                       <Send className="w-4 h-4" />
                       <span>{submittingAction ? 'Writing to Audit Ledger...' : 'Commit Action to Immutable Audit Trail'}</span>
                     </button>
-
-                    {/* Historical Statutory Audit Trail */}
-                    <div className="pt-4 border-t border-slate-800 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Historical Statutory Audit Trail ({auditHistory.length})</span>
-                        </h5>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          SHA-256 Chain Verified
-                        </span>
-                      </div>
-
-                      {auditHistory.length === 0 ? (
-                        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
-                          No prior administrative audit actions recorded for this scheme.
-                        </div>
-                      ) : (
-                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                          {auditHistory.map((item, idx) => (
-                            <div key={idx} className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
-                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                                    item.action === 'ESCALATED' 
-                                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                                      : item.action === 'TREASURY_HOLD_RECOMMENDED'
-                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  }`}>
-                                    {item.action || 'ACTION'}
-                                  </span>
-                                  <span className="text-slate-300 font-medium">{item.user_id || 'Auditor'}</span>
-                                  <span className="text-[10px] text-slate-400 uppercase font-mono">({item.role || 'user'})</span>
-                                </div>
-                                <span className="text-[10px] text-slate-400 font-mono">
-                                  {item.timestamp ? new Date(item.timestamp).toLocaleString('en-IN') : 'N/A'}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-300 italic">
-                                "{item.justification}"
-                              </p>
-                              {item.sha256_seal && (
-                                <div className="text-[9px] font-mono text-slate-400 flex items-center gap-1">
-                                  <Hash className="w-2.5 h-2.5 text-cyan-400" />
-                                  <span>Seal: {String(item.sha256_seal).slice(0, 16)}...</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </form>
-              )}
-
-              {/* TAB: Work Execution & Statutory Integrity Diagnostic Matrix */}
-              {activeTab === 'integrity_radar' && (
-                <IntegrityRadarTab workObj={workObj} dupEvidence={dupEvidence} />
               )}
 
             </>
@@ -1298,22 +1232,22 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 border-t border-slate-800 bg-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-          <div className="font-mono text-[11px] flex items-center space-x-2">
+        <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-slate-400">
+          <div className="font-mono text-xs flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Statutory Reference: MoSPI Circular F.No. 12014/1/2023-MPLADS // GFR Rule 144</span>
           </div>
-          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
             <button
               onClick={() => api.downloadWorkPdf(workId)}
-              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-glow-cyan"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg shadow-violet-500/25"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Download Statutory Audit PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold transition-colors"
             >
               Close Dossier
             </button>
@@ -1355,14 +1289,6 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Jan-Drishti Citizen Plaque Modal */}
-      {showJanDrishti && (
-        <JanDrishtiPlaque
-          work={workObj}
-          onClose={() => setShowJanDrishti(false)}
-        />
       )}
     </div>
   );

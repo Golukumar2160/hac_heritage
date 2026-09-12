@@ -67,29 +67,29 @@ export default function SecretaryBriefingModal({ onClose }) {
       <div className="relative w-full max-w-3xl overflow-hidden rounded-2xl glass-panel-glow border border-violet-500/40 bg-slate-950 flex flex-col shadow-2xl">
         
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-300 shadow-glow-violet">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-900/90">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-300 shadow-glow-violet">
               <Sparkles className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-violet-400 font-bold">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-xs font-mono uppercase tracking-widest text-violet-400 font-bold">
                   Secretariat Intelligence Directive
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-violet-950 border border-violet-800 text-[10px] font-mono text-violet-300">
-                  Gemini Flash 2.5
+                <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/30">
+                  National AI Engine
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-white font-display">
-                MoSPI Secretary Executive AI Briefing
+              <h2 className="text-lg sm:text-xl font-extrabold text-white font-display">
+                MoSPI Secretary Executive Strategic Briefing
               </h2>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -101,17 +101,17 @@ export default function SecretaryBriefingModal({ onClose }) {
           {loading ? (
             <div className="py-20 text-center space-y-3">
               <div className="inline-block w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
-              <div className="text-xs text-slate-400 font-mono">Synthesizing national strategic audit briefing...</div>
+              <div className="text-sm text-slate-400 font-mono">Synthesizing national strategic audit briefing...</div>
             </div>
           ) : (
             <>
               {/* Executive Summary Card */}
-              <div className="p-4 rounded-xl bg-violet-950/20 border border-violet-500/30 space-y-2">
-                <div className="text-xs font-mono font-bold uppercase text-violet-300 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
+              <div className="p-5 rounded-xl bg-violet-950/25 border border-violet-500/35 space-y-3 shadow-lg">
+                <div className="text-sm font-mono font-bold uppercase text-violet-300 flex items-center gap-2 tracking-wide">
+                  <FileText className="w-4 h-4 text-violet-400" />
                   National Executive Strategic Summary
                 </div>
-                <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm sm:text-base text-slate-100 leading-relaxed whitespace-pre-wrap font-normal">
                   {typeof briefing?.explanation === 'string' 
                     ? briefing?.explanation 
                     : (briefing?.explanation?.opening_paragraph || briefing?.explanation?.executive_summary || briefing?.explanation?.narrative || briefing?.executive_summary || briefing?.narrative || 'National audit across 98,649 MPLADS schemes indicates that approximately ₹1,115.23 Cr exhibits statutory anomalies.')}
@@ -119,40 +119,40 @@ export default function SecretaryBriefingModal({ onClose }) {
               </div>
 
               {/* Vulnerability Vectors */}
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-                <div className="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-2">
+              <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="text-sm font-mono font-bold uppercase text-amber-400 flex items-center gap-2 tracking-wide">
                   <AlertTriangle className="w-4 h-4" />
                   Top 3 Strategic Vulnerability Vectors
                 </div>
-                <div className="space-y-2 text-xs text-slate-300">
+                <div className="space-y-2.5 text-sm text-slate-200">
                   {(briefing?.top_vulnerabilities || briefing?.explanation?.vulnerabilities || [
                     "Contract Evasion Clustering: 218 projects in UP and Maharashtra sanctioned just under ₹50L to evade mandatory open e-tenders.",
                     "Contractor Monopolies: High concentration of repeat single-bidder awards across key district headquarters.",
                     "Discrepancies in Ground Milestones: Schemes reporting 100% fund disbursement with 0% physical ground progress."
                   ]).map((v, i) => (
-                    <div key={i} className="flex items-start space-x-2">
-                      <span className="font-mono font-bold text-amber-400">{i + 1}.</span>
-                      <span>{typeof v === 'string' ? v : JSON.stringify(v)}</span>
+                    <div key={i} className="flex items-start space-x-2.5 bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+                      <span className="font-mono font-bold text-amber-400 text-sm mt-0.5">{i + 1}.</span>
+                      <span className="text-sm leading-relaxed">{typeof v === 'string' ? v : JSON.stringify(v)}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Policy Recommendations */}
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-                <div className="text-xs font-mono font-bold uppercase text-cyan-400 flex items-center gap-2">
+              <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="text-sm font-mono font-bold uppercase text-indigo-400 flex items-center gap-2 tracking-wide">
                   <Building className="w-4 h-4" />
                   Recommended Administrative Directives
                 </div>
-                <div className="space-y-2 text-xs text-slate-300">
+                <div className="space-y-2.5 text-sm text-slate-200">
                   {(briefing?.recommended_actions || briefing?.explanation?.recommendations || [
                     "Immediate administrative hold on 3rd-tranche fund releases for CRITICAL priority schemes.",
                     "Mandatory physical re-inspection for works with duplicate perceptual image hashes.",
                     "Integration with GeM / e-procurement portals to eliminate shell contractor alias rings."
                   ]).map((a, i) => (
-                    <div key={i} className="flex items-start space-x-2">
-                      <span className="font-mono font-bold text-cyan-400">{i + 1}.</span>
-                      <span>{typeof a === 'string' ? a : JSON.stringify(a)}</span>
+                    <div key={i} className="flex items-start space-x-2.5 bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+                      <span className="font-mono font-bold text-indigo-400 text-sm mt-0.5">{i + 1}.</span>
+                      <span className="text-sm leading-relaxed">{typeof a === 'string' ? a : JSON.stringify(a)}</span>
                     </div>
                   ))}
                 </div>
@@ -164,27 +164,27 @@ export default function SecretaryBriefingModal({ onClose }) {
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
             <button
               onClick={handleCopy}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-sm font-semibold transition-colors flex items-center gap-2 border border-slate-700/60"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               <span>{copied ? 'Copied to Clipboard' : 'Copy Memo'}</span>
             </button>
             <button
               onClick={handleDownload}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-sm font-semibold transition-colors flex items-center gap-2 border border-slate-700/60"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Download Briefing</span>
             </button>
           </div>
 
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-all"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/25 transition-all"
           >
             Acknowledge & Close
           </button>

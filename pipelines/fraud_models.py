@@ -748,10 +748,15 @@ def model5_ensemble(m1: pd.DataFrame, m2: tuple, m3: pd.DataFrame,
     # Unpack Model 2 outputs
     m2_pair, m2_work = m2
 
-    base = san[["work_id", "mp_name", "mp_number", "state", "house",
-                "work_category", "ida", "work_description",
-                "sanction_date", "sanction_amount", "work_status",
-                "progress_pct", "implausible_amount_flag"]].copy()
+    # BUG-005 FIX: Include 'constituency' in base so it flows through to fraud_flags.csv
+    # LS MPs have real constituency names; RS MPs don't have constituencies (handled as None/NaN)
+    base_cols = ["work_id", "mp_name", "mp_number", "state", "house",
+                 "work_category", "ida", "work_description",
+                 "sanction_date", "sanction_amount", "work_status",
+                 "progress_pct", "implausible_amount_flag"]
+    if "constituency" in san.columns:
+        base_cols.insert(4, "constituency")  # preserve real constituency from sanctioned data
+    base = san[[c for c in base_cols if c in san.columns]].copy()
 
     # Merge Model 1 scores
     base = base.merge(

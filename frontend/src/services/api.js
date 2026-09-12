@@ -3,7 +3,7 @@
  * Direct connection to FastAPI backend (http://127.0.0.1:8000)
  */
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000';
+export const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 let authToken = localStorage.getItem('bharat_drishti_token') || '';
 let currentUser = JSON.parse(localStorage.getItem('bharat_drishti_user') || 'null');
@@ -51,19 +51,33 @@ export const api = {
   // Health & Server Status
   async checkHealth() {
     const t0 = performance.now();
-    const res = await fetch(`${API_BASE}/docs`, { method: 'HEAD' });
-    const ping = Math.round(performance.now() - t0);
-    return { ok: res.ok, ping };
+    try {
+      const res = await fetch(`${API_BASE}/api/health`);
+      const ping = Math.round(performance.now() - t0);
+      if (res.ok) {
+        const data = await res.json();
+        return { ok: true, ping, ...data };
+      }
+    } catch {
+      // Fallback to docs HEAD ping
+    }
+    try {
+      const res = await fetch(`${API_BASE}/docs`, { method: 'HEAD' });
+      const ping = Math.round(performance.now() - t0);
+      return { ok: res.ok, ping, supabase_connected: false };
+    } catch {
+      return { ok: false, ping: 0, supabase_connected: false };
+    }
   },
 
   // Auth & Roles
   async getDemoAccounts() {
     return {
       demo_accounts: [
-        { username: 'ministry_admin', name: 'MoSPI Ministry Official', role: 'ministry' },
-        { username: 'state_nodal_up', name: 'State Nodal Authority — UP', role: 'state' },
-        { username: 'district_pilibhit', name: 'District Authority — Pilibhit', role: 'district' },
-        { username: 'mp_javed', name: 'Shri Javed Ali Khan (MP)', role: 'mp' }
+        { username: 'ministry_admin', name: 'MoSPI Ministry Official', role: 'ministry', designation: 'Central Vigilance & National Oversight' },
+        { username: 'state_nodal_up', name: 'State Nodal Authority - UP', role: 'state', state: 'Uttar Pradesh', designation: 'Principal Secretary (Planning)' },
+        { username: 'district_pilibhit', name: 'District Authority - Pilibhit', role: 'district', state: 'Uttar Pradesh', ida: 'PILIBHIT', designation: 'District Magistrate & Collector' },
+        { username: 'mp_javed', name: 'Shri Javed Ali Khan (MP)', role: 'mp', mp_name: 'Shri Javed Ali Khan', state: 'Uttar Pradesh', designation: 'Member of Parliament (Rajya Sabha)' }
       ]
     };
   },
@@ -77,6 +91,35 @@ export const api = {
     }
   },
 
+  async getAuthOptions() {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/options`);
+      return await handleResponse(res);
+    } catch (err) {
+      console.error('Failed to load auth options from backend:', err);
+      return {
+        states: ['Uttar Pradesh', 'Maharashtra', 'West Bengal', 'Bihar', 'Tamil Nadu', 'Rajasthan', 'Madhya Pradesh', 'Karnataka', 'Gujarat', 'Delhi'],
+        districts_by_state: {
+          'Uttar Pradesh': ['PILIBHIT', 'VARANASI', 'LUCKNOW', 'AGRA', 'KANPUR NAGAR', 'GORAKHPUR', 'PRAYAGRAJ'],
+        },
+        mps: [
+          { name: 'Shri Javed Ali Khan', state: 'Uttar Pradesh', house: 'RS' },
+          { name: 'Sk Nurul Islam', state: 'West Bengal', house: 'LS' },
+          { name: 'R.K. Chaudhary', state: 'Uttar Pradesh', house: 'LS' }
+        ]
+      };
+    }
+  },
+
+  async getRegisteredUsers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/users`);
+      return await handleResponse(res);
+    } catch {
+      return { users: [] };
+    }
+  },
+
   async login(username, password) {
     const res = await fetch(`${API_BASE}/api/login`, {
       method: 'POST',
@@ -85,12 +128,44 @@ export const api = {
     });
     const data = await handleResponse(res);
     setAuthSession(data.access_token, {
-      username,
+      username: data.username || username,
       role: data.role,
       name: data.name,
+      state: data.state || '',
+      ida: data.ida || '',
+      mp_name: data.mp_name || '',
+      designation: data.designation || '',
       ...data,
     });
     return data;
+  },
+
+  async register(userData) {
+    const res = await fetch(`${API_BASE}/api/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    const data = await handleResponse(res);
+    setAuthSession(data.access_token, {
+      username: data.username || userData.username,
+      role: data.role,
+      name: data.name,
+      state: data.state || '',
+      ida: data.ida || '',
+      mp_name: data.mp_name || '',
+      designation: data.designation || '',
+      ...data,
+    });
+    return data;
+  },
+
+  logout() {
+    setAuthSession(null, null);
+  },
+
+  getCurrentUser() {
+    return currentUser;
   },
 
   // Executive Overview & KPIs
@@ -109,7 +184,6 @@ export const api = {
       low_count: data.low_count || 0,
       missing_photos_count: data.missing_photo_works || 0,
       monopoly_works_count: data.monopoly_vendor_works || 0,
-      duplicate_photos_count: data.duplicate_photos_count !== undefined ? data.duplicate_photos_count : 157,
       average_risk_score: data.average_risk_score || 0,
     };
   },
@@ -329,6 +403,4 @@ export const api = {
     return handleResponse(res);
   },
 };
-
-export default api;
 

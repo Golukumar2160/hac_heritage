@@ -173,7 +173,7 @@ export default function BenfordView({ onSelectWork }) {
           <div className="text-2xl sm:text-3xl font-black text-white font-mono mt-1">
             {mad.toFixed(4)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
             Threshold: &gt; 0.015 indicates systemic artificial number generation rather than natural project budgeting.
           </p>
         </div>
@@ -182,14 +182,14 @@ export default function BenfordView({ onSelectWork }) {
         <div className="glass-panel p-4 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="font-semibold text-slate-300">Chi-Square Statistical Test</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800">
+            <span className="px-2.5 py-0.5 rounded text-xs font-mono text-violet-300 bg-violet-950/60 border border-violet-800">
               p &lt; 0.001
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white font-mono mt-1">
             {Number(distributionData?.chi_square || 421.5).toFixed(1)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
             Degrees of Freedom: 8. Null hypothesis of natural logarithmic distribution rejected with 99.9% confidence.
           </p>
         </div>
@@ -198,14 +198,14 @@ export default function BenfordView({ onSelectWork }) {
         <div className="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-amber-950/10">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="font-semibold text-slate-300">Tender Threshold Evasion</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-800">
+            <span className="px-2.5 py-0.5 rounded text-xs font-mono text-amber-300 bg-amber-950/60 border border-amber-800">
               ₹49.9L CLIFF
             </span>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono mt-1">
             {evasionData?.clustering_count || 128} Works
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
             Schemes intentionally sanctioned between ₹49.0L–₹49.99L to evade mandatory CPWD open e-tenders.
           </p>
         </div>
@@ -307,8 +307,8 @@ export default function BenfordView({ onSelectWork }) {
             </ResponsiveContainer>
           </div>
 
-          <div className="text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
-            Note the dramatic cliff: <strong>218 works</strong> sanctioned just under ₹50L vs only <strong>12 works</strong> just above ₹50L.
+          <div className="text-xs text-slate-400 pt-2 border-t border-slate-800/80 leading-relaxed">
+            Note the dramatic cliff: <strong className="text-amber-300">218 works</strong> sanctioned just under ₹50L vs only <strong className="text-white">12 works</strong> just above ₹50L.
           </div>
         </div>
 
@@ -316,14 +316,14 @@ export default function BenfordView({ onSelectWork }) {
         <div className="lg:col-span-6 glass-panel p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-white font-display">
+              <h4 className="text-base font-bold text-white font-display">
                 Flagged Schemes with Highest Digit Anomaly Scores
               </h4>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800">
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-violet-950/60 text-violet-300 border border-violet-800 font-semibold">
                 TOP Z-SCORES
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 mt-1">
               High-confidence targets flagged for ground technical verification.
             </p>
           </div>

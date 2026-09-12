@@ -92,15 +92,6 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
     };
   }, [activeRole, states.length]);
 
-  const handleSelectState = (stateName) => {
-    setSelectedState(stateName);
-    setLoadingDistricts(true);
-    api.getMapDistricts(stateName)
-      .then((data) => setDistricts(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Error loading district map data:', err))
-      .finally(() => setLoadingDistricts(false));
-  };
-
   // Load States Aggregates & GPS points (Re-fetches on activeRole switch)
   useEffect(() => {
     setLoading(true);
@@ -126,6 +117,15 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
       setLoading(false);
     });
   }, [activeRole]);
+
+  const handleSelectState = (stateName) => {
+    setSelectedState(stateName);
+    setLoadingDistricts(true);
+    api.getMapDistricts(stateName)
+      .then((data) => setDistricts(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Error loading district map data:', err))
+      .finally(() => setLoadingDistricts(false));
+  };
 
   // Create state lookup dictionary by db_name
   const stateDataMap = useMemo(() => {
@@ -212,47 +212,47 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
     <div className="space-y-6">
       
       {/* ── TOP HEADER & SUMMARY BADGES ──────────────────────────────────── */}
-      <div className="glass-panel p-5 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-slate-800">
+      <div className="glass-panel p-6 sm:p-7 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-violet-500/25">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/80">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="text-xs font-mono uppercase tracking-widest text-violet-300 font-bold px-2.5 py-0.5 rounded bg-violet-950/60 border border-violet-800/80">
               {roleConfig.badge}
             </span>
-            <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="px-2 py-0.5 text-xs font-mono rounded bg-slate-800 text-slate-300 border border-slate-700">
               Official Survey of India Boundary
             </span>
-            <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
+            <span className="px-2 py-0.5 text-xs font-mono rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
               100% Offline Vector Projection
             </span>
             {roleConfig.scopeBannerText && (
-              <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-cyan-900/40 text-cyan-200 border border-cyan-700">
+              <span className="px-2.5 py-0.5 text-xs font-mono rounded bg-violet-900/40 text-violet-200 border border-violet-700 font-semibold">
                 {roleConfig.scopeBannerText}
               </span>
             )}
           </div>
-          <h2 className="text-xl font-bold text-white font-display flex items-center gap-2">
-            <Globe className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white font-display flex items-center gap-2.5">
+            <Globe className="w-5 h-5 text-violet-400" />
             {roleConfig.title}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5 max-w-3xl">
+          <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
             {roleConfig.desc}
           </p>
         </div>
 
         {/* National / Scoped Stats Quick Strip */}
-        <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
-          <div className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase">{roleConfig.jurisdictionLabel}</div>
-            <div className="text-sm font-bold text-white mt-0.5">{roleConfig.jurisdictionVal}</div>
+        <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm font-mono">
+          <div className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800">
+            <div className="text-xs text-slate-400 uppercase font-semibold">{roleConfig.jurisdictionLabel}</div>
+            <div className="text-base font-extrabold text-white mt-0.5">{roleConfig.jurisdictionVal}</div>
           </div>
-          <div className="px-3.5 py-2 rounded-xl bg-rose-950/40 border border-rose-800/60">
-            <div className="text-[10px] text-rose-300 uppercase">Critical Schemes</div>
-            <div className="text-sm font-bold text-rose-400 mt-0.5">{nationalKpis.totalCrit.toLocaleString()} Flags</div>
+          <div className="px-4 py-2 rounded-xl bg-rose-950/40 border border-rose-800/60">
+            <div className="text-xs text-rose-300 uppercase font-semibold">Critical Schemes</div>
+            <div className="text-base font-extrabold text-rose-400 mt-0.5">{nationalKpis.totalCrit.toLocaleString()} Flags</div>
           </div>
-          <div className="px-3.5 py-2 rounded-xl bg-amber-950/40 border border-amber-800/60">
-            <div className="text-[10px] text-amber-300 uppercase">Capital at Risk</div>
-            <div className="text-sm font-bold text-amber-400 mt-0.5">₹{nationalKpis.totalFundsCr} Cr</div>
+          <div className="px-4 py-2 rounded-xl bg-amber-950/40 border border-amber-800/60">
+            <div className="text-xs text-amber-300 uppercase font-semibold">Capital at Risk</div>
+            <div className="text-base font-extrabold text-amber-400 mt-0.5">₹{nationalKpis.totalFundsCr} Cr</div>
           </div>
         </div>
       </div>
@@ -261,42 +261,42 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* LEFT COLUMN: RANKED STATES LIST SIDEBAR (4 COLS) */}
-        <div className="lg:col-span-4 glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col space-y-3 h-[680px]">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div className="lg:col-span-4 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col space-y-3.5 h-[680px]">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div>
-              <h3 className="text-sm font-bold text-white font-display flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-violet-400" />
                 State Vulnerability Index
               </h3>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs text-slate-400 mt-0.5">
                 Ranked by Composite AI Risk Score
               </div>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300">
+            <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/30">
               {filteredStates.length} Active
             </span>
           </div>
 
           {/* Quick Search */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               placeholder="Search State or UT..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 font-sans"
+              className="w-full pl-10 pr-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500/60 font-sans"
             />
           </div>
 
           {/* Scrollable Ranked States */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="h-16 rounded-xl bg-slate-900/60 animate-pulse border border-slate-800/40" />
               ))
             ) : filteredStates.length === 0 ? (
-              <div className="py-10 text-center text-xs text-slate-500">
+              <div className="py-10 text-center text-sm text-slate-500">
                 No states matching "{searchQuery}"
               </div>
             ) : (
@@ -312,9 +312,9 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                     onClick={() => handleSelectState(s.state)}
                     onMouseEnter={() => setHoveredState(s)}
                     onMouseLeave={() => setHoveredState(null)}
-                    className={`p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                    className={`p-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
                       isSelected
-                        ? 'bg-cyan-500/15 border-cyan-500/80 shadow-lg shadow-cyan-950/50'
+                        ? 'bg-violet-500/15 border-violet-500/80 shadow-lg shadow-violet-950/50'
                         : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
@@ -325,26 +325,26 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                           style={{ backgroundColor: stateColor }}
                         />
                         <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <div className="text-sm font-bold text-white flex items-center gap-1.5">
                             {s.state}
                             {critCount > 200 && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                          <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
                             <span>{s.total_works.toLocaleString()} Works</span>
                             <span>•</span>
-                            <span className="text-rose-400 font-medium">{critCount} Critical</span>
+                            <span className="text-rose-400 font-semibold">{critCount} Critical</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right font-mono flex-shrink-0">
-                        <div className="text-xs font-bold text-amber-400">
+                        <div className="text-sm font-bold text-amber-400">
                           ₹{fundsRiskCr} Cr
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          Score: <span className="font-bold text-cyan-300">{s.avg_risk_score}</span>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          Score: <span className="font-bold text-violet-300">{s.avg_risk_score}</span>
                         </div>
                       </div>
                     </div>
@@ -355,20 +355,20 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
           </div>
 
           {/* Quick Guidance Note */}
-          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+          <div className="pt-2.5 border-t border-slate-800/80 text-xs text-slate-400 flex items-center gap-2">
+            <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
             <span>Click any state polygon on map or list to trigger district drilldown.</span>
           </div>
         </div>
 
         {/* RIGHT COLUMN: INTERACTIVE INDIA VECTOR CHOROPLETH (8 COLS) */}
-        <div className="lg:col-span-8 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col space-y-4 h-[680px] relative">
+        <div className="lg:col-span-8 glass-panel p-5 sm:p-6 rounded-2xl border border-slate-800 flex flex-col space-y-4 h-[680px] relative">
           
           {/* Map Controls Top Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
             
             {/* Metric Mode Selector */}
-            <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm">
               {[
                 { id: 'risk', label: 'AI Risk Score' },
                 { id: 'critical', label: 'Critical Works' },
@@ -378,9 +378,9 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                 <button
                   key={tab.id}
                   onClick={() => setActiveMetric(tab.id)}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                     activeMetric === tab.id
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -399,7 +399,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                     : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
                 }`}
               >
-                <Radio className={`w-3.5 h-3.5 ${showGpsLayer ? 'text-rose-400 animate-pulse' : ''}`} />
+                <Radio className={`w-3.5 h-3.5 ${showGpsLayer ? 'text-rose-400' : ''}`} />
                 <span>12 Forensic GPS Pins</span>
                 <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-900/80 text-rose-200 font-bold">
                   Ground Truth
@@ -548,32 +548,21 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                         onMouseEnter={() => setHoveredGps(p)}
                         onMouseLeave={() => setHoveredGps(null)}
                       >
-                        {/* Concentric Pulsing Radar Rings */}
+                        {/* Static Marker Pin */}
                         <circle 
                           cx={px} 
                           cy={py} 
-                          r={isSelected ? "18" : "12"} 
-                          className="animate-ping" 
-                          fill="#f43f5e" 
-                          opacity="0.4" 
-                        />
-                        
-                        {/* Middle Halo */}
-                        <circle 
-                          cx={px} 
-                          cy={py} 
-                          r={isSelected ? "8" : "5.5"} 
+                          r={isSelected ? "7" : "5"} 
                           fill="#f43f5e" 
                           stroke="#ffffff" 
                           strokeWidth={isSelected ? "2" : "1.2"} 
-                          filter="url(#glow-rose)"
                         />
                         
                         {/* Center Core Pinpoint */}
                         <circle 
                           cx={px} 
                           cy={py} 
-                          r="2.5" 
+                          r="2" 
                           fill="#ffffff" 
                         />
                       </g>
@@ -592,13 +581,13 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                   top: Math.min(tooltipPos.y, 400)
                 }}
               >
-                <div className="font-bold text-white flex items-center justify-between border-b border-slate-800 pb-1">
-                  <span>{hoveredState.state}</span>
-                  <span className="text-[10px] font-mono text-cyan-400 px-1.5 py-0.2 rounded bg-cyan-950/80">
+                <div className="font-bold text-white flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <span className="text-sm">{hoveredState.state}</span>
+                  <span className="text-xs font-mono text-violet-300 px-2 py-0.5 rounded bg-violet-950/80 border border-violet-800">
                     Score: {hoveredState.avg_risk_score || 'N/A'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div>
                     <span className="text-slate-400">Total Works:</span>
                     <div className="text-white font-semibold">{Number(hoveredState.total_works || 0).toLocaleString()}</div>
@@ -615,7 +604,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                   </div>
                   <div>
                     <span className="text-slate-400">Monopoly Works:</span>
-                    <div className="text-cyan-300 font-semibold">{Number(hoveredState.monopoly_works || 0)}</div>
+                    <div className="text-violet-300 font-semibold">{Number(hoveredState.monopoly_works || 0)}</div>
                   </div>
                 </div>
               </div>
@@ -624,27 +613,27 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
             {/* Hover Floating Tooltip for GPS Radar Point */}
             {hoveredGps && (
               <div 
-                className="absolute pointer-events-none z-40 p-3 rounded-xl bg-rose-950/95 border border-rose-500 shadow-2xl backdrop-blur-md text-xs space-y-1 min-w-[240px]"
+                className="absolute pointer-events-none z-40 p-3.5 rounded-xl bg-rose-950/95 border border-rose-500 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[240px]"
                 style={{
                   left: Math.min(tooltipPos.x, 340),
                   top: Math.min(tooltipPos.y, 380)
                 }}
               >
-                <div className="flex items-center justify-between text-rose-300 font-mono text-[10px] uppercase font-bold border-b border-rose-800 pb-1">
-                  <span className="flex items-center gap-1">
-                    <Radio className="w-3 h-3 text-rose-400 animate-pulse" />
+                <div className="flex items-center justify-between text-rose-300 font-mono text-xs uppercase font-bold border-b border-rose-800 pb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
                     Verified GPS Coordinate
                   </span>
                   <span>#{hoveredGps.work_id}</span>
                 </div>
-                <div className="text-xs font-bold text-white">{hoveredGps.mp_name} (MP)</div>
-                <div className="text-[11px] text-slate-300">
-                  Lat: <span className="font-mono text-cyan-300 font-bold">{hoveredGps.latitude.toFixed(6)}° N</span>
+                <div className="text-sm font-bold text-white">{hoveredGps.mp_name} (MP)</div>
+                <div className="text-xs text-slate-300">
+                  Lat: <span className="font-mono text-violet-300 font-bold">{hoveredGps.latitude.toFixed(6)}° N</span>
                 </div>
-                <div className="text-[11px] text-slate-300">
-                  Lon: <span className="font-mono text-cyan-300 font-bold">{hoveredGps.longitude.toFixed(6)}° E</span>
+                <div className="text-xs text-slate-300">
+                  Lon: <span className="font-mono text-violet-300 font-bold">{hoveredGps.longitude.toFixed(6)}° E</span>
                 </div>
-                <div className="text-[10px] font-mono text-rose-300 pt-1 border-t border-rose-900/60">
+                <div className="text-xs font-mono text-rose-300 pt-1 border-t border-rose-900/60">
                   Source: {hoveredGps.gps_source}
                 </div>
               </div>
@@ -652,7 +641,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
 
             {/* Bottom-Right Legend Card */}
             <div className="absolute bottom-3 right-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs space-y-1.5">
-              <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+              <div className="text-xs font-mono uppercase text-slate-400 font-bold">
                 {activeMetric === 'risk' && 'AI Risk Severity'}
                 {activeMetric === 'critical' && 'Critical Flag Density'}
                 {activeMetric === 'funds' && 'Capital at Risk Outlay'}
@@ -680,8 +669,8 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
 
             {/* Bottom-Left GPS Status Pill */}
             {showGpsLayer && (
-              <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-[11px] font-mono flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <div className="absolute bottom-3 left-3 px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs font-mono flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                 <span className="text-slate-300">12 Camera Watermarks Triangulated in Bijnor/UP</span>
               </div>
             )}
@@ -896,11 +885,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
         {/* ── JUDGE DEFENSE & METHODOLOGY BRIEFING ────────────────────────── */}
         <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-            <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-violet-400" />
               Choropleth vs Coordinate Cluster Defense
             </h5>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               When raw completion datasets omit GPS coordinates, naive pin maps render blank screens. 
               Bharat-Drishti utilizes a <strong>two-layer defense architecture</strong>: an administrative boundary choropleth 
               aggregating all 98,649 works across 36 states, augmented by an optical watermark extraction pipeline that 
@@ -909,11 +898,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-            <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Radio className="w-3.5 h-3.5 text-rose-400" />
+            <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Radio className="w-4 h-4 text-rose-400" />
               Physical Completion Audit Protocol
             </h5>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Our Vision OCR parser extracted camera watermark text (e.g. <em>29.3436° N, 78.3148° E</em>) from scanned completion 
               certificates in Uttar Pradesh. This allows MoSPI and CAG vigilance inspectors to dispatch field verification squads 
               to the exact physical coordinate of the audited work.
