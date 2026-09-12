@@ -29,7 +29,6 @@ import {
   Landmark,
   MapPin,
   Vote,
-  Clock,
   Radio,
   Zap,
   ShieldCheck,
@@ -48,7 +47,6 @@ export default function App() {
   const [kpis, setKpis] = useState(null);
   const [initialTier, setInitialTier] = useState('all');
   const [toastMessage, setToastMessage] = useState(null);
-  const [currentTime, setCurrentTime] = useState('');
   const [ping, setPing] = useState(40);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -98,16 +96,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Live IST Clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true }) + ' IST');
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const loadKpis = async () => {
     if (!currentUser) return;
@@ -266,10 +254,6 @@ export default function App() {
               <span className="text-violet-500 font-semibold">{ping !== null ? `${ping}ms` : '40ms'}</span>
             </div>
 
-            <div className="hidden lg:flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-mono" style={{ background: theme === 'light' ? 'rgba(241,245,249,0.8)' : 'rgba(0,0,0,0.3)', border: theme === 'light' ? '1px solid rgba(203,213,225,0.8)' : '1px solid rgba(255,255,255,0.06)', color: theme === 'light' ? '#475569' : '#cbd5e1' }}>
-              <Clock className="w-4 h-4 text-violet-400" />
-              <span>{currentTime}</span>
-            </div>
 
             <div className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold" style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.28)', color: theme === 'light' ? '#6d28d9' : 'rgba(196,181,253,0.95)' }}>
               <Radio className="w-3.5 h-3.5 animate-pulse text-violet-500" />
