@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { api } from '../services/api';
 import {
   ResponsiveContainer,
   PieChart,
@@ -29,6 +30,28 @@ const STATIC_STATE_RISK_DATA = [
 function QuickStatsCharts({ kpis }) {
   if (!kpis) return null;
 
+  const [liveStateRiskData, setLiveStateRiskData] = useState(STATIC_STATE_RISK_DATA);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getMapStates().then(states => {
+      if (!isMounted || !Array.isArray(states) || states.length === 0) return;
+      const top10 = [...states]
+        .sort((a, b) => (b.critical_count + b.high_count) - (a.critical_count + a.high_count))
+        .slice(0, 10)
+        .map(s => ({
+          state: s.state,
+          critical: s.critical_count || 0,
+          high: s.high_count || 0,
+          atRiskCr: Math.round(((s.funds_at_risk || 0) / 1e7) * 10) / 10
+        }));
+      setLiveStateRiskData(top10);
+    }).catch(err => {
+      console.warn('Using static state risk fallback:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
   const critical_count = kpis.critical_count ?? 15731;
   const high_count = kpis.high_count ?? 6053;
   const medium_count = kpis.medium_count ?? 14867;
@@ -42,7 +65,7 @@ function QuickStatsCharts({ kpis }) {
     { name: 'Low / Verified', value: low_count, color: '#34d399' },
   ], [critical_count, high_count, medium_count, low_count]);
 
-  const stateRiskData = STATIC_STATE_RISK_DATA;
+  const stateRiskData = liveStateRiskData;
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
