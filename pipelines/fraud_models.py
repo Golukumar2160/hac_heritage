@@ -561,8 +561,10 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
 
     # Rule 3: Completed work has no photo evidence uploaded (catches all ~12,761 ghost works)
     if "has_image" in com.columns and "work_id" in com.columns:
+        has_img_series = com["has_image"].fillna(False)
+        is_missing = (has_img_series == False) | (has_img_series.astype(str).str.strip().str.lower().isin(["false", "0", "0.0", "none", "nan", ""]))
         no_photo_ids = set(
-            com.loc[com["has_image"] == False, "work_id"].dropna().tolist()
+            com.loc[is_missing, "work_id"].dropna().tolist()
         )
     else:
         no_photo_ids = set()

@@ -37,7 +37,13 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 # ── Auto-Switch to venv Python if running globally ────────────────────────────
-VENV_PY = os.path.join(ROOT_DIR, "venv", "Scripts", "python.exe")
+VENV_PY = (
+    os.path.join(ROOT_DIR, "venv", "Scripts", "python.exe")
+    if os.name == "nt"
+    else os.path.join(ROOT_DIR, "venv", "bin", "python")
+)
+if not os.path.exists(VENV_PY):
+    VENV_PY = sys.executable
 if os.path.exists(VENV_PY) and sys.executable.lower() != os.path.abspath(VENV_PY).lower():
     try:
         import imagehash
@@ -212,6 +218,12 @@ def audit_single_pdf(pdf_path: str, meta_by_wid: dict) -> Optional[Dict[str, Any
     except Exception as e:
         print(f"  [!] Error auditing {filename}: {e}")
         return None
+    finally:
+        if 'doc' in locals() and doc:
+            try:
+                doc.close()
+            except Exception:
+                pass
 
 
 def update_master_gps_dataset(new_records: List[Dict[str, Any]]):

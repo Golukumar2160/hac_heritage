@@ -26,9 +26,12 @@ import {
   AlertOctagon,
   CheckCircle2,
   Hash,
-  ExternalLink
+  ExternalLink,
+  QrCode
 } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
+import JanDrishtiPlaque from './JanDrishtiPlaque';
+import IntegrityRadarTab from './IntegrityRadarTab';
 
 export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const maskAccountNo = (acc) => {
@@ -43,6 +46,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const [activeTab, setActiveTab] = useState('ai_memo');
   const [showSampleOcr, setShowSampleOcr] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showJanDrishti, setShowJanDrishti] = useState(false);
   
   // AI Explainer state
   const [aiData, setAiData] = useState(null);
@@ -195,6 +199,15 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
               <span>Download Statutory Audit PDF</span>
             </button>
             <button
+              onClick={() => setShowJanDrishti(true)}
+              id="btn-open-jan-drishti"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:shadow-glow-amber transition-all cursor-pointer"
+              title="Open Jan-Drishti Citizen Transparency Plaque & Offline QR Code"
+            >
+              <QrCode className="w-3.5 h-3.5 text-amber-400" />
+              <span>📱 Jan-Drishti Citizen QR</span>
+            </button>
+            <button
               onClick={onClose}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
@@ -274,9 +287,10 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
               </div>
 
               {/* Navigation Tabs within Modal */}
-              <div className="flex items-center space-x-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2 border-b border-slate-800 overflow-x-auto">
                 {[
                   { id: 'ai_memo', label: 'AI Gemini CAG Memo', icon: Sparkles },
+                  { id: 'integrity_radar', label: 'Integrity Diagnostic Matrix', icon: Compass },
                   { id: 'models', label: 'ML Forensic Scores', icon: Cpu },
                   { id: 'images', label: 'Visual & OCR Forensics', icon: ImageIcon },
                   { id: 'action', label: 'Auditor Action & Resolution', icon: Scale },
@@ -1216,8 +1230,66 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                       <Send className="w-4 h-4" />
                       <span>{submittingAction ? 'Writing to Audit Ledger...' : 'Commit Action to Immutable Audit Trail'}</span>
                     </button>
+
+                    {/* Historical Statutory Audit Trail */}
+                    <div className="pt-4 border-t border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Historical Statutory Audit Trail ({auditHistory.length})</span>
+                        </h5>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          SHA-256 Chain Verified
+                        </span>
+                      </div>
+
+                      {auditHistory.length === 0 ? (
+                        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
+                          No prior administrative audit actions recorded for this scheme.
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {auditHistory.map((item, idx) => (
+                            <div key={idx} className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                                    item.action === 'ESCALATED' 
+                                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                                      : item.action === 'TREASURY_HOLD_RECOMMENDED'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  }`}>
+                                    {item.action || 'ACTION'}
+                                  </span>
+                                  <span className="text-slate-300 font-medium">{item.user_id || 'Auditor'}</span>
+                                  <span className="text-[10px] text-slate-400 uppercase font-mono">({item.role || 'user'})</span>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {item.timestamp ? new Date(item.timestamp).toLocaleString('en-IN') : 'N/A'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 italic">
+                                "{item.justification}"
+                              </p>
+                              {item.sha256_seal && (
+                                <div className="text-[9px] font-mono text-slate-400 flex items-center gap-1">
+                                  <Hash className="w-2.5 h-2.5 text-cyan-400" />
+                                  <span>Seal: {String(item.sha256_seal).slice(0, 16)}...</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </form>
+              )}
+
+              {/* TAB: Work Execution & Statutory Integrity Diagnostic Matrix */}
+              {activeTab === 'integrity_radar' && (
+                <IntegrityRadarTab workObj={workObj} dupEvidence={dupEvidence} />
               )}
 
             </>
@@ -1283,6 +1355,14 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Jan-Drishti Citizen Plaque Modal */}
+      {showJanDrishti && (
+        <JanDrishtiPlaque
+          work={workObj}
+          onClose={() => setShowJanDrishti(false)}
+        />
       )}
     </div>
   );

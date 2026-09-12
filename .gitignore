@@ -27,3 +27,5 @@ database.sqlite
 images/downloaded_pdfs/
 scratch/*.geojson
 scratch/*.svg
+
+.github/

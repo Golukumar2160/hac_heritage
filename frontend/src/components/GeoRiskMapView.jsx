@@ -92,6 +92,15 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
     };
   }, [activeRole, states.length]);
 
+  const handleSelectState = (stateName) => {
+    setSelectedState(stateName);
+    setLoadingDistricts(true);
+    api.getMapDistricts(stateName)
+      .then((data) => setDistricts(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Error loading district map data:', err))
+      .finally(() => setLoadingDistricts(false));
+  };
+
   // Load States Aggregates & GPS points (Re-fetches on activeRole switch)
   useEffect(() => {
     setLoading(true);
@@ -117,15 +126,6 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
       setLoading(false);
     });
   }, [activeRole]);
-
-  const handleSelectState = (stateName) => {
-    setSelectedState(stateName);
-    setLoadingDistricts(true);
-    api.getMapDistricts(stateName)
-      .then((data) => setDistricts(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Error loading district map data:', err))
-      .finally(() => setLoadingDistricts(false));
-  };
 
   // Create state lookup dictionary by db_name
   const stateDataMap = useMemo(() => {

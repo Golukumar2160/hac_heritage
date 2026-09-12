@@ -4,6 +4,7 @@ import ExecutiveKpis from './components/ExecutiveKpis';
 import QuickStatsCharts from './components/QuickStatsCharts';
 import LiveAlertFeed from './components/LiveAlertFeed';
 import CaseFileModal from './components/CaseFileModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import BenfordView from './components/BenfordView';
 import VendorNetworkView from './components/VendorNetworkView';
 import GeoRiskMapView from './components/GeoRiskMapView';
@@ -207,10 +208,10 @@ export default function App() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 <span className="font-mono text-slate-300">
-                  {activeRole === 'ministry' && <>NATIONAL AUDIT ACTIVE: <strong>98,649 WORKS MONITORED</strong></>}
-                  {activeRole === 'state' && <>STATE AUDIT ACTIVE: <strong>19,892 WORKS IN UTTAR PRADESH</strong></>}
-                  {activeRole === 'district' && <>DISTRICT AUDIT ACTIVE: <strong>293 WORKS IN PILIBHIT</strong></>}
-                  {activeRole === 'mp' && <>CONSTITUENCY AUDIT ACTIVE: <strong>178 WORKS FOR SHRI JAVED ALI KHAN</strong></>}
+                  {activeRole === 'ministry' && <>NATIONAL AUDIT ACTIVE: <strong>{Number(kpis?.total_works || 98649).toLocaleString('en-IN')} WORKS MONITORED</strong></>}
+                  {activeRole === 'state' && <>STATE AUDIT ACTIVE: <strong>{Number(kpis?.total_works || 19892).toLocaleString('en-IN')} WORKS IN UTTAR PRADESH</strong></>}
+                  {activeRole === 'district' && <>DISTRICT AUDIT ACTIVE: <strong>{Number(kpis?.total_works || 293).toLocaleString('en-IN')} WORKS IN PILIBHIT</strong></>}
+                  {activeRole === 'mp' && <>CONSTITUENCY AUDIT ACTIVE: <strong>{Number(kpis?.total_works || 178).toLocaleString('en-IN')} WORKS FOR MP JAVED ALI KHAN</strong></>}
                 </span>
               </div>
               <div className="hidden sm:flex items-center space-x-4 text-slate-400 font-mono text-[11px]">
@@ -345,16 +346,22 @@ export default function App() {
 
       </main>
 
-      {/* Forensic Case File Modal (Deep-Dive Drawer) */}
+      {/* Forensic Case File Modal (Deep-Dive Drawer with Error Boundary Guard) */}
       {selectedWorkId && (
-        <CaseFileModal
-          workId={selectedWorkId}
+        <ErrorBoundary 
+          title="Forensic Case File Guard" 
           onClose={() => setSelectedWorkId(null)}
-          onActionLogged={() => {
-            showToast(`Auditor action for #${selectedWorkId} recorded.`);
-            loadKpis();
-          }}
-        />
+          onReset={() => setSelectedWorkId(selectedWorkId)}
+        >
+          <CaseFileModal
+            workId={selectedWorkId}
+            onClose={() => setSelectedWorkId(null)}
+            onActionLogged={() => {
+              showToast(`Auditor action for #${selectedWorkId} recorded.`);
+              loadKpis();
+            }}
+          />
+        </ErrorBoundary>
       )}
 
       {/* MoSPI Secretary AI Briefing Modal */}

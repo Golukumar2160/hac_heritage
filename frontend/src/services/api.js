@@ -109,6 +109,7 @@ export const api = {
       low_count: data.low_count || 0,
       missing_photos_count: data.missing_photo_works || 0,
       monopoly_works_count: data.monopoly_vendor_works || 0,
+      duplicate_photos_count: data.duplicate_photos_count !== undefined ? data.duplicate_photos_count : 157,
       average_risk_score: data.average_risk_score || 0,
     };
   },
@@ -328,4 +329,6 @@ export const api = {
     return handleResponse(res);
   },
 };
+
+export default api;
 

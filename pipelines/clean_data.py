@@ -57,8 +57,15 @@ def clean_mp_name(series: pd.Series) -> pd.Series:
     - NaN placeholders: '(NaN-NaN)' removed
     Also collapses double spaces and normalises ALLCAPS to Title Case.
     """
-    # Only remove trailing brackets ($ anchor protects mid-name brackets like '(A)')
-    cleaned = series.str.replace(r'\s*\(.*?\)\s*$', '', regex=True)
+    # Only remove trailing bracket groups one by one to avoid swallowing words between parentheses
+    def _strip_trailing_brackets(val):
+        if not isinstance(val, str):
+            return val
+        while re.search(r'\s*\([^)]*\)\s*$', val):
+            val = re.sub(r'\s*\([^)]*\)\s*$', '', val)
+        return val
+
+    cleaned = series.apply(_strip_trailing_brackets)
     # Collapse any double/triple spaces created by bracket removal
     cleaned = cleaned.str.replace(r'\s+', ' ', regex=True).str.strip()
     # Title-case names that are FULLY UPPER CASE (LS style)

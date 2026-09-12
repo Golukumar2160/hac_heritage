@@ -579,6 +579,7 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
     for pdf_name in pdf_files:
         pdf_path = os.path.join(target_dir, pdf_name)
         pdf_meta = resolve_file_metadata(pdf_name, meta_by_wid)
+        doc = None
         try:
             doc = pymupdf.open(pdf_path)
             # Step 1: PyMuPDF renders high-resolution 300 DPI image of Page 1 (certificate header & letterhead)
@@ -632,6 +633,12 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
                     })
         except Exception as e:
             print(f"  Error reading {pdf_name}: {e}")
+        finally:
+            if doc:
+                try:
+                    doc.close()
+                except Exception:
+                    pass
 
     # Add standalone images
     for img_name in direct_img_files:

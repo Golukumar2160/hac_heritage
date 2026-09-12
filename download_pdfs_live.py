@@ -294,6 +294,7 @@ def run_bulk_download(
     # Session Metrics
     session_docs_count = 0
     session_bytes = 0
+    initial_total_bytes = state.get("total_bytes_downloaded", 0)
     start_time = time.time()
     errors_count = 0
 
@@ -422,7 +423,7 @@ def run_bulk_download(
                 state["completed_work_ids"] = list(completed_work_ids)
                 state["downloaded_attach_ids"] = list(downloaded_attach_ids)
                 state["total_downloaded_count"] = len(downloaded_attach_ids)
-                state["total_bytes_downloaded"] = (state.get("total_bytes_downloaded", 0) + session_bytes)
+                state["total_bytes_downloaded"] = initial_total_bytes + session_bytes
                 save_checkpoint(checkpoint_file, state)
 
                 # Save metadata index safely
@@ -435,7 +436,7 @@ def run_bulk_download(
         state["completed_work_ids"] = list(completed_work_ids)
         state["downloaded_attach_ids"] = list(downloaded_attach_ids)
         state["total_downloaded_count"] = len(downloaded_attach_ids)
-        state["total_bytes_downloaded"] = (state.get("total_bytes_downloaded", 0) + session_bytes)
+        state["total_bytes_downloaded"] = initial_total_bytes + session_bytes
         save_checkpoint(checkpoint_file, state)
 
         with open(metadata_index_file, "w", encoding="utf-8") as f_meta:

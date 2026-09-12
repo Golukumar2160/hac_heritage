@@ -122,3 +122,42 @@
 .leaflet-popup-tip {
   background: #0f172a !important;
 }
+
+/* ==========================================================================
+   Jan-Drishti Citizen Plaque Print Stylesheet (Physical A4 Notice for Site)
+   ========================================================================== */
+@media print {
+  /* Hide everything on page by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only display the plaque and its contents */
+  .jan-drishti-plaque,
+  .jan-drishti-plaque * {
+    visibility: visible !important;
+  }
+
+  .jan-drishti-plaque {
+    position: fixed !important;
+    left: 50% !important;
+    top: 20px !important;
+    transform: translateX(-50%) !important;
+    width: 92% !important;
+    max-width: 700px !important;
+    margin: 0 auto !important;
+    border: 2px solid #292524 !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive / non-printable UI elements */
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

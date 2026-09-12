@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ResponsiveContainer,
   PieChart,
@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts';
+import api from '../services/api';
 
 export default function QuickStatsCharts({ kpis }) {
   if (!kpis) return null;
@@ -23,6 +24,8 @@ export default function QuickStatsCharts({ kpis }) {
     low_count = 65833,
   } = kpis;
 
+  const totalWorks = (Number(critical_count) + Number(high_count) + Number(medium_count) + Number(low_count)) || Number(kpis?.total_works) || 98649;
+
   const pieData = [
     { name: 'Critical Risk', value: critical_count, color: '#f43f5e' },
     { name: 'High Risk', value: high_count, color: '#f59e0b' },
@@ -30,7 +33,7 @@ export default function QuickStatsCharts({ kpis }) {
     { name: 'Low / Verified', value: low_count, color: '#10b981' },
   ];
 
-  const stateRiskData = [
+  const [stateRiskData, setStateRiskData] = useState([
     { state: 'Uttar Pradesh', critical: 248, high: 1420, atRiskCr: 215.4 },
     { state: 'Maharashtra', critical: 185, high: 980, atRiskCr: 168.2 },
     { state: 'Bihar', critical: 142, high: 840, atRiskCr: 132.8 },
@@ -38,7 +41,28 @@ export default function QuickStatsCharts({ kpis }) {
     { state: 'West Bengal', critical: 92, high: 590, atRiskCr: 98.1 },
     { state: 'Tamil Nadu', critical: 76, high: 510, atRiskCr: 84.3 },
     { state: 'Madhya Pradesh', critical: 71, high: 490, atRiskCr: 79.6 },
-  ];
+  ]);
+
+  useEffect(() => {
+    api.getMapStates()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const topStates = [...data]
+            .sort((a, b) => (b.critical_count || 0) - (a.critical_count || 0))
+            .slice(0, 7)
+            .map((s) => ({
+              state: s.state,
+              critical: s.critical_count || 0,
+              high: s.high_count || 0,
+              atRiskCr: Number(((s.funds_at_risk || 0) / 10000000).toFixed(1)),
+            }));
+          setStateRiskData(topStates);
+        }
+      })
+      .catch((err) => console.error('Failed to load dynamic state chart breakdown:', err));
+  }, []);
+
+  const totalConcentrationCr = stateRiskData.reduce((acc, curr) => acc + (curr.atRiskCr || 0), 0).toFixed(1);
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -53,7 +77,7 @@ export default function QuickStatsCharts({ kpis }) {
             {Number(data.value).toLocaleString('en-IN')} Schemes
           </div>
           <div className="text-[10px] text-slate-400 mt-1">
-            {((data.value / 98649) * 100).toFixed(1)}% of audited works
+            {((data.value / totalWorks) * 100).toFixed(1)}% of audited works
           </div>
         </div>
       );
@@ -124,7 +148,9 @@ export default function QuickStatsCharts({ kpis }) {
           
           {/* Inner Center Stat */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-2xl font-black text-white font-mono">98,649</span>
+            <span className="text-2xl font-black text-white font-mono">
+              {Number(totalWorks).toLocaleString('en-IN')}
+            </span>
             <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
               Total Audited
             </span>
@@ -153,7 +179,7 @@ export default function QuickStatsCharts({ kpis }) {
               Geographic Vulnerability Distribution (Top States)
             </h4>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-800">
-              ₹722.9 Cr HIGH-RISK CONCENTRATION
+              ₹{totalConcentrationCr} Cr HIGH-RISK CONCENTRATION
             </span>
           </div>
           <p className="text-xs text-slate-400 mb-4">

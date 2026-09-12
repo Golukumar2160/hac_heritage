@@ -141,7 +141,7 @@ def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> byt
 
     # Basic Work Details Table
     sanction_amt = float(work_data.get("sanction_amount", 0) or 0)
-    expenditure = float(work_data.get("expenditure", 0) or 0)
+    expenditure = float(work_data.get("total_spent") or work_data.get("expenditure") or work_data.get("disbursed_amount") or 0)
     progress_val = work_data.get("work_progress_pct", work_data.get("progress_pct", "20%"))
     risk_score = float(work_data.get("risk_score", 0) or 0)
     if risk_score <= 1.0 and risk_score > 0:

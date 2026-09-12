@@ -100,8 +100,12 @@ CREATE TABLE IF NOT EXISTS audit_ledger (
     justification TEXT NOT NULL,
     original_risk_score NUMERIC(6, 2),
     sha256_seal VARCHAR(64) NOT NULL,
+    previous_hash VARCHAR(64) NOT NULL DEFAULT 'GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure previous_hash column exists if table was created in prior schema
+ALTER TABLE audit_ledger ADD COLUMN IF NOT EXISTS previous_hash VARCHAR(64) DEFAULT 'GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026';
 
 -- Optimized Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_works_state ON works(state);
