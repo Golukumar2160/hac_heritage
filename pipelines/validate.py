@@ -257,17 +257,25 @@ def calculate_approach_2_train_test_split(df: pd.DataFrame) -> dict:
     iso = IsolationForest(n_estimators=150, contamination=0.20, random_state=42, n_jobs=-1)
     iso.fit(X_train)
 
+    # Derive normalization scaling and anomaly decision threshold strictly from X_train
+    train_raw_scores = -iso.decision_function(X_train)
+    train_min = float(train_raw_scores.min())
+    train_max = float(train_raw_scores.max())
+    denom = (train_max - train_min) if (train_max - train_min) > 0 else 1e-9
+    train_scores = np.clip((train_raw_scores - train_min) / denom, 0.0, 1.0)
+    top_thresh = float(np.percentile(train_scores, 90))
+
+    # Evaluate strictly on unseen test set using train-derived parameters
     test_raw_scores = -iso.decision_function(X_test)
-    test_scores = (test_raw_scores - test_raw_scores.min()) / (test_raw_scores.max() - test_raw_scores.min() + 1e-9)
+    test_scores = np.clip((test_raw_scores - train_min) / denom, 0.0, 1.0)
 
     test_auc = round(float(roc_auc_score(y_test, test_scores)), 4)
 
-    # Precision at Top 10% most anomalous in unseen test set
-    top_thresh = np.percentile(test_scores, 90)
+    # Precision at Top 10% most anomalous threshold learned from train distribution
     y_pred_top10 = (test_scores >= top_thresh).astype(int)
     tp_top10 = int(((y_pred_top10 == 1) & (y_test == 1)).sum())
     fp_top10 = int(((y_pred_top10 == 1) & (y_test == 0)).sum())
-    prec_top10 = round(tp_top10 / (tp_top10 + fp_top10) * 100, 2)
+    prec_top10 = round(tp_top10 / (tp_top10 + fp_top10) * 100, 2) if (tp_top10 + fp_top10) > 0 else 0.0
 
     # Risk score performance on test partition
     test_indices = X_test.index

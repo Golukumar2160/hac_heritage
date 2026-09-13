@@ -249,6 +249,25 @@ export const api = {
     return handleResponse(res);
   },
 
+  // Jan-Drishti Citizen Ground Vigilance & QR Plaque
+  getWorkQrCodeUrl(workId) {
+    return `${API_BASE}/api/work/${encodeURIComponent(workId)}/qr-code`;
+  },
+
+  async submitCitizenFeedback(workId, { report_type = 'ground_empty', description = '', citizen_name = '', citizen_contact = '' } = {}) {
+    const res = await fetch(`${API_BASE}/api/work/${encodeURIComponent(workId)}/citizen-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        report_type,
+        description,
+        citizen_name,
+        citizen_contact,
+      }),
+    });
+    return handleResponse(res);
+  },
+
   // Statutory Audit Investigation PDF Export
   getWorkPdfUrl(workId) {
     return `${API_BASE}/api/export/work-pdf/${encodeURIComponent(workId)}`;

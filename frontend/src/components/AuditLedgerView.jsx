@@ -15,49 +15,20 @@ import { api } from '../services/api';
 export default function AuditLedgerView({ onSelectWork }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
 
   const loadLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await api.getAuditLog();
       setLogs(Array.isArray(data) ? data : []);
     } catch (err) {
-      // If unauthorized (e.g. not logged in as ministry/state), fall back to public/demo rows
-      console.warn('Full audit log requires ministry/state token, loading sample records:', err);
-      setLogs([
-        {
-          id: 1,
-          work_id: "W073000547",
-          timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
-          user_id: "ministry_admin",
-          role: "ministry",
-          action: "ESCALATED",
-          justification: "Critical discrepancy between sanctioned amount and physical progress. Field verification ordered under SDM Pilibhit.",
-          original_risk_score: 92.5
-        },
-        {
-          id: 2,
-          work_id: "W073000523",
-          timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-          user_id: "state_nodal_up",
-          role: "state",
-          action: "INSPECTION_ORDERED",
-          justification: "Perceptual duplicate hash detected for inspection photograph. Third party structural auditor dispatched for geotag re-audit.",
-          original_risk_score: 87.0
-        },
-        {
-          id: 3,
-          work_id: "W073000490",
-          timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
-          user_id: "district_pilibhit",
-          role: "district",
-          action: "DISMISSED",
-          justification: "Technical sanction re-validated. High cost justified due to specialized flood barrier earthwork in low-lying village sector.",
-          original_risk_score: 76.2
-        }
-      ]);
+      console.error('Failed to load audit ledger from backend:', err);
+      setError(err.message || 'Failed to retrieve immutable audit ledger records.');
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -200,6 +171,21 @@ export default function AuditLedgerView({ onSelectWork }) {
                     </td>
                   </tr>
                 ))
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-rose-300 text-sm">
+                    <div className="flex flex-col items-center gap-2">
+                      <AlertTriangle className="w-6 h-6 text-rose-400" />
+                      <span>{error}</span>
+                      <button
+                        onClick={loadLogs}
+                        className="mt-2 px-3 py-1.5 rounded-lg bg-violet-600/30 hover:bg-violet-600/50 text-white text-xs font-semibold border border-violet-500/40 cursor-pointer"
+                      >
+                        Retry Audit Log Connection
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 text-sm">

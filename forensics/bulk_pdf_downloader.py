@@ -37,10 +37,22 @@ HEADERS  = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
-# SSL Context to handle government server certificate chains
-SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
+# SSL Context to handle government server certificate chains securely
+def get_ssl_context():
+    """Returns SSL context with verified certificate chain, allowing explicit override only via env var."""
+    insecure = os.getenv("MPLADS_INSECURE_SSL", "false").lower() in ("true", "1", "yes")
+    if insecure:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+SSL_CTX = get_ssl_context()
 
 
 def _post_json(url: str, payload: dict, timeout: int = 40) -> Any:
@@ -49,9 +61,24 @@ def _post_json(url: str, payload: dict, timeout: int = 40) -> Any:
     req = urllib.request.Request(url, data=data, headers=HEADERS)
     with urllib.request.urlopen(req, context=SSL_CTX, timeout=timeout) as resp:
         raw_bytes = resp.read()
-        # Government servers often return latin-1 / cp1252 bytes (e.g. \xa0)
-        text = raw_bytes.decode("latin-1", errors="ignore")
+        try:
+            text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw_bytes.decode("latin-1", errors="replace")
         return json.loads(text)
+
+
+def _parse_amount(val: Any) -> float:
+    """Safely parse amounts formatted with commas, currency symbols, or non-numeric strings."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    cleaned = re.sub(r"[^\d.-]", "", str(val).strip())
+    try:
+        return float(cleaned) if cleaned else 0.0
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def sanitize_filename(name: str) -> str:
@@ -205,7 +232,7 @@ def bulk_download(
         print(f"[*] Filter by State '{state_filter}': {len(filtered)} matching works.")
         
     if min_amount is not None:
-        filtered = [w for w in filtered if float(w.get("ACTUAL_AMOUNT", 0) or 0) >= min_amount]
+        filtered = [w for w in filtered if _parse_amount(w.get("ACTUAL_AMOUNT")) >= min_amount]
         print(f"[*] Filter by min_amount >= ₹{min_amount:,.0f}: {len(filtered)} matching works.")
 
     # Slice to requested limit

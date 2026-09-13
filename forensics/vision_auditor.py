@@ -20,6 +20,7 @@ import os
 import io
 import json
 import base64
+import re
 from typing import Dict, Any, Optional
 from PIL import Image, ImageChops, ImageEnhance
 import numpy as np
@@ -35,7 +36,7 @@ except Exception:
     pass
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 # ==============================================================================
@@ -59,16 +60,16 @@ def generate_ela_heatmap(
       have higher error levels and glow brightly compared to the background.
     """
     try:
-        original = Image.open(image_path).convert("RGB")
+        with Image.open(image_path) as img:
+            original = img.convert("RGB")
         
         # Resave to in-memory buffer at fixed compression quality
         buffer = io.BytesIO()
         original.save(buffer, "JPEG", quality=quality)
         buffer.seek(0)
-        resaved = Image.open(buffer)
-        
-        # Calculate pixel difference
-        diff = ImageChops.difference(original, resaved)
+        with Image.open(buffer) as resaved:
+            # Calculate pixel difference
+            diff = ImageChops.difference(original, resaved)
         
         # Get maximum difference across color channels
         extrema = diff.getextrema()
@@ -192,15 +193,19 @@ Return your findings strictly in valid JSON format:
         )
         
         text = response.text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
+        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+        if match:
+            json_str = match.group(1).strip()
+        else:
+            # Fallback to finding outermost curly braces
+            start = text.find("{")
+            end = text.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                json_str = text[start:end+1].strip()
+            else:
+                json_str = text
         
-        parsed = json.loads(text)
+        parsed = json.loads(json_str)
         parsed["success"] = True
         return parsed
 

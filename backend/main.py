@@ -48,7 +48,6 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,27 +146,19 @@ DEMO_USERS = {
 }
 
 # ── Database Helper & WAL Mode ────────────────────────────────────────────────
-SUPABASE_DB_URL = os.getenv("DATABASE_URL")
-SUPABASE_POOLER_FALLBACK = "postgresql://postgres.gpjfxbvuzfshaxwkcnsx:Golukumar2160%40@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
+SUPABASE_DB_URL = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DB_URL")
 
 def get_supabase_conn():
     """Connect to Supabase PostgreSQL for cloud credentials and tamper-evident audit ledger."""
-    db_url = os.getenv("DATABASE_URL") or SUPABASE_POOLER_FALLBACK
+    db_url = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DB_URL")
+    if not db_url:
+        return None
     try:
         import psycopg2
         conn = psycopg2.connect(db_url, connect_timeout=6)
         conn.autocommit = True
         return conn
     except Exception as _e:
-        if db_url != SUPABASE_POOLER_FALLBACK:
-            try:
-                import psycopg2
-                conn = psycopg2.connect(SUPABASE_POOLER_FALLBACK, connect_timeout=6)
-                conn.autocommit = True
-                return conn
-            except Exception as _e2:
-                print(f"[!] Supabase connection warning (primary: {_e}, pooler: {_e2})")
-                return None
         print(f"[!] Supabase connection warning: {_e}")
         return None
 
@@ -747,12 +738,14 @@ def login(req: LoginRequest):
     if not ident or not req.password:
         raise HTTPException(status_code=400, detail="Please enter your official username/email and password.")
 
+    import hmac
     user = find_user_by_identifier(ident)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid official credentials. Account not found.")
+    input_hash = hash_password(req.password)
+    target_hash = user["password_hash"] if user else "0" * 64
+    matches = hmac.compare_digest(input_hash, target_hash)
 
-    if hash_password(req.password) != user["password_hash"]:
-        raise HTTPException(status_code=401, detail="Invalid password for official credentials.")
+    if not user or not matches:
+        raise HTTPException(status_code=401, detail="Invalid official credentials or password.")
 
     extra = {
         "name": user.get("name", ""),
@@ -829,9 +822,13 @@ def get_auth_options():
                     districts_by_state[st] = []
                 if ida and ida not in districts_by_state[st]:
                     districts_by_state[st].append(ida)
-            pg.close()
         except Exception as _e:
             print(f"[!] Warning reading auth options from Supabase: {_e}")
+        finally:
+            try:
+                pg.close()
+            except Exception:
+                pass
 
     # 2. Fallback / augmentation from cached fraud flags
     try:
@@ -1543,7 +1540,6 @@ def get_work_detail(
                     ORDER BY log_id DESC;
                 """, (str(work_record["work_id"]),))
                 rows = cur.fetchall()
-            pg.close()
             if rows:
                 for r in rows:
                     item = dict(r)
@@ -1554,6 +1550,11 @@ def get_work_detail(
                     audit_history_list.append(item)
         except Exception as _e:
             print(f"[!] Warning fetching case audit history from Supabase: {_e}")
+        finally:
+            try:
+                pg.close()
+            except Exception:
+                pass
 
     if not audit_history_list:
         try:
@@ -1626,6 +1627,80 @@ def get_work_detail(
     }
 
 # (Specific QR code and vision-audit endpoints moved above /api/work/{work_id:path} to prevent Starlette route shadowing)
+
+# ── Citizen Ground Reality Feedback ──────────────────────────────────────────
+class CitizenFeedbackRequest(BaseModel):
+    report_type: str
+    description: Optional[str] = None
+    citizen_name: Optional[str] = None
+    citizen_contact: Optional[str] = None
+    evidence_url: Optional[str] = None
+
+@app.post("/api/work/{work_id:path}/citizen-feedback", tags=["Alerts"])
+def submit_citizen_feedback(work_id: str, req: CitizenFeedbackRequest):
+    """
+    Persist Jan-Drishti citizen ground transparency vigilance report.
+    Logs feedback in the local SQLite citizen_reports ledger and updates the statutory audit trail.
+    """
+    clean_id = urllib.parse.unquote(work_id.strip())
+    if clean_id.endswith("/citizen-feedback"):
+        clean_id = clean_id[:-17].strip()
+    now_iso = datetime.now().isoformat()
+    
+    conn = get_db()
+    try:
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS citizen_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                work_id TEXT NOT NULL,
+                report_type TEXT NOT NULL,
+                description TEXT NOT NULL,
+                citizen_name TEXT,
+                citizen_contact TEXT,
+                status TEXT NOT NULL DEFAULT 'PENDING_VERIFICATION',
+                created_at TEXT NOT NULL
+            )
+        ''')
+        c.execute('''
+            INSERT INTO citizen_reports (work_id, report_type, description, citizen_name, citizen_contact, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            clean_id,
+            req.report_type,
+            req.description or f"Citizen vigilance report submitted: {req.report_type}",
+            req.citizen_name or "Anonymous Citizen",
+            req.citizen_contact or "",
+            now_iso
+        ))
+        report_id = c.lastrowid
+        
+        # Also link into dismissals / audit log as a public vigilance flag
+        c.execute('''
+            INSERT INTO dismissals (work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            clean_id,
+            now_iso,
+            f"citizen_reporter_{report_id}",
+            "citizen_vigilance",
+            "CITIZEN_FLAGGED",
+            f"Jan-Drishti Public Plaque Report: {req.report_type.upper()}. {req.description or 'Discrepancy reported at site.'}",
+            90.0,
+            hashlib.sha256(f"{clean_id}:{report_id}:{now_iso}".encode()).hexdigest(),
+            "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026"
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+    
+    return {
+        "status": "success",
+        "message": f"Jan-Drishti citizen vigilance report #{report_id} permanently recorded.",
+        "report_id": report_id,
+        "work_id": clean_id,
+        "timestamp": now_iso
+    }
 
 # ── Logistic Regression Completion Prediction Endpoints ───────────────────────
 
@@ -2442,6 +2517,8 @@ def export_alerts_csv(
     return response
 
 # ── Immutable Anti-Tampering Audit Log (SHA-256 Cryptographic Hash Chain) ──
+_audit_chain_lock = threading.Lock()
+
 class DismissalRequest(BaseModel):
     work_id: str
     action: str = Field(..., description="Action: 'DISMISSED', 'CONFIRMED', 'ESCALATED', 'FALSE_POSITIVE', 'INSPECTION_ORDERED', or 'TREASURY_HOLD_RECOMMENDED'")
@@ -2486,62 +2563,71 @@ def log_audit_action(req: DismissalRequest, user=Depends(decode_token)):
     justification_clean = req.justification.strip()
     risk_score_clean = float(req.original_risk_score)
 
-    # 1. Sequential Cryptographic SHA-256 Hash Chain Calculation
-    prev_hash = "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026"
-    pg = get_supabase_conn()
-    if pg:
-        try:
-            with pg.cursor() as cur:
-                cur.execute("SELECT sha256_seal FROM audit_ledger ORDER BY log_id DESC LIMIT 1;")
-                row = cur.fetchone()
+    with _audit_chain_lock:
+        # 1. Sequential Cryptographic SHA-256 Hash Chain Calculation
+        prev_hash = "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026"
+        pg = get_supabase_conn()
+        if pg:
+            try:
+                with pg.cursor() as cur:
+                    cur.execute("SELECT sha256_seal FROM audit_ledger ORDER BY log_id DESC LIMIT 1;")
+                    row = cur.fetchone()
+                    if row and row[0]:
+                        prev_hash = row[0]
+            except Exception as _e:
+                print(f"[!] Warning fetching prev_hash from Supabase: {_e}")
+        else:
+            try:
+                conn = get_db()
+                c = conn.cursor()
+                c.execute("SELECT sha256_seal FROM dismissals WHERE sha256_seal IS NOT NULL ORDER BY id DESC LIMIT 1;")
+                row = c.fetchone()
                 if row and row[0]:
                     prev_hash = row[0]
-        except Exception as _e:
-            print(f"[!] Warning fetching prev_hash from Supabase: {_e}")
-    else:
+                conn.close()
+            except Exception:
+                pass
+
+        # Compute sequential cryptographic hash
+        payload = f"{prev_hash}|{ts}|{work_id_clean}|{user_id}|{user_role}|{action_clean}|{justification_clean}|{risk_score_clean:.2f}"
+        sha256_seal = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+        # 2. Dual-Write to Local SQLite (Fail-Safe & Cryptographically Sealed)
         try:
             conn = get_db()
             c = conn.cursor()
-            c.execute("SELECT sha256_seal FROM dismissals WHERE sha256_seal IS NOT NULL ORDER BY id DESC LIMIT 1;")
-            row = c.fetchone()
-            if row and row[0]:
-                prev_hash = row[0]
+            c.execute(
+                "INSERT INTO dismissals (work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (work_id_clean, ts, user_id, user_role, action_clean, justification_clean, risk_score_clean, sha256_seal, prev_hash)
+            )
+            conn.commit()
             conn.close()
-        except Exception:
-            pass
-
-    # Compute sequential cryptographic hash
-    payload = f"{prev_hash}|{ts}|{work_id_clean}|{user_id}|{user_role}|{action_clean}|{justification_clean}|{risk_score_clean:.2f}"
-    sha256_seal = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-    # 2. Dual-Write to Local SQLite (Fail-Safe & Cryptographically Sealed)
-    try:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO dismissals (work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (work_id_clean, ts, user_id, user_role, action_clean, justification_clean, risk_score_clean, sha256_seal, prev_hash)
-        )
-        conn.commit()
-        conn.close()
-    except Exception as _e:
-        print(f"[!] SQLite local audit log write warning: {_e}")
-
-    # 3. Cryptographic SHA-256 Hash Chain Insertion into Supabase PostgreSQL
-    if pg:
-        try:
-            with pg.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO audit_ledger 
-                    (work_id, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash, timestamp)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
-                """, (
-                    work_id_clean, user_id, user_role, action_clean, justification_clean,
-                    risk_score_clean, sha256_seal, prev_hash, ts
-                ))
-            pg.close()
         except Exception as _e:
-            print(f"[!] Warning writing to Supabase audit_ledger: {_e}")
+            print(f"[!] SQLite local audit log write warning: {_e}")
+
+        # 3. Cryptographic SHA-256 Hash Chain Insertion into Supabase PostgreSQL
+        if pg:
+            try:
+                with pg.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO audit_ledger 
+                        (work_id, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash, timestamp)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (
+                        work_id_clean, user_id, user_role, action_clean, justification_clean,
+                        risk_score_clean, sha256_seal, prev_hash, ts
+                    ))
+            except Exception as _e:
+                print(f"[!] Warning writing to Supabase audit_ledger: {_e}")
+                try:
+                    pg.rollback()
+                except Exception:
+                    pass
+            finally:
+                try:
+                    pg.close()
+                except Exception:
+                    pass
 
     return {
         "status": "success",
@@ -2569,7 +2655,6 @@ def get_audit_log(user: Optional[dict] = Depends(get_current_user_optional)):
                     LIMIT 250;
                 """)
                 rows = cur.fetchall()
-            pg.close()
             if rows:
                 result = []
                 for r in rows:
@@ -2582,15 +2667,22 @@ def get_audit_log(user: Optional[dict] = Depends(get_current_user_optional)):
                 return result
         except Exception as _e:
             print(f"[!] Warning querying Supabase audit_ledger: {_e}")
+        finally:
+            try:
+                pg.close()
+            except Exception:
+                pass
 
     # 2. Fallback: Local SQLite dismissals
     # BUG-016 FIX: Explicitly log that Supabase is unavailable so ops team sees the gap.
     print("[!] WARNING: Supabase audit_ledger unavailable. Serving from local SQLite fallback. "
           "Audit records written only to this node — NOT replicated to cloud.")
     conn = get_db()
-    df = pd.read_sql_query("SELECT * FROM dismissals ORDER BY timestamp DESC", conn)
-    conn.close()
-    return df.to_dict(orient="records")
+    try:
+        df = pd.read_sql_query("SELECT * FROM dismissals ORDER BY timestamp DESC", conn)
+        return df.to_dict(orient="records")
+    finally:
+        conn.close()
 
 @app.get("/api/audit/da-flagged", tags=["Audit Log"])
 def get_flagged_das(user=Depends(decode_token)):
@@ -2605,11 +2697,18 @@ def get_flagged_das(user=Depends(decode_token)):
             df = pd.read_sql_query("SELECT * FROM audit_ledger WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", pg)
         except Exception as _e:
             print(f"[!] Warning querying Supabase for flagged DAs: {_e}")
+        finally:
+            try:
+                pg.close()
+            except Exception:
+                pass
     
     if df.empty:
         conn = get_db()
-        df = pd.read_sql_query("SELECT * FROM dismissals WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", conn)
-        conn.close()
+        try:
+            df = pd.read_sql_query("SELECT * FROM dismissals WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", conn)
+        finally:
+            conn.close()
     
     if df.empty:
         return []
@@ -2623,6 +2722,7 @@ def get_flagged_das(user=Depends(decode_token)):
     return flagged.to_dict(orient="records")
 
 # ── Non-Blocking Image Forensics Endpoints ─────────────────────────────────────
+_forensics_lock = threading.Lock()
 forensics_state = {
     "is_running": False,
     "last_run": None,
@@ -2632,30 +2732,34 @@ forensics_state = {
 
 def _execute_forensics_task():
     global forensics_state
-    forensics_state["is_running"] = True
-    forensics_state["status"] = "running"
-    forensics_state["error"] = None
+    with _forensics_lock:
+        forensics_state["is_running"] = True
+        forensics_state["status"] = "running"
+        forensics_state["error"] = None
     try:
         script_path = os.path.join(ROOT_DIR, "forensics", "image_forensics.py")
         res = subprocess.run([VENV_PY, script_path], cwd=ROOT_DIR, capture_output=True, text=True, timeout=300)
-        if res.returncode == 0:
-            forensics_state["status"] = "success"
-            forensics_state["last_run"] = datetime.now().isoformat()
-        else:
-            forensics_state["status"] = "failed"
-            forensics_state["error"] = res.stderr[-500:]
+        with _forensics_lock:
+            if res.returncode == 0:
+                forensics_state["status"] = "success"
+                forensics_state["last_run"] = datetime.now().isoformat()
+            else:
+                forensics_state["status"] = "failed"
+                forensics_state["error"] = res.stderr[-500:]
     except Exception as e:
-        forensics_state["status"] = "error"
-        forensics_state["error"] = str(e)
+        with _forensics_lock:
+            forensics_state["status"] = "error"
+            forensics_state["error"] = str(e)
     finally:
-        forensics_state["is_running"] = False
+        with _forensics_lock:
+            forensics_state["is_running"] = False
 
 @app.get("/api/image-forensics", tags=["Image Forensics"])
 def get_image_forensics():
     """Fetch results from the image forensics engine."""
     summary_path = os.path.join(ROOT_DIR, "forensics", "forensics_summary.json")
     if os.path.exists(summary_path):
-        with open(summary_path, "r") as f:
+        with open(summary_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return {"status": "not_run", "message": "Run image_forensics.py first"}
 
@@ -2665,15 +2769,19 @@ def run_image_forensics_endpoint(background_tasks: BackgroundTasks, user=Depends
     if user["role"] not in ("ministry", "state"):
         raise HTTPException(status_code=403, detail="Only Ministry or State officials can trigger image forensics.")
     
-    if forensics_state["is_running"]:
-        return {"status": "running", "message": "Image forensics is already in progress."}
+    with _forensics_lock:
+        if forensics_state["is_running"]:
+            return {"status": "running", "message": "Image forensics is already in progress."}
+        forensics_state["is_running"] = True
+        forensics_state["status"] = "running"
         
     background_tasks.add_task(_execute_forensics_task)
     return {"status": "started", "message": "Image Forensics triggered in non-blocking background thread."}
 
 @app.get("/api/image-forensics/status", tags=["Image Forensics"])
 def get_forensics_status():
-    return forensics_state
+    with _forensics_lock:
+        return dict(forensics_state)
 
 @app.get("/api/image-forensics/results", tags=["Image Forensics"])
 def get_forensics_results():
@@ -2703,6 +2811,7 @@ def get_forensics_duplicates():
     return []
 
 # ── Automated Bulk Document Downloader Endpoints ───────────────────────────────
+_bulk_download_lock = threading.Lock()
 bulk_download_state = {
     "is_running": False,
     "last_run": None,
@@ -2721,10 +2830,11 @@ class BulkDownloadRequest(BaseModel):
 
 def _execute_bulk_download_task(req: BulkDownloadRequest):
     global bulk_download_state
-    bulk_download_state["is_running"] = True
-    bulk_download_state["status"] = "downloading"
-    bulk_download_state["error"] = None
-    bulk_download_state["result"] = None
+    with _bulk_download_lock:
+        bulk_download_state["is_running"] = True
+        bulk_download_state["status"] = "downloading"
+        bulk_download_state["error"] = None
+        bulk_download_state["result"] = None
     try:
         from forensics.bulk_pdf_downloader import bulk_download
         res = bulk_download(
@@ -2734,17 +2844,20 @@ def _execute_bulk_download_task(req: BulkDownloadRequest):
             min_amount=req.min_amount,
             max_workers=req.workers
         )
-        bulk_download_state["status"] = "success"
-        bulk_download_state["result"] = res
-        bulk_download_state["last_run"] = datetime.now().isoformat()
+        with _bulk_download_lock:
+            bulk_download_state["status"] = "success"
+            bulk_download_state["result"] = res
+            bulk_download_state["last_run"] = datetime.now().isoformat()
 
         if req.run_forensics_after:
             _execute_forensics_task()
     except Exception as e:
-        bulk_download_state["status"] = "failed"
-        bulk_download_state["error"] = str(e)
+        with _bulk_download_lock:
+            bulk_download_state["status"] = "failed"
+            bulk_download_state["error"] = str(e)
     finally:
-        bulk_download_state["is_running"] = False
+        with _bulk_download_lock:
+            bulk_download_state["is_running"] = False
 
 @app.post("/api/forensics/bulk-download", tags=["Image Forensics"])
 def start_bulk_download(req: BulkDownloadRequest, background_tasks: BackgroundTasks, user=Depends(decode_token)):
@@ -2752,8 +2865,11 @@ def start_bulk_download(req: BulkDownloadRequest, background_tasks: BackgroundTa
     if user["role"] not in ("ministry", "state", "district"):
         raise HTTPException(status_code=403, detail="Unauthorized to trigger bulk ingestion.")
     
-    if bulk_download_state["is_running"]:
-        return {"status": "running", "message": "Bulk download is already in progress."}
+    with _bulk_download_lock:
+        if bulk_download_state["is_running"]:
+            return {"status": "running", "message": "Bulk download is already in progress."}
+        bulk_download_state["is_running"] = True
+        bulk_download_state["status"] = "downloading"
 
     background_tasks.add_task(_execute_bulk_download_task, req)
     return {
@@ -2765,7 +2881,8 @@ def start_bulk_download(req: BulkDownloadRequest, background_tasks: BackgroundTa
 @app.get("/api/forensics/bulk-download/status", tags=["Image Forensics"])
 def get_bulk_download_status():
     """Check the status of bulk document downloading."""
-    return bulk_download_state
+    with _bulk_download_lock:
+        return dict(bulk_download_state)
 
 # ── Health Check ───────────────────────────────────────────────────────────────
 _last_supabase_check = {"connected": False, "checked_at": 0.0}
@@ -2781,12 +2898,16 @@ def is_supabase_alive() -> bool:
         try:
             cur = pg.cursor()
             cur.execute("SELECT 1;")
-            pg.close()
             _last_supabase_check["connected"] = True
             _last_supabase_check["checked_at"] = now
             return True
         except Exception:
             pass
+        finally:
+            try:
+                pg.close()
+            except Exception:
+                pass
 
     # 2. Test Supabase Python client SDK
     url = os.getenv("SUPABASE_URL")

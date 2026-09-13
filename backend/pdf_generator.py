@@ -302,7 +302,7 @@ def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> byt
     story.append(HRFlowable(width="100%", thickness=0.7, color=accent_blue, spaceBefore=2, spaceAfter=5))
 
     directives = [
-        "1. <b>Immediate Tranche Freeze:</b> District Authority instructed to withhold further disbursements on Work ID " + work_id + ".",
+        "1. <b>Immediate Tranche Freeze:</b> District Authority instructed to withhold further disbursements on Work ID " + safe_esc(work_id) + ".",
         "2. <b>Warrant for Ground Verification:</b> Sub-Divisional Magistrate (SDM) / Independent Executive Engineer dispatched for physical asset verification.",
         "3. <b>Muster Roll &amp; Invoice Audit:</b> Implementing Agency summoned to reconcile contractor labor registers, measurement books, and bank transaction UTRs.",
         "4. <b>Contractor Syndicate Inquiry:</b> Cross-reference associated alias entities to ascertain true beneficial ownership under PMLA / Benami Transactions Act."

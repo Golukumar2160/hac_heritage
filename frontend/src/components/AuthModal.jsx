@@ -146,6 +146,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
     }
   };
 
+  // 1-Click Official Demo Access with pre-seeded credentials
+  const handleQuickDemoLogin = async (uname, pwd) => {
+    setLoginForm({ username: uname, password: pwd });
+    setError(null);
+    setLoading(true);
+    try {
+      const user = await api.login(uname, pwd);
+      if (onAuthSuccess) onAuthSuccess(user);
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Demo authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Sign Up submit with validation
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
@@ -372,7 +388,70 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
             /* ─────────────────────────────────────────────────────────────
                AUTHENTIC SIGN IN FORM (Clean, Theme of Landing Page)
             ───────────────────────────────────────────────────────────── */
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <>
+              {/* Quick 1-Click Demo Clearance Strip */}
+              <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-violet-950/40 via-[#0b1022] to-indigo-950/40 border border-violet-500/25 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-violet-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
+                    Quick Official Clearance • 1-Click Role Login
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                    Pre-Seeded
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('ministry_admin', 'Ministry@2026')}
+                    className="p-2 rounded-xl bg-[#040714] hover:bg-violet-950/60 border border-violet-500/25 hover:border-violet-400 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white group-hover:text-violet-300">
+                      <span className="truncate">🏛️ MoSPI Ministry</span>
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-violet-500/20 text-violet-300">L-5</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">Pan-India Central Oversight</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('state_nodal_up', 'StateUP@2026')}
+                    className="p-2 rounded-xl bg-[#040714] hover:bg-cyan-950/60 border border-cyan-500/25 hover:border-cyan-400 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white group-hover:text-cyan-300">
+                      <span className="truncate">🏢 State Nodal (UP)</span>
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300">L-4</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">State Jurisdiction (UP)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('district_pilibhit', 'District@2026')}
+                    className="p-2 rounded-xl bg-[#040714] hover:bg-emerald-950/60 border border-emerald-500/25 hover:border-emerald-400 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white group-hover:text-emerald-300">
+                      <span className="truncate">📍 District Authority</span>
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300">L-3</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">DM Pilibhit (Ground Sanction)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('mp_javed', 'MP@2026')}
+                    className="p-2 rounded-xl bg-[#040714] hover:bg-amber-950/60 border border-amber-500/25 hover:border-amber-400 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white group-hover:text-amber-300">
+                      <span className="truncate">🗳️ Hon'ble MP</span>
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">MP</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">Shri Javed Ali Khan (Watchdog)</div>
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
               
               <div>
                 <label className="block text-sm font-bold uppercase tracking-wider text-slate-200 mb-2 font-mono">
@@ -458,6 +537,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                 </button>
               </div>
             </form>
+          </>
           ) : (
             /* ─────────────────────────────────────────────────────────────
                SIGN UP FORM (With Government Tier DROPDOWN)

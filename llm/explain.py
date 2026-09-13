@@ -52,6 +52,19 @@ def _clean_json_str(text: str) -> str:
     return s
 
 
+def _format_sse(text: str) -> str:
+    """
+    Formats text into an SSE-compliant data payload.
+    In the SSE protocol:
+    - Every line must be prefixed with 'data: '.
+    - An empty line terminates the event ('\\n\\n').
+    """
+    if not text:
+        return "data: \n\n"
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "\n".join(f"data: {line}" for line in lines) + "\n\n"
+
+
 class GeminiExplainer:
     """
     Forensic explainer client using Gemini Flash.
@@ -60,7 +73,7 @@ class GeminiExplainer:
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         
         self.client = None
         if _GENAI_AVAILABLE and self.api_key:
@@ -194,23 +207,23 @@ Speak directly and authoritatively in natural prose."""
                     if chunk.text:
                         streaming_succeeded = True
                         # Send text chunk
-                        yield f"data: {chunk.text}\n\n"
+                        yield _format_sse(chunk.text)
             except Exception as e:
                 print(f"[!] Gemini streaming error: {type(e).__name__} - {e}")
                 if streaming_succeeded:
-                    yield f"data: \n\n[SYSTEM WARNING]: Connection interrupted mid-stream ({type(e).__name__}).\n\n"
+                    yield _format_sse(f"\n\n[SYSTEM WARNING]: Connection interrupted mid-stream ({type(e).__name__}).\n\n")
 
         if not streaming_succeeded:
             # Fallback simulated stream
             fb = self._fallback_work(ctx)
-            yield f"data: [CAG AUDIT BRIEFING - WORK {ctx['work_id']}]\n\n"
+            yield _format_sse(f"[CAG AUDIT BRIEFING - WORK {ctx['work_id']}]\n\n")
             time.sleep(0.05)
-            yield f"data: {fb['case_summary']}\n\n"
+            yield _format_sse(f"{fb['case_summary']}\n\n")
             time.sleep(0.05)
             for rf in fb["red_flags"]:
-                yield f"data: • RED FLAG: {rf}\n\n"
+                yield _format_sse(f"• RED FLAG: {rf}\n")
                 time.sleep(0.03)
-            yield f"data: \n\n[RECOMMENDED ACTION]: {fb['recommended_action']}\n\n"
+            yield _format_sse(f"\n[RECOMMENDED ACTION]: {fb['recommended_action']}\n\n")
 
         yield "data: [DONE]\n\n"
 

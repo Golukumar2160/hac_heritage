@@ -175,8 +175,23 @@ def build_work_context(work_id: str) -> dict:
     else:
         # Check if work has duplicate photo records
         dup_list = get_duplicate_photos()
+        clean_id_str = str(clean_id).strip()
         work_key = clean_id.split("/")[-1] if "/" in clean_id else clean_id
-        matched_dup = any(work_key in str(item.get("source_1", "")) or work_key in str(item.get("source_2", "")) for item in dup_list)
+        def _is_match(item):
+            # Check exact match on full work_id
+            if clean_id_str in (str(item.get("work_id_1", "")).strip(), str(item.get("work_id_2", "")).strip()):
+                return True
+            # Check exact match on numeric work ID
+            if work_key in (str(item.get("numeric_work_id_1", "")).strip(), str(item.get("numeric_work_id_2", "")).strip()):
+                return True
+            # Exact token match within filenames to avoid substring false positives
+            s1 = str(item.get("source_1", ""))
+            s2 = str(item.get("source_2", ""))
+            if f"_{work_key}_" in s1 or f"_{work_key}_" in s2 or s1.startswith(f"{work_key}_") or s2.startswith(f"{work_key}_"):
+                return True
+            return False
+
+        matched_dup = any(_is_match(item) for item in dup_list)
         if matched_dup:
             image_forensics_flag = "CRITICAL: Duplicate/reused evidence photograph detected across separate project files"
 

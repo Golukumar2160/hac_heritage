@@ -543,8 +543,8 @@ def main():
     ls_cal = clean_calamity(os.path.join(LS, "Amount consented for Calamity.csv"), "LS")
     rs_cal = clean_calamity(os.path.join(RS, "Amount consented for Calamity (1).csv"), "RS")
     cal = pd.concat([ls_cal, rs_cal], ignore_index=True)
-    # Re-group across LS+RS in case same MP donated in both
-    cal = cal.groupby('mp_name', as_index=False).agg(
+    # Re-group by mp_name and house to avoid cross-join inflation across houses
+    cal = cal.groupby(['mp_name', 'house'], as_index=False).agg(
         total_calamity_donated=('total_calamity_donated', 'sum'),
         calamity_count=('calamity_count', 'sum')
     )
@@ -556,9 +556,9 @@ def main():
     rs_alloc = clean_allocated(os.path.join(RS, "Allocated Limit for Honble MPs (2).csv"), "RS")
     alloc = pd.concat([ls_alloc, rs_alloc], ignore_index=True)
 
-    # Merge calamity donations and subtract from allocation
-    alloc = alloc.merge(cal[['mp_name', 'total_calamity_donated', 'calamity_count']],
-                        on='mp_name', how='left')
+    # Merge calamity donations and subtract from allocation matching on both mp_name and house
+    alloc = alloc.merge(cal[['mp_name', 'house', 'total_calamity_donated', 'calamity_count']],
+                        on=['mp_name', 'house'], how='left')
     alloc['total_calamity_donated'] = alloc['total_calamity_donated'].fillna(0)
     alloc['calamity_count']         = alloc['calamity_count'].fillna(0).astype(int)
     alloc['true_budget']            = alloc['allocated_amount'] - alloc['total_calamity_donated']
