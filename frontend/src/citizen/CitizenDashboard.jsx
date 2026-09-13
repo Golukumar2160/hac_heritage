@@ -10,17 +10,16 @@ import {
   Eye, 
   Sparkles, 
   ChevronRight,
+  Globe
 } from 'lucide-react';
 import { api } from '../services/api';
 import CitizenFeedbackModal from './CitizenFeedbackModal';
 
 // Utility: Clean up raw IDA district strings like "PILIBHIT(DISTRICT MAGISTRATE PILIBHIT_IDA)"
 // or "Dhalai(DISTRICT MAGISTRATE DHALAI_IDA)" into readable "Pilibhit" / "Dhalai" format
-function cleanDistrictName(raw) {
+export function cleanDistrictName(raw) {
   if (!raw) return '';
-  // Strip any parenthetical suffix like (DISTRICT MAGISTRATE ..._IDA) or (COLLECTOR ...)
   const clean = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
-  // Title-case each word, replacing underscores with spaces
   return clean
     .split(/[\s_]+/)
     .filter(Boolean)
@@ -32,10 +31,16 @@ export default function CitizenDashboard({
   currentUser, 
   onSelectWork, 
   onNavigateTab,
-  theme = 'dark'
+  theme = 'dark',
+  district: externalDistrict,
+  onDistrictChange
 }) {
-  const [district, setDistrict] = useState(currentUser?.ida || 'PILIBHIT');
-  const [state, setState] = useState(currentUser?.state || 'Uttar Pradesh');
+  const state = currentUser?.state || 'Uttar Pradesh';
+  const [internalDistrict, setInternalDistrict] = useState(currentUser?.ida || 'PILIBHIT(DISTRICT MAGISTRAE PILIBHIT_IDA)');
+  
+  const district = externalDistrict !== undefined ? externalDistrict : internalDistrict;
+  const setDistrict = onDistrictChange || setInternalDistrict;
+
   const [kpis, setKpis] = useState(null);
   const [priorityFlags, setPriorityFlags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,24 +48,37 @@ export default function CitizenDashboard({
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [reportingWork, setReportingWork] = useState(null);
 
-  // Load available districts for district switcher
+  // Load available districts for user's fixed state
   useEffect(() => {
     api.getAuthOptions().then((opts) => {
-      setAuthOptions(opts);
+      setAuthOptions(opts || { states: [], districts_by_state: {} });
     }).catch(console.error);
   }, []);
 
-  // Fetch district-scoped KPIs and priority anomalies
+  // District options for the user's fixed state
+  const availableDistricts = authOptions.districts_by_state?.[state] || (district ? [district] : []);
+
+  const matchedDistrictVal = availableDistricts.find(
+    d => d === district || cleanDistrictName(d).toLowerCase() === cleanDistrictName(district).toLowerCase()
+  ) || availableDistricts[0] || district || '';
+
+  // Ensure district is aligned with available districts of the fixed state
+  useEffect(() => {
+    if (availableDistricts.length > 0 && matchedDistrictVal && matchedDistrictVal !== district) {
+      setDistrict(matchedDistrictVal);
+    }
+  }, [availableDistricts, matchedDistrictVal, district, setDistrict]);
+
+  // Fetch district-scoped KPIs and priority anomalies whenever district changes
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    // Use a cleaned district name as search term so the API finds results
-    const districtSearchTerm = cleanDistrictName(district);
+    const targetDistrict = matchedDistrictVal || district;
 
     Promise.all([
-      api.getKpis(),
-      api.getFlags({ page: 1, pageSize: 6, risk_label: 'CRITICAL', search: districtSearchTerm })
+      api.getKpis({ state, ida: targetDistrict, district: targetDistrict }),
+      api.getFlags({ page: 1, pageSize: 8, state, ida: targetDistrict, district: targetDistrict, sort_by: 'risk_score', sort_order: 'desc' })
     ]).then(([kpiData, flagData]) => {
       if (isMounted) {
         setKpis(kpiData);
@@ -75,24 +93,19 @@ export default function CitizenDashboard({
     return () => {
       isMounted = false;
     };
-  }, [district]);
+  }, [district, matchedDistrictVal, state]);
 
-  // District options for current state
-  const availableDistricts = authOptions.districts_by_state[state] || [district];
-
-  // BUG FIX: api.getKpis() already transforms the data into crore-converted fields:
-  // total_sanctioned_cr, total_spent_cr, total_at_risk_cr — do NOT divide by 10M again
   const totalWorks = kpis?.total_works || 0;
   const sanctionedCr = kpis?.total_sanctioned_cr ?? 0;
   const spentCr = kpis?.total_spent_cr ?? 0;
   const atRiskCr = kpis?.total_at_risk_cr ?? 0;
   const criticalCount = kpis?.critical_count || 0;
+  const highCount = kpis?.high_count || 0;
   const integrityPct = totalWorks > 0
-    ? Math.max(0, Math.round(((totalWorks - criticalCount) / totalWorks) * 100))
-    : 88;
+    ? Math.max(0, Math.round(((totalWorks - (criticalCount + highCount)) / totalWorks) * 100))
+    : 100;
 
-  // Display-clean version of the selected district (strips raw IDA formatting)
-  const displayDistrict = cleanDistrictName(district);
+  const displayDistrict = cleanDistrictName(matchedDistrictVal || district) || 'Selected District';
 
   return (
     <div className="space-y-6">
@@ -115,28 +128,41 @@ export default function CitizenDashboard({
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Welcome, <strong className="text-white">{currentUser?.name || 'Citizen Vigilance Watchdog'}</strong>. You have unrestricted, read-only public access to inspect AI fraud detections across taxpayer-funded projects in your district.
+              Welcome, <strong className="text-white">{currentUser?.name || 'Citizen Vigilance Watchdog'}</strong>. You have unrestricted, read-only public access to inspect AI fraud detections across taxpayer-funded projects in <span className="text-emerald-400 font-bold">{displayDistrict}, {state}</span>.
             </p>
           </div>
 
           {/* Quick District Switcher & Report Button */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 self-start lg:self-auto">
-            <div className="p-2 rounded-2xl bg-[#040714] border border-slate-700 flex items-center gap-2">
+            {/* Fixed State Badge (No change allowed as per mandate) */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-[#040714] border border-slate-700/80 flex items-center gap-2 text-xs font-mono text-slate-300">
+              <Globe className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <span className="text-slate-500 font-bold uppercase text-[10px]">State:</span>
+              <span className="font-bold text-white tracking-wide">{state}</span>
+            </div>
+
+            {/* District Selector */}
+            <div className="p-2 rounded-2xl bg-[#040714] border border-emerald-500/40 flex items-center gap-2 shadow-inner">
               <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0 ml-1" />
               <select
-                value={district}
+                value={matchedDistrictVal}
                 onChange={(e) => setDistrict(e.target.value)}
-                className="bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer pr-2"
+                className="bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer pr-2 max-w-[200px] truncate"
+                aria-label="Select District"
               >
-                {availableDistricts.map(d => (
-                  <option key={d} value={d} className="bg-slate-900 text-white font-sans">{cleanDistrictName(d)}</option>
-                ))}
+                {availableDistricts.length === 0 ? (
+                  <option value={district}>{cleanDistrictName(district) || 'All Districts'}</option>
+                ) : (
+                  availableDistricts.map(d => (
+                    <option key={d} value={d} className="bg-slate-900 text-white font-sans">{cleanDistrictName(d)}</option>
+                  ))
+                )}
               </select>
             </div>
 
             <button
               onClick={() => setShowFeedbackModal(true)}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition-all cursor-pointer transform hover:-translate-y-0.5"
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition-all cursor-pointer transform hover:-translate-y-0.5 whitespace-nowrap"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Report Ghost Project</span>
@@ -180,8 +206,10 @@ export default function CitizenDashboard({
             ₹{atRiskCr.toFixed(2)} Cr
           </div>
           <div className="text-[11px] text-rose-300/80 font-sans flex items-center justify-between">
-            <span>{criticalCount} Critical Anomalies</span>
-            <span className="font-mono text-rose-400 font-bold">Action Needed</span>
+            <span>{criticalCount} Critical {criticalCount === 1 ? 'Anomaly' : 'Anomalies'}</span>
+            <span className={`font-mono font-bold ${criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {criticalCount > 0 ? 'Action Needed' : 'Zero Critical Flags'}
+            </span>
           </div>
         </div>
 
@@ -200,7 +228,9 @@ export default function CitizenDashboard({
           </div>
           <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between">
             <span>Treasury Outflow</span>
-            <span className="font-mono text-slate-300">{sanctionedCr > 0 ? Math.round((spentCr / sanctionedCr) * 100) : 0}% Realized</span>
+            <span className="font-mono text-slate-300">
+              {sanctionedCr > 0 ? Math.min(100, Math.round((spentCr / sanctionedCr) * 100)) : 0}% Realized
+            </span>
           </div>
         </div>
 
@@ -224,16 +254,16 @@ export default function CitizenDashboard({
         </div>
       </div>
 
-      {/* 3. High-Priority Flagged Works Spotlight in District */}
+      {/* 3. Priority Flagged Schemes Spotlight in District */}
       <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4 bg-[#060913]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-rose-400" />
-              <span>Priority Anomalies Requiring Public Scrutiny in {displayDistrict}</span>
+              <span>Priority Anomalies &amp; Monitored Schemes in {displayDistrict}</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Top critical schemes flagged for ghost duplicate photos, split tendering, or unvouched treasury disbursements.
+              Ranked schemes audited by multi-model AI for ghost duplicates, split tendering, or unvouched disbursements.
             </p>
           </div>
 
@@ -248,14 +278,15 @@ export default function CitizenDashboard({
 
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-400 font-mono">
-            Loading district anomaly feed...
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-2" />
+            Loading {displayDistrict} scheme surveillance feed...
           </div>
         ) : priorityFlags.length === 0 ? (
           <div className="py-12 text-center space-y-2">
             <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
-            <p className="text-sm font-bold text-white">No Critical Anomalies in {displayDistrict}</p>
+            <p className="text-sm font-bold text-white">No Schemes Found in {displayDistrict}</p>
             <p className="text-xs text-slate-400 font-mono">
-              This district has no CRITICAL-tier flags. Use the Full Anomaly Radar to view all monitored schemes.
+              There are no schemes recorded under this district authority in the current ledger.
             </p>
           </div>
         ) : (
@@ -264,10 +295,17 @@ export default function CitizenDashboard({
               const cleanId = String(flag.work_id || flag.id);
               const sanctionLakh = (Number(flag.sanction_amount || 0) / 100000).toFixed(2);
               const spentLakh = (Number(flag.total_spent || 0) / 100000).toFixed(2);
-              // risk_score from api.getFlags is normalized to 0-1; show as /100 integer
               const riskPct = flag.risk_score
                 ? Math.round(flag.risk_score > 1 ? flag.risk_score : flag.risk_score * 100)
                 : 0;
+              const tier = (flag.risk_label || flag.risk_tier || 'LOW').toUpperCase();
+
+              // Badge styling by risk tier
+              const tierBadgeClass = 
+                tier === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
+                tier === 'HIGH' ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
+                tier === 'MEDIUM' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
 
               return (
                 <div
@@ -279,8 +317,8 @@ export default function CitizenDashboard({
                       <span className="font-mono font-bold text-violet-300">
                         #{cleanId}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-mono font-bold border border-rose-500/30">
-                        CRITICAL RISK: {riskPct}%
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold border ${tierBadgeClass}`}>
+                        {tier} RISK: {riskPct}%
                       </span>
                     </div>
 
@@ -310,6 +348,11 @@ export default function CitizenDashboard({
                           ⏳ Stalled Execution
                         </span>
                       )}
+                      {flag.rule_missing_photo && (
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono font-bold">
+                          🚫 No Proof Photo
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -320,13 +363,16 @@ export default function CitizenDashboard({
                       <span className="text-emerald-400">₹{spentLakh}L Spent</span>
                     </div>
 
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setReportingWork(flag)}
-                        className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-mono font-bold cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 hover:text-rose-200 text-[11px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Report Discrepancy"
                       >
-                        Report
+                        <Send className="w-3 h-3" />
+                        <span>Report</span>
                       </button>
+
                       <button
                         onClick={() => onSelectWork(cleanId)}
                         className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-mono font-bold flex items-center gap-1 cursor-pointer shadow-sm"

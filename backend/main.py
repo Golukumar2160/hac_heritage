@@ -644,10 +644,30 @@ def decode_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-def apply_role_scope(df: pd.DataFrame, user: Optional[dict]) -> pd.DataFrame:
-    """Enforce role-based access control (RBAC) safely without regex injection risks."""
+def apply_role_scope(
+    df: pd.DataFrame, 
+    user: Optional[dict],
+    requested_state: Optional[str] = None,
+    requested_ida: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Enforce role-based access control (RBAC) safely while permitting dynamic 
+    state and district/IDA drill-downs for sovereign citizens and ministry oversight.
+    """
+    import re
     if not user:
-        return df
+        res = df
+        if requested_state:
+            res = res[res["state"].astype(str).str.contains(requested_state.strip(), case=False, na=False, regex=False)]
+        if requested_ida and "ida" in res.columns:
+            clean_ida = re.sub(r'\s*\(.*?\)\s*', '', requested_ida).strip()
+            mask = (
+                res["ida"].astype(str).str.contains(re.escape(requested_ida), case=False, na=False) |
+                res["ida"].astype(str).str.contains(re.escape(clean_ida), case=False, na=False)
+            )
+            res = res[mask]
+        return res
+
     role = user.get("role")
     if role == "mp":
         mp_name = user.get("mp_name", "")
@@ -655,23 +675,56 @@ def apply_role_scope(df: pd.DataFrame, user: Optional[dict]) -> pd.DataFrame:
     elif role == "district":
         state = user.get("state", "")
         ida = user.get("ida", "")
-        res = df[df["state"] == state]
+        res = df[df["state"] == state] if state else df
         if ida and "ida" in res.columns:
-            res = res[res["ida"].astype(str).str.contains(ida, case=False, na=False, regex=False)]
-        return res
-    elif role == "citizen":
-        state = user.get("state", "")
-        ida = user.get("ida", "")
-        res = df
-        if state:
-            res = res[res["state"].astype(str).str.contains(state, case=False, na=False, regex=False)]
-        if ida and "ida" in res.columns:
-            res = res[res["ida"].astype(str).str.contains(ida, case=False, na=False, regex=False)]
+            clean_ida = re.sub(r'\s*\(.*?\)\s*', '', ida).strip()
+            mask = (
+                res["ida"].astype(str).str.contains(re.escape(ida), case=False, na=False) |
+                res["ida"].astype(str).str.contains(re.escape(clean_ida), case=False, na=False)
+            )
+            res = res[mask]
         return res
     elif role == "state":
         state = user.get("state", "")
-        return df[df["state"] == state]
-    return df  # ministry role sees all
+        res = df[df["state"] == state] if state else df
+        if requested_ida and "ida" in res.columns:
+            clean_ida = re.sub(r'\s*\(.*?\)\s*', '', requested_ida).strip()
+            mask = (
+                res["ida"].astype(str).str.contains(re.escape(requested_ida), case=False, na=False) |
+                res["ida"].astype(str).str.contains(re.escape(clean_ida), case=False, na=False)
+            )
+            res = res[mask]
+        return res
+    elif role == "citizen":
+        # Sovereign Citizen Transparency (GFR 2017 & RTI Section 4):
+        # Unrestricted public vigilance access. If user explicitly requests a state or district/IDA,
+        # scope to that requested jurisdiction; otherwise fall back to user's registered home district.
+        target_state = requested_state if requested_state else user.get("state", "")
+        target_ida = requested_ida if requested_ida else user.get("ida", "")
+        res = df
+        if target_state and target_state != "all":
+            res = res[res["state"].astype(str).str.contains(target_state.strip(), case=False, na=False, regex=False)]
+        if target_ida and target_ida != "all" and "ida" in res.columns:
+            clean_ida = re.sub(r'\s*\(.*?\)\s*', '', target_ida).strip()
+            mask = (
+                res["ida"].astype(str).str.contains(re.escape(target_ida), case=False, na=False) |
+                res["ida"].astype(str).str.contains(re.escape(clean_ida), case=False, na=False)
+            )
+            res = res[mask]
+        return res
+    else:
+        # Ministry / Central Auditor: sees national dataset by default, allows drilldown
+        res = df
+        if requested_state and requested_state != "all":
+            res = res[res["state"].astype(str).str.contains(requested_state.strip(), case=False, na=False, regex=False)]
+        if requested_ida and requested_ida != "all" and "ida" in res.columns:
+            clean_ida = re.sub(r'\s*\(.*?\)\s*', '', requested_ida).strip()
+            mask = (
+                res["ida"].astype(str).str.contains(re.escape(requested_ida), case=False, na=False) |
+                res["ida"].astype(str).str.contains(re.escape(clean_ida), case=False, na=False)
+            )
+            res = res[mask]
+        return res
 
 # ── Auth Endpoints ─────────────────────────────────────────────────────────────
 class LoginRequest(BaseModel):
@@ -1049,10 +1102,15 @@ def _get_duplicate_photos_count() -> int:
         return 0
 
 @app.get("/api/kpis", tags=["Analytics"])
-def get_executive_kpis(user: Optional[dict] = Depends(get_current_user_optional)):
+def get_executive_kpis(
+    state: Optional[str] = Query(None, description="Filter KPIs by State"),
+    district: Optional[str] = Query(None, description="Filter KPIs by District or IDA"),
+    ida: Optional[str] = Query(None, description="Filter KPIs by IDA"),
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
     """Return instant national or role-scoped executive KPI metrics."""
     df = get_cached_flags()
-    df = apply_role_scope(df, user)
+    df = apply_role_scope(df, user, requested_state=state, requested_ida=(ida or district))
     
     total_works = len(df)
     if total_works == 0:
@@ -1099,6 +1157,8 @@ def get_flags(
     page_size: int = Query(50, ge=1, le=500, description="Items per page"),
     risk_label: Optional[str] = Query(None, description="Filter by CRITICAL, HIGH, MEDIUM, or LOW"),
     state: Optional[str] = Query(None, description="Filter by State"),
+    district: Optional[str] = Query(None, description="Filter by District or IDA"),
+    ida: Optional[str] = Query(None, description="Filter by IDA"),
     category: Optional[str] = Query(None, description="Filter by Work Category"),
     vendor_flag: Optional[bool] = Query(None, description="Filter by Vendor Monopoly Flag"),
     trigger: Optional[str] = Query(None, description="Filter by anomaly trigger (e.g. premature_tranche, stalled, split_tender, duplicate, missing_photo, overspend, vendor)"),
@@ -1110,14 +1170,14 @@ def get_flags(
 ):
     """High-performance paginated alert feed with regex-safe multi-criteria filtering."""
     df = get_cached_flags()
-    df = apply_role_scope(df, user)
+    df = apply_role_scope(df, user, requested_state=state, requested_ida=(ida or district))
 
     # 1. Apply filters safely (regex=False prevents 500 crashes from brackets/parentheses)
     if risk_label:
         labels = [l.strip().upper() for l in risk_label.split(",")]
         df = df[df["risk_label"].isin(labels)]
         
-    if state:
+    if state and state != "all":
         df = df[df["state"].astype(str).str.contains(state.strip(), case=False, na=False, regex=False)]
         
     if category:
@@ -1152,7 +1212,9 @@ def get_flags(
             df["work_id"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False) |
             df["mp_name"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False) |
             df["work_description"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False) |
-            df["work_top_vendor"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False)
+            df["work_top_vendor"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False) |
+            df["ida"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False) |
+            df["state"].astype(str).str.lower().str.contains(search_lower, na=False, regex=False)
         )
         df = df[mask]
 
@@ -1993,9 +2055,9 @@ def get_state_map_data(user: Optional[dict] = Depends(get_current_user_optional)
 def get_district_map_data(state: Optional[str] = None, user: Optional[dict] = Depends(get_current_user_optional)):
     """District-level risk ranking within a state."""
     df = get_cached_flags()
-    df = apply_role_scope(df, user)
+    df = apply_role_scope(df, user, requested_state=state)
     
-    if state:
+    if state and state != "all":
         df = df[df["state"].astype(str).str.contains(state.strip(), case=False, na=False, regex=False)]
         
     grouped = df.groupby(["state", "ida"]).agg(

@@ -64,7 +64,9 @@ export default function App() {
   const [ping, setPing] = useState(40);
   const [isOnline, setIsOnline] = useState(true);
 
-  // Theme Management (Dark / Light Mode)
+  // Global District & State Scoping for Citizen & Official telemetry
+  const [selectedDistrict, setSelectedDistrict] = useState(() => currentUser?.ida || 'PILIBHIT(DISTRICT MAGISTRAE PILIBHIT_IDA)');
+  const [selectedState, setSelectedState] = useState(() => currentUser?.state || 'Uttar Pradesh');
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem('mplads_theme') || 'dark';
@@ -146,6 +148,8 @@ export default function App() {
     setCurrentUser(user);
     setActiveRole(user.role || 'ministry');
     setShowAuthModal(false);
+    if (user.ida) setSelectedDistrict(user.ida);
+    if (user.state) setSelectedState(user.state);
     if (user.role === 'citizen') {
       setActiveTab('citizen_overview');
     } else {
@@ -376,8 +380,12 @@ export default function App() {
           {/* CITIZEN VIEWS */}
           {isCitizen && (activeTab === 'citizen_overview' || activeTab === 'overview') && (
             <CitizenDashboard
-              key={`citizen-dash-${currentUser?.ida || 'dist'}`}
+              key={`citizen-dash-${currentUser?.username || 'usr'}`}
               currentUser={currentUser}
+              district={selectedDistrict}
+              onDistrictChange={setSelectedDistrict}
+              state={selectedState}
+              onStateChange={setSelectedState}
               onSelectWork={setSelectedWorkId}
               onNavigateTab={setActiveTab}
               theme={theme}
@@ -386,18 +394,22 @@ export default function App() {
 
           {isCitizen && (activeTab === 'citizen_alerts' || activeTab === 'alerts') && (
             <CitizenAnomalyFeed
-              key={`citizen-feed-${currentUser?.ida || 'dist'}`}
-              district={currentUser?.ida || 'PILIBHIT'}
-              state={currentUser?.state || 'Uttar Pradesh'}
+              key={`citizen-feed-${currentUser?.username || 'usr'}`}
+              district={selectedDistrict}
+              onDistrictChange={setSelectedDistrict}
+              state={selectedState}
+              onStateChange={setSelectedState}
               onSelectWork={setSelectedWorkId}
             />
           )}
 
           {isCitizen && activeTab === 'citizen_plaques' && (
             <CitizenPlaqueView
-              key={`citizen-plaque-${currentUser?.ida || 'dist'}`}
-              district={currentUser?.ida || 'PILIBHIT'}
-              state={currentUser?.state || 'Uttar Pradesh'}
+              key={`citizen-plaque-${currentUser?.username || 'usr'}`}
+              district={selectedDistrict}
+              onDistrictChange={setSelectedDistrict}
+              state={selectedState}
+              onStateChange={setSelectedState}
               onSelectWork={setSelectedWorkId}
             />
           )}

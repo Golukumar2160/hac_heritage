@@ -170,8 +170,14 @@ export const api = {
   },
 
   // Executive Overview & KPIs
-  async getKpis() {
-    const res = await fetch(`${API_BASE}/api/kpis`, { headers: getHeaders() });
+  async getKpis(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.state && filters.state !== 'all') params.set('state', filters.state);
+    if (filters.district && filters.district !== 'all') params.set('district', filters.district);
+    if (filters.ida && filters.ida !== 'all') params.set('ida', filters.ida);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+
+    const res = await fetch(`${API_BASE}/api/kpis${qs}`, { headers: getHeaders() });
     const data = await handleResponse(res);
     // Transform into standard format for UI
     return {
@@ -191,12 +197,14 @@ export const api = {
   },
 
   // Live Alert Feed & Flagged Schemes
-  async getFlags({ page = 1, pageSize = 50, risk_label, state, category, search, vendor_flag, trigger } = {}) {
+  async getFlags({ page = 1, pageSize = 50, risk_label, state, district, ida, category, search, vendor_flag, trigger } = {}) {
     const params = new URLSearchParams();
     params.set('page', String(page));
     params.set('page_size', String(pageSize));
     if (risk_label && risk_label !== 'all') params.set('risk_label', risk_label.toUpperCase());
     if (state && state !== 'all') params.set('state', state);
+    if (district && district !== 'all') params.set('district', district);
+    if (ida && ida !== 'all') params.set('ida', ida);
     if (category && category !== 'all') params.set('category', category);
     if (search) params.set('search', search);
     if (vendor_flag !== undefined && vendor_flag !== null) params.set('vendor_flag', String(vendor_flag));

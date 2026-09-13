@@ -11,7 +11,8 @@ import {
   Sparkles,
   Info,
   ChevronRight,
-  Copy
+  Copy,
+  Globe
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
@@ -25,25 +26,62 @@ function cleanDistrictName(raw) {
     .join(' ');
 }
 
-export default function CitizenPlaqueView({ district = 'PILIBHIT', state = 'Uttar Pradesh', onSelectWork }) {
+export default function CitizenPlaqueView({ 
+  district: propDistrict, 
+  state: propState, 
+  onDistrictChange,
+  onStateChange,
+  onSelectWork 
+}) {
+  const [internalDistrict, setInternalDistrict] = useState('PILIBHIT(DISTRICT MAGISTRAE PILIBHIT_IDA)');
+  const [internalState, setInternalState] = useState('Uttar Pradesh');
+
+  const district = propDistrict !== undefined ? propDistrict : internalDistrict;
+  const setDistrict = onDistrictChange || setInternalDistrict;
+
+  const state = propState !== undefined ? propState : internalState;
+  const setState = onStateChange || setInternalState;
+
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWork, setSelectedWork] = useState(null);
   const [qrMode, setQrMode] = useState('portal_url'); // 'portal_url' | 'offline_seal'
   const [copied, setCopied] = useState(false);
+  const [authOptions, setAuthOptions] = useState({ states: [], districts_by_state: {} });
+
+  useEffect(() => {
+    api.getAuthOptions().then((opts) => {
+      setAuthOptions(opts || { states: [], districts_by_state: {} });
+    }).catch(console.error);
+  }, []);
+
+  const availableDistricts = authOptions.districts_by_state?.[state] || (district ? [district] : []);
+
+  const matchedDistrictVal = availableDistricts.find(
+    d => d === district || cleanDistrictName(d).toLowerCase() === cleanDistrictName(district).toLowerCase()
+  ) || availableDistricts[0] || district || '';
+
+  // Ensure district is aligned with available districts of the fixed state
+  useEffect(() => {
+    if (availableDistricts.length > 0 && matchedDistrictVal && matchedDistrictVal !== district) {
+      setDistrict(matchedDistrictVal);
+    }
+  }, [availableDistricts, matchedDistrictVal, district, setDistrict]);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    api.getFlags({ page: 1, pageSize: 25, search: cleanDistrictName(district) })
+    api.getFlags({ page: 1, pageSize: 50, state, ida: district, district })
       .then((data) => {
         if (isMounted) {
           const items = data.flags || data.items || [];
           setWorks(items);
           if (items.length > 0) {
             setSelectedWork(items[0]);
+          } else {
+            setSelectedWork(null);
           }
           setLoading(false);
         }
@@ -56,7 +94,7 @@ export default function CitizenPlaqueView({ district = 'PILIBHIT', state = 'Utta
     return () => {
       isMounted = false;
     };
-  }, [district]);
+  }, [district, state]);
 
   const filteredWorks = useMemo(() => {
     if (!searchQuery) return works;
@@ -157,11 +195,38 @@ Verification: ${directVerifyUrl}`;
           <div className="glass-panel p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-                Select Scheme in {district}
+                Select Scheme in {cleanDistrictName(district) || 'District'}
               </span>
               <span className="text-[10px] font-mono text-emerald-400 font-semibold">
                 {filteredWorks.length} Schemes Loaded
               </span>
+            </div>
+
+            {/* State (Fixed) and District Filter Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="px-3 py-1.5 rounded-xl bg-[#040714] border border-slate-700/80 flex items-center gap-1.5 text-xs font-mono">
+                <Globe className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                <span className="text-slate-500 text-[10px] uppercase font-bold">State:</span>
+                <span className="text-white font-bold tracking-wide truncate">{state}</span>
+              </div>
+
+              <div className="p-1.5 rounded-xl bg-[#040714] border border-emerald-500/40 flex items-center gap-1 shadow-inner">
+                <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 ml-1" />
+                <select
+                  value={matchedDistrictVal}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer pr-2 w-full truncate"
+                  aria-label="Select District"
+                >
+                  {availableDistricts.length === 0 ? (
+                    <option value={district}>{cleanDistrictName(district) || 'All Districts'}</option>
+                  ) : (
+                    availableDistricts.map(d => (
+                      <option key={d} value={d} className="bg-slate-900 text-white font-sans">{cleanDistrictName(d)}</option>
+                    ))
+                  )}
+                </select>
+              </div>
             </div>
 
             <div className="relative">
