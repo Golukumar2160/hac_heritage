@@ -30,7 +30,10 @@ import {
   User,
   MapPin,
   Landmark,
-  FileCheck
+  FileCheck,
+  Users,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 
@@ -45,6 +48,8 @@ export default function LiveBatchAuditLab({ onSelectWork }) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedBatchWork, setSelectedBatchWork] = useState(null);
   const [copiedMemo, setCopiedMemo] = useState(false);
+  const [viewMode, setViewMode] = useState('citizen'); // 'citizen' (default) | 'auditor'
+  const [lang, setLang] = useState('en'); // 'en' | 'hi'
   const fileInputRef = useRef(null);
 
   // Auto-run demo benchmark on mount if no data exists
@@ -362,9 +367,98 @@ ${
         </div>
       )}
 
+      {/* Mode & Language Selector Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#070b18] border border-slate-700/80 shadow-inner">
+        {/* Left: View Mode Toggle */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+          <button
+            onClick={() => setViewMode('citizen')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'citizen'
+                ? 'bg-emerald-500 text-slate-950 shadow-md font-mono'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Common Citizen Mode</span>
+            <span className="text-[10px] opacity-80">(आम नागरिक)</span>
+          </button>
+          <button
+            onClick={() => setViewMode('auditor')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'auditor'
+                ? 'bg-violet-600 text-white shadow-md font-mono'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Technical Auditor</span>
+            <span className="text-[10px] opacity-80">(5 AI Models)</span>
+          </button>
+        </div>
+
+        {/* Right: Language Toggle */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <span className="text-xs font-mono text-slate-400">Explanation Language:</span>
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold">
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                lang === 'en' ? 'bg-cyan-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => setLang('hi')}
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                lang === 'hi' ? 'bg-cyan-500 text-slate-950 shadow-xs font-semibold' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              हिंदी (Hindi)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Citizen 0-100 Score Explainer Guide (Shown in Citizen Mode) */}
+      {viewMode === 'citizen' && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-[#060a18] via-[#09142e] to-[#060a18] border border-cyan-500/30 text-xs space-y-2.5 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-cyan-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              {lang === 'hi' ? '0 से 100 जोखिम स्कोर का अर्थ (आम नागरिक मार्गदर्शिका)' : '0 to 100 Risk Score Guide (What this means for your tax money)'}
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {lang === 'hi' ? '5 एआई मॉडल एवं सीएजी ऑडिट नियमों पर आधारित' : 'Evaluated by 5 algorithmic AI models & CAG rules'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-[11px] font-mono">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+              <span className="font-black text-xs block">🟢 0 - 35 // CLEAN</span>
+              <span>{lang === 'hi' ? 'ईमानदार एवं सत्यापित कार्य (पूर्णतः नियम-सम्मत)' : 'Verified Honest Work (Milestones match sanction)'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300">
+              <span className="font-black text-xs block">🟡 36 - 54 // CAUTION</span>
+              <span>{lang === 'hi' ? 'धीमा कार्य या आंशिक भौतिक प्रगति' : 'Work Delayed / Partial Progress Gap'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300">
+              <span className="font-black text-xs block">🟠 55 - 74 // HIGH RISK</span>
+              <span>{lang === 'hi' ? 'ठेकेदार एकाधिकार या बजट से अधिक खर्च' : 'Contractor Monopoly or Suspicious Drain'}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
+              <span className="font-black text-xs block">🔴 75 - 100 // CRITICAL</span>
+              <span>{lang === 'hi' ? 'गंभीर भ्रष्टाचार / बिना काम पूरा हुए 100% भुगतान' : 'Tender Bypassed / Paid Before Completion'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ========================================================================= */}
-      {/* TOP SECTION: CONCISE SUMMARY OF EVERY MODEL (CLICKABLE FILTERS)           */}
+      {/* AUDITOR SECTION: CONCISE SUMMARY OF EVERY MODEL (SHOWN IN AUDITOR MODE)   */}
       {/* ========================================================================= */}
+      {viewMode === 'auditor' && (
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -539,6 +633,7 @@ ${
           </div>
         </div>
       </div>
+      )}
 
       {/* Middle Row: Executive Batch Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
@@ -777,34 +872,98 @@ ${
 
                   {/* Right Column: Score & Severity Badge */}
                   <div className="flex items-center md:flex-col md:items-end justify-between gap-2 shrink-0">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2.5">
                       <div className="text-right">
                         <span className="text-[10px] text-slate-400 font-mono uppercase block">Risk Score</span>
-                        <div className="text-xl font-black font-mono text-slate-900 dark:text-white">
-                          {work.risk_score} <span className="text-xs text-slate-400">/ 100</span>
+                        <div className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white leading-none">
+                          {work.risk_score} <span className="text-xs text-slate-400 font-normal">/ 100</span>
+                        </div>
+                        {/* 0-100 Mini Visual Score Bar */}
+                        <div className="w-24 sm:w-28 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-1.5 shadow-inner">
+                          <div 
+                            className={`h-full rounded-full transition-all ${
+                              isCrit ? 'bg-rose-500' : isHigh ? 'bg-amber-500' : isMed ? 'bg-yellow-500' : 'bg-emerald-500'
+                            }`} 
+                            style={{ width: `${Math.min(100, Math.max(5, work.risk_score))}%` }} 
+                          />
                         </div>
                       </div>
 
-                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black font-mono border ${badgeBg}`}>
-                        {work.severity}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-black font-mono border ${badgeBg}`}>
+                          {work.severity}
+                        </span>
+                        {(work.key_badge || work.key_badge_hi) && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold whitespace-nowrap">
+                            {lang === 'hi' ? (work.key_badge_hi || work.key_badge) : work.key_badge}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Open Built-in Work Dossier Modal */}
                     <button
                       onClick={() => setSelectedBatchWork(work)}
-                      className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-violet-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-violet-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1 shadow-xs mt-1"
                       title="Inspect Multi-Model Dossier"
                     >
-                      <span>View Dossier</span>
+                      <span>{lang === 'hi' ? 'दस्तावेज देखें' : 'View Dossier'}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Layman Reason Callout Box (For Common Man) */}
+                {/* Verdict Title Banner */}
+                {(work.verdict_title || work.verdict_title_hi) && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 tracking-wide flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${isCrit ? 'bg-rose-500' : isHigh ? 'bg-amber-500' : isMed ? 'bg-yellow-500' : 'bg-emerald-500'}`} />
+                      <span>{lang === 'hi' ? (work.verdict_title_hi || work.verdict_title) : work.verdict_title}</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* 3-Point Citizen Integrity Checklist */}
+                {work.checklist && (
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 font-mono text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      {work.checklist.budget_compliant ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      )}
+                      <span className={work.checklist.budget_compliant ? 'text-slate-600 dark:text-slate-300' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                        {lang === 'hi' ? 'स्वीकृत बजट के भीतर' : 'Within Budget Limit'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {work.checklist.tender_compliant ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      )}
+                      <span className={work.checklist.tender_compliant ? 'text-slate-600 dark:text-slate-300' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                        {lang === 'hi' ? 'खुला सार्वजनिक टेंडर' : 'Open Public Tender'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {work.checklist.inspection_compliant ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      )}
+                      <span className={work.checklist.inspection_compliant ? 'text-slate-600 dark:text-slate-300' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+                        {lang === 'hi' ? 'सत्यापन उपरांत भुगतान' : 'Paid After Inspection'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Layman Reason Callout Box (For Common Citizen) */}
                 <div
-                  className={`mt-3 p-3 rounded-xl border text-xs font-sans leading-relaxed ${
+                  className={`mt-2.5 p-3 rounded-xl border text-xs font-sans leading-relaxed ${
                     isCrit
                       ? 'bg-rose-100/50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-500/30 text-rose-900 dark:text-rose-200'
                       : isHigh
@@ -814,18 +973,20 @@ ${
                       : 'bg-emerald-100/50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
                   }`}
                 >
-                  <div className="font-bold flex items-center gap-1.5 mb-0.5">
+                  <div className="font-bold flex items-center gap-1.5 mb-1 font-mono text-[11px] uppercase tracking-wider">
                     {isCrit && <AlertOctagon className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />}
                     {isHigh && <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
                     {isMed && <Info className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400 shrink-0" />}
                     {isLow && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-                    <span>Audit Finding &amp; Layman Reason:</span>
+                    <span>{lang === 'hi' ? 'यह स्कोर क्यों मिला? (आम नागरिक स्पष्टीकरण):' : 'Why This Score? (Common Citizen Summary):'}</span>
                   </div>
-                  <p>{work.layman_reason}</p>
+                  <p className="text-xs sm:text-sm font-sans leading-relaxed">
+                    {lang === 'hi' ? (work.layman_reason_hi || work.layman_reason) : work.layman_reason}
+                  </p>
                 </div>
 
-                {/* Model Breakdown Mini-Pills */}
-                {work.model_breakdown && (
+                {/* Model Breakdown Mini-Pills (Shown when in Auditor view) */}
+                {viewMode === 'auditor' && work.model_breakdown && (
                   <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center space-x-2 flex-wrap gap-y-1 text-[10px] font-mono text-slate-500 dark:text-slate-400">
                     <span className="font-bold uppercase">Model Signals:</span>
                     <span
@@ -854,9 +1015,9 @@ ${
                           prev === 'compliance_rules' ? null : 'compliance_rules'
                         )
                       }
-                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-rose-500 cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 cursor-pointer"
                     >
-                      Compliance Rules: <strong>{work.model_breakdown.compliance_rules}/100</strong>
+                      Rules Engine: <strong>{work.model_breakdown.compliance_rules}/100</strong>
                     </span>
                     <span
                       onClick={() =>
@@ -864,9 +1025,9 @@ ${
                           prev === 'timeline_risk' ? null : 'timeline_risk'
                         )
                       }
-                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500 cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-cyan-500 cursor-pointer"
                     >
-                      Timeline Delay: <strong>{work.model_breakdown.timeline_risk}/100</strong>
+                      Timeline Risk: <strong>{work.model_breakdown.timeline_risk}/100</strong>
                     </span>
                   </div>
                 )}

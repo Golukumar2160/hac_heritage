@@ -309,43 +309,112 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
 
     clean_df["severity"] = clean_df["final_risk_score"].apply(_get_tier)
 
-    # 6. Layman Reason Synthesizer (Plain-English Explanations)
-    def _generate_layman_reason(row):
+    # 6. Layman Reason Synthesizer (Bilingual: English & Hindi Explanations for Common Citizens)
+    def _generate_layman_reason_pack(row):
         tier = row["severity"]
         san_lakhs = f"₹{row['sanction_amount']/100000:.2f}L"
         disb_lakhs = f"₹{row['fund_disbursed']/100000:.2f}L"
         violations = row["compliance_violations"]
         v_name = row["vendor_name"]
+        st = str(row["work_status"])
 
-        reasons = []
+        reasons_en = []
+        reasons_hi = []
+        key_badge = "✅ Verified Clean"
+        key_badge_hi = "✅ प्रमाणित ईमानदार कार्य"
 
         if "SPLIT_TENDER_50L" in violations:
-            reasons.append(f"Project budget was fixed at {san_lakhs}—just under the ₹50.00 Lakh mandatory open tender threshold to avoid public bidding")
+            reasons_en.append(f"Project budget was fixed at {san_lakhs}—just under the ₹50.00 Lakh mandatory open tender threshold to avoid public bidding")
+            reasons_hi.append(f"परियोजना का बजट {san_lakhs} तय किया गया—जो अनिवार्य खुली निविदा (ओपन टेंडर) की ₹50.00 लाख सीमा से ठीक नीचे है ताकि बिना खुली प्रतिस्पर्धा के काम दिया जा सके")
+            key_badge = "⚠️ Open Tender Bypassed (< ₹50L)"
+            key_badge_hi = "⚠️ टेंडर बाईपास (< ₹50L)"
         elif "SPLIT_TENDER_25L" in violations:
-            reasons.append(f"Project budget was pegged at {san_lakhs} to bypass the ₹25.00 Lakh state nodal oversight rule")
+            reasons_en.append(f"Project budget was pegged at {san_lakhs} to bypass the ₹25.00 Lakh state nodal oversight rule")
+            reasons_hi.append(f"परियोजना का बजट {san_lakhs} रखा गया ताकि राज्य स्तर की ₹25.00 लाख की विशेष वित्तीय निगरानी से बचा जा सके")
+            key_badge = "⚠️ Nodal Threshold Evasion"
+            key_badge_hi = "⚠️ निगरानी सीमा बाईपास"
 
         if "PREMATURE_DISBURSEMENT" in violations:
-            reasons.append(f"100% full payment ({disb_lakhs}) was disbursed while official portal records still show '{row['work_status']}'")
-
-        if row["m2_score"] >= 60:
-            reasons.append(f"High vendor concentration: Heavy allocation routed to private contractor '{v_name}'")
+            reasons_en.append(f"100% full payment ({disb_lakhs}) was disbursed while official portal records still show '{st}'")
+            reasons_hi.append(f"सरकारी पोर्टल के अनुसार कार्य अभी भी '{st}' पर है, फिर भी ठेकेदार को 100% पूरा भुगतान ({disb_lakhs}) पहले ही जारी कर दिया गया")
+            key_badge = "🚨 Premature 100% Payout"
+            key_badge_hi = "🚨 अवैध अग्रिम भुगतान"
 
         if row["cost_overrun"] > 0:
             over = f"₹{(row['fund_disbursed'] - row['sanction_amount'])/100000:.2f}L"
-            reasons.append(f"Unsanctioned cost overrun of {over} released beyond approved sanction")
+            reasons_en.append(f"Unsanctioned cost overrun of {over} released beyond approved sanction")
+            reasons_hi.append(f"स्वीकृत बजट से {over} अधिक राशि बिना पुनरीक्षित अनुमति के जारी की गई")
+            if "PREMATURE" not in key_badge:
+                key_badge = "📈 Unapproved Cost Overrun"
+                key_badge_hi = "📈 बजट से अधिक भुगतान"
 
-        if not reasons:
+        if row["m2_score"] >= 60:
+            reasons_en.append(f"High vendor concentration: Heavy allocation routed to private contractor '{v_name}'")
+            reasons_hi.append(f"ठेकेदार एकाधिकार: अधिकांश सरकारी बजट केवल एक निजी ठेकेदार '{v_name}' को दिया जा रहा है")
+            if "PREMATURE" not in key_badge and "Tender" not in key_badge:
+                key_badge = "🏢 Contractor Monopoly"
+                key_badge_hi = "🏢 ठेकेदार सिंडिकेट"
+
+        if not reasons_en:
             if tier in ["CRITICAL", "HIGH"]:
-                reasons.append(f"Statistical expenditure anomaly detected by Isolation Forest model ({disb_lakhs} disbursed)")
+                reasons_en.append(f"Statistical expenditure anomaly detected by Isolation Forest model ({disb_lakhs} disbursed)")
+                reasons_hi.append(f"एआई मॉडल द्वारा संदिग्ध वित्तीय असामान्यता पकड़ी गई ({disb_lakhs} का संदिग्ध आहरण)")
+                key_badge = "⚡ High Risk Anomaly"
+                key_badge_hi = "⚡ उच्च जोखिम असामान्यता"
             elif tier == "MEDIUM":
-                reasons.append(f"Minor progress mismatch: Funds partially disbursed ({disb_lakhs}) with pending ground completion certificate")
+                reasons_en.append(f"Minor progress mismatch: Funds partially disbursed ({disb_lakhs}) with pending ground completion certificate")
+                reasons_hi.append(f"अपूर्ण कार्य: {disb_lakhs} का आंशिक भुगतान हो चुका है लेकिन अंतिम कार्य समाप्ति प्रमाण पत्र अभी लंबित है")
+                key_badge = "⏳ Stalled / Delayed"
+                key_badge_hi = "⏳ कार्य लंबित / धीमा"
             else:
-                return f"Statutory Compliant: Routine community infrastructure works ({san_lakhs}). Milestone payments match approved engineer sanction."
+                reasons_en.append(f"Statutory Compliant: Routine community infrastructure works ({san_lakhs}). Milestone payments match approved engineer sanction.")
+                reasons_hi.append(f"पूर्णतः नियम-सम्मत: सामान्य जनहित विकास कार्य ({san_lakhs})। इंजीनियर के भौतिक सत्यापन के आधार पर ही नियमानुसार भुगतान हुआ है।")
+                key_badge = "✅ Verified Clean"
+                key_badge_hi = "✅ प्रमाणित ईमानदार कार्य"
 
-        prefix = "🔴 CRITICAL ALERT: " if tier == "CRITICAL" else ("🟠 HIGH RISK: " if tier == "HIGH" else "🟡 CAUTION: ")
-        return prefix + "; ".join(reasons) + "."
+        prefix_en = "🔴 CRITICAL ALERT: " if tier == "CRITICAL" else ("🟠 HIGH RISK: " if tier == "HIGH" else ("🟡 CAUTION: " if tier == "MEDIUM" else "🟢 VERIFIED: "))
+        prefix_hi = "🔴 गंभीर चेतावनी: " if tier == "CRITICAL" else ("🟠 उच्च जोखिम: " if tier == "HIGH" else ("🟡 सावधानी: " if tier == "MEDIUM" else "🟢 सत्यापित: "))
 
-    clean_df["layman_reason"] = clean_df.apply(_generate_layman_reason, axis=1)
+        verdict_title = "CRITICAL ALERT // HIGH CORRUPTION RISK" if tier == "CRITICAL" else (
+            "HIGH RISK // AUDIT SCRUTINY REQUIRED" if tier == "HIGH" else (
+                "CAUTION // PENDING GROUND COMPLETION" if tier == "MEDIUM" else "CLEAN // STATUTORY COMPLIANT"
+            )
+        )
+        verdict_title_hi = "गंभीर चेतावनी // उच्च भ्रष्टाचार जोखिम" if tier == "CRITICAL" else (
+            "उच्च जोखिम // सतर्कता जांच आवश्यक" if tier == "HIGH" else (
+                "सावधानी // कार्य सत्यापन लंबित" if tier == "MEDIUM" else "स्वच्छ // पूर्णतः नियम-सम्मत कार्य"
+            )
+        )
+
+        # 3-Point Citizen Integrity Checklist
+        checklist = {
+            "budget_compliant": bool(row["cost_overrun"] <= 0),
+            "tender_compliant": not any("SPLIT_TENDER" in v for v in violations),
+            "inspection_compliant": not ("PREMATURE_DISBURSEMENT" in violations),
+            "vendor_competitive": bool(row["m2_score"] < 60)
+        }
+
+        full_reason_en = prefix_en + "; ".join(reasons_en) + "." if not reasons_en[0].startswith("Statutory") else reasons_en[0]
+        full_reason_hi = prefix_hi + "; ".join(reasons_hi) + "।" if not reasons_hi[0].startswith("पूर्णतः") else reasons_hi[0]
+
+        return {
+            "layman_reason": full_reason_en,
+            "layman_reason_hi": full_reason_hi,
+            "verdict_title": verdict_title,
+            "verdict_title_hi": verdict_title_hi,
+            "key_badge": key_badge,
+            "key_badge_hi": key_badge_hi,
+            "checklist": checklist
+        }
+
+    layman_packs = clean_df.apply(_generate_layman_reason_pack, axis=1)
+    clean_df["layman_reason"] = [p["layman_reason"] for p in layman_packs]
+    clean_df["layman_reason_hi"] = [p["layman_reason_hi"] for p in layman_packs]
+    clean_df["verdict_title"] = [p["verdict_title"] for p in layman_packs]
+    clean_df["verdict_title_hi"] = [p["verdict_title_hi"] for p in layman_packs]
+    clean_df["key_badge"] = [p["key_badge"] for p in layman_packs]
+    clean_df["key_badge_hi"] = [p["key_badge_hi"] for p in layman_packs]
+    clean_df["checklist"] = [p["checklist"] for p in layman_packs]
 
     # 7. Construct Final Response Payload
     results = []
@@ -365,6 +434,12 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
             "risk_score": float(r["final_risk_score"]),
             "severity": str(r["severity"]),
             "layman_reason": str(r["layman_reason"]),
+            "layman_reason_hi": str(r["layman_reason_hi"]),
+            "verdict_title": str(r["verdict_title"]),
+            "verdict_title_hi": str(r["verdict_title_hi"]),
+            "key_badge": str(r["key_badge"]),
+            "key_badge_hi": str(r["key_badge_hi"]),
+            "checklist": r["checklist"],
             "model_breakdown": {
                 "isolation_forest": round(float(r["m1_score"]), 1),
                 "vendor_concentration": round(float(r["m2_score"]), 1),

@@ -62,7 +62,7 @@ export default function Sidebar({
     },
     {
       id: 'batch_audit',
-      label: 'Batch CSV Audit Lab',
+      label: 'Jan-Audit: CSV Lab (जन-ऑडिट)',
       icon: UploadCloud,
     },
   ];

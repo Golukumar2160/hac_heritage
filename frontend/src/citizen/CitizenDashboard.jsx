@@ -10,7 +10,8 @@ import {
   Eye, 
   Sparkles, 
   ChevronRight,
-  Globe
+  Globe,
+  UploadCloud
 } from 'lucide-react';
 import { api } from '../services/api';
 import CitizenFeedbackModal from './CitizenFeedbackModal';
@@ -252,6 +253,36 @@ export default function CitizenDashboard({
             <span className="text-cyan-400 font-mono font-semibold">Live AI Telemetry</span>
           </div>
         </div>
+      </div>
+
+      {/* 2.5 Jan-Audit Callout Banner: Common Man CSV Ingestion */}
+      <div className="glass-panel p-5 rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-[#071328] via-[#091838] to-[#071328] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
+            <UploadCloud className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm sm:text-base font-display">
+                Jan-Audit: Have a Local Works CSV? (जन-ऑडिट)
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                5 AI Models
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
+              Upload any public works spreadsheet to evaluate split tenders, ghost payments, and stalled funds with a 0–100 score explained in plain English and Hindi.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigateTab('batch_audit')}
+          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/30 transition-all cursor-pointer shrink-0"
+        >
+          <span>Launch Jan-Audit</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 3. Priority Flagged Schemes Spotlight in District */}
