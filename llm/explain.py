@@ -88,6 +88,32 @@ class GeminiExplainer:
         self._mp_cache: Dict[str, dict] = {}
         self._briefing_cache: Dict[str, Any] = {"data": None, "timestamp": 0}
 
+    def _call_generate_content(self, **kwargs):
+        """Calls generate_content with automatic fallback if configured model is deprecated."""
+        model_to_use = kwargs.pop("model", self.model)
+        try:
+            return self.client.models.generate_content(model=model_to_use, **kwargs)
+        except Exception as e:
+            err_str = str(e)
+            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-flash-latest":
+                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-flash-latest'.")
+                self.model = "gemini-flash-latest"
+                return self.client.models.generate_content(model="gemini-flash-latest", **kwargs)
+            raise e
+
+    def _call_generate_content_stream(self, **kwargs):
+        """Calls generate_content_stream with automatic fallback if configured model is deprecated."""
+        model_to_use = kwargs.pop("model", self.model)
+        try:
+            return self.client.models.generate_content_stream(model=model_to_use, **kwargs)
+        except Exception as e:
+            err_str = str(e)
+            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-flash-latest":
+                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-flash-latest'.")
+                self.model = "gemini-flash-latest"
+                return self.client.models.generate_content_stream(model="gemini-flash-latest", **kwargs)
+            raise e
+
     # ── 1. Work-Level Explanation ─────────────────────────────────────────────
 
     def explain_work(self, work_id: str) -> dict:
@@ -137,10 +163,7 @@ Return ONLY valid JSON. No markdown fences. No explanation outside the JSON."""
 
         if self.client:
             try:
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=prompt
-                )
+                response = self._call_generate_content(contents=prompt)
                 if response and response.text:
                     cleaned = _clean_json_str(response.text)
                     parsed = json.loads(cleaned, strict=False)
@@ -199,10 +222,7 @@ Speak directly and authoritatively in natural prose."""
         streaming_succeeded = False
         if self.client:
             try:
-                stream = self.client.models.generate_content_stream(
-                    model=self.model,
-                    contents=prompt
-                )
+                stream = self._call_generate_content_stream(contents=prompt)
                 for chunk in stream:
                     if chunk.text:
                         streaming_succeeded = True
@@ -272,10 +292,7 @@ Return ONLY valid JSON. No markdown. No text outside the JSON."""
 
         if self.client:
             try:
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=prompt
-                )
+                response = self._call_generate_content(contents=prompt)
                 if response and response.text:
                     cleaned = _clean_json_str(response.text)
                     parsed = json.loads(cleaned, strict=False)
@@ -342,10 +359,7 @@ Return ONLY valid JSON. No markdown. No text outside the JSON."""
 
         if self.client:
             try:
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=prompt
-                )
+                response = self._call_generate_content(contents=prompt)
                 if response and response.text:
                     cleaned = _clean_json_str(response.text)
                     parsed = json.loads(cleaned, strict=False)

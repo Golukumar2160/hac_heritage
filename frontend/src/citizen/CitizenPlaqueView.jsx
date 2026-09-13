@@ -16,6 +16,15 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
 
+// Strip raw IDA parenthetical suffixes from district names
+function cleanDistrictName(raw) {
+  if (!raw) return '';
+  const clean = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
+  return clean.split(/[\s_]+/).filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export default function CitizenPlaqueView({ district = 'PILIBHIT', state = 'Uttar Pradesh', onSelectWork }) {
   const [works, setWorks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +37,7 @@ export default function CitizenPlaqueView({ district = 'PILIBHIT', state = 'Utta
     let isMounted = true;
     setLoading(true);
 
-    api.getFlags({ page: 1, pageSize: 25, search: district })
+    api.getFlags({ page: 1, pageSize: 25, search: cleanDistrictName(district) })
       .then((data) => {
         if (isMounted) {
           const items = data.flags || data.items || [];
@@ -69,9 +78,11 @@ export default function CitizenPlaqueView({ district = 'PILIBHIT', state = 'Utta
   const sanctionAmt = Number(workObj?.sanction_amount || 4950000);
   const spentAmt = Number(workObj?.total_spent || 4950000);
   const mpName = workObj?.mp_name || 'Shri Javed Ali Khan';
-  const agency = workObj?.implementing_agency || workObj?.ida || district;
+  const agency = workObj?.implementing_agency || workObj?.ida || cleanDistrictName(district);
   const progressPct = workObj?.progress_pct !== undefined ? Number(workObj.progress_pct) : 100;
-  const riskScore = workObj?.risk_score !== undefined ? Number(workObj.risk_score).toFixed(3) : '0.850';
+  const riskScore = workObj?.risk_score !== undefined
+    ? Math.round((Number(workObj.risk_score) > 1 ? Number(workObj.risk_score) : Number(workObj.risk_score) * 100))
+    : 85;
 
   const cleanWorkId = String(workId).trim();
   const displayWorkId = cleanWorkId.startsWith('WS/') ? cleanWorkId : `WS/MP18250/2024-2025/${cleanWorkId}`;

@@ -184,13 +184,26 @@ Return your findings strictly in valid JSON format:
   "action_recommendation": "Clear administrative step for District Magistrate"
 }}
 """
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                prompt
-            ]
-        )
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    prompt
+                ]
+            )
+        except Exception as _m_err:
+            if ("404" in str(_m_err) or "NOT_FOUND" in str(_m_err) or "no longer available" in str(_m_err)) and GEMINI_MODEL != "gemini-flash-latest":
+                print(f"[!] Configured vision model '{GEMINI_MODEL}' unavailable ({_m_err}). Switching to 'gemini-flash-latest'.")
+                response = client.models.generate_content(
+                    model="gemini-flash-latest",
+                    contents=[
+                        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                        prompt
+                    ]
+                )
+            else:
+                raise _m_err
         
         text = response.text.strip()
         match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)

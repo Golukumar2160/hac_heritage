@@ -19,6 +19,17 @@ import {
 import { api } from '../services/api';
 import CitizenFeedbackModal from './CitizenFeedbackModal';
 
+// Same utility as CitizenDashboard — strips raw IDA parenthetical suffixes
+function cleanDistrictName(raw) {
+  if (!raw) return '';
+  const clean = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
+  return clean
+    .split(/[\s_]+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export default function CitizenAnomalyFeed({ 
   district = 'PILIBHIT', 
   state = 'Uttar Pradesh', 
@@ -43,7 +54,8 @@ export default function CitizenAnomalyFeed({
         page,
         pageSize: 25,
         state: state && state !== 'all' ? state : 'all',
-        search: searchQuery.trim() || district,
+        // Use clean district name (not raw IDA string) as search term
+        search: searchQuery.trim() || cleanDistrictName(district),
       };
 
       if (selectedTrigger && selectedTrigger !== 'all') {
@@ -106,7 +118,7 @@ export default function CitizenAnomalyFeed({
               <span>District Public Anomaly Radar</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Showing public infrastructure schemes in <strong className="text-emerald-500 dark:text-emerald-400 font-mono">{district}</strong> flagged by multi-model AI surveillance for suspected fraud or execution failures.
+              Showing public infrastructure schemes in <strong className="text-emerald-500 dark:text-emerald-400 font-mono">{cleanDistrictName(district)}</strong> flagged by multi-model AI surveillance for suspected fraud or execution failures.
             </p>
           </div>
 
@@ -177,7 +189,7 @@ export default function CitizenAnomalyFeed({
           <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
           <h4 className="text-base font-bold text-white">No Schemes Flagged in this Filter</h4>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Try resetting your search query or selecting "All Anomalies" to view other monitored projects in {district}.
+            Try resetting your search query or selecting "All Anomalies" to view other monitored projects in {cleanDistrictName(district)}.
           </p>
           <button
             onClick={() => { setSelectedTrigger('all'); setSelectedCategory('all'); setSearchQuery(''); }}
@@ -227,7 +239,7 @@ export default function CitizenAnomalyFeed({
                       {isCrit ? 'CRITICAL ANOMALY' : 'HIGH RISK'}
                     </span>
                     <span className="text-xs font-mono font-bold text-white px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
-                      Risk: {Number(item.risk_score || 0).toFixed(2)}
+                      Risk: {Math.round((item.risk_score || 0) * 100)}/100
                     </span>
                   </div>
                 </div>

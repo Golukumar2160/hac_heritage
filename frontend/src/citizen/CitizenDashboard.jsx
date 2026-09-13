@@ -6,20 +6,27 @@ import {
   CheckCircle, 
   Send, 
   QrCode, 
-  Layers, 
-  TrendingDown, 
   Building2, 
   Eye, 
   Sparkles, 
-  ChevronRight, 
-  ArrowRight,
-  Filter,
-  DollarSign,
-  Activity,
-  FileText
+  ChevronRight,
 } from 'lucide-react';
 import { api } from '../services/api';
 import CitizenFeedbackModal from './CitizenFeedbackModal';
+
+// Utility: Clean up raw IDA district strings like "PILIBHIT(DISTRICT MAGISTRATE PILIBHIT_IDA)"
+// or "Dhalai(DISTRICT MAGISTRATE DHALAI_IDA)" into readable "Pilibhit" / "Dhalai" format
+function cleanDistrictName(raw) {
+  if (!raw) return '';
+  // Strip any parenthetical suffix like (DISTRICT MAGISTRATE ..._IDA) or (COLLECTOR ...)
+  const clean = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
+  // Title-case each word, replacing underscores with spaces
+  return clean
+    .split(/[\s_]+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
 
 export default function CitizenDashboard({ 
   currentUser, 
@@ -48,9 +55,12 @@ export default function CitizenDashboard({
     let isMounted = true;
     setLoading(true);
 
+    // Use a cleaned district name as search term so the API finds results
+    const districtSearchTerm = cleanDistrictName(district);
+
     Promise.all([
       api.getKpis(),
-      api.getFlags({ page: 1, pageSize: 6, risk_label: 'CRITICAL', search: district })
+      api.getFlags({ page: 1, pageSize: 6, risk_label: 'CRITICAL', search: districtSearchTerm })
     ]).then(([kpiData, flagData]) => {
       if (isMounted) {
         setKpis(kpiData);
@@ -70,12 +80,19 @@ export default function CitizenDashboard({
   // District options for current state
   const availableDistricts = authOptions.districts_by_state[state] || [district];
 
+  // BUG FIX: api.getKpis() already transforms the data into crore-converted fields:
+  // total_sanctioned_cr, total_spent_cr, total_at_risk_cr — do NOT divide by 10M again
   const totalWorks = kpis?.total_works || 0;
-  const sanctionedCr = (kpis?.total_sanctioned_amount || 0) / 10000000;
-  const spentCr = (kpis?.total_spent_amount || 0) / 10000000;
-  const atRiskCr = (kpis?.total_funds_at_risk || 0) / 10000000;
+  const sanctionedCr = kpis?.total_sanctioned_cr ?? 0;
+  const spentCr = kpis?.total_spent_cr ?? 0;
+  const atRiskCr = kpis?.total_at_risk_cr ?? 0;
   const criticalCount = kpis?.critical_count || 0;
-  const integrityPct = totalWorks > 0 ? Math.max(0, Math.round(((totalWorks - criticalCount) / totalWorks) * 100)) : 88;
+  const integrityPct = totalWorks > 0
+    ? Math.max(0, Math.round(((totalWorks - criticalCount) / totalWorks) * 100))
+    : 88;
+
+  // Display-clean version of the selected district (strips raw IDA formatting)
+  const displayDistrict = cleanDistrictName(district);
 
   return (
     <div className="space-y-6">
@@ -94,7 +111,7 @@ export default function CitizenDashboard({
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">
-              {district} District Fraud &amp; Anomaly Watch
+              {displayDistrict} District Fraud &amp; Anomaly Watch
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
@@ -112,7 +129,7 @@ export default function CitizenDashboard({
                 className="bg-transparent text-white text-xs font-mono font-bold focus:outline-none cursor-pointer pr-2"
               >
                 {availableDistricts.map(d => (
-                  <option key={d} value={d} className="bg-slate-900 text-white font-sans">{d}</option>
+                  <option key={d} value={d} className="bg-slate-900 text-white font-sans">{cleanDistrictName(d)}</option>
                 ))}
               </select>
             </div>
@@ -213,7 +230,7 @@ export default function CitizenDashboard({
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-rose-400" />
-              <span>Priority Anomalies Requiring Public Scrutiny in {district}</span>
+              <span>Priority Anomalies Requiring Public Scrutiny in {displayDistrict}</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
               Top critical schemes flagged for ghost duplicate photos, split tendering, or unvouched treasury disbursements.
@@ -234,8 +251,12 @@ export default function CitizenDashboard({
             Loading district anomaly feed...
           </div>
         ) : priorityFlags.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-400 font-mono">
-            No critical anomalies found for this district scope.
+          <div className="py-12 text-center space-y-2">
+            <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
+            <p className="text-sm font-bold text-white">No Critical Anomalies in {displayDistrict}</p>
+            <p className="text-xs text-slate-400 font-mono">
+              This district has no CRITICAL-tier flags. Use the Full Anomaly Radar to view all monitored schemes.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -243,6 +264,10 @@ export default function CitizenDashboard({
               const cleanId = String(flag.work_id || flag.id);
               const sanctionLakh = (Number(flag.sanction_amount || 0) / 100000).toFixed(2);
               const spentLakh = (Number(flag.total_spent || 0) / 100000).toFixed(2);
+              // risk_score from api.getFlags is normalized to 0-1; show as /100 integer
+              const riskPct = flag.risk_score
+                ? Math.round(flag.risk_score > 1 ? flag.risk_score : flag.risk_score * 100)
+                : 0;
 
               return (
                 <div
@@ -255,7 +280,7 @@ export default function CitizenDashboard({
                         #{cleanId}
                       </span>
                       <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-mono font-bold border border-rose-500/30">
-                        CRITICAL RISK: {Number(flag.risk_score || 0.85).toFixed(2)}
+                        CRITICAL RISK: {riskPct}%
                       </span>
                     </div>
 
