@@ -209,14 +209,6 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </button>
 
             <button
-              onClick={() => api.downloadWorkPdf(workId)}
-              className="hidden sm:flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-200 border border-violet-500/40 hover:shadow-glow-violet transition-all cursor-pointer"
-              title="Download Official MoSPI Statutory Audit PDF Dossier"
-            >
-              <Download className="w-4 h-4 text-violet-400" />
-              <span>Download Statutory Audit PDF</span>
-            </button>
-            <button
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             >
@@ -238,39 +230,39 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
               {/* Case Metadata Banner */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                 <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Sanctioned Outlay</div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Approved Budget</div>
                   <div className="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">
                     ₹{(sanctionAmt / 100000).toFixed(2)} L
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">Approved Budget</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Govt Sanctioned</div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Total Disbursed</div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Total Money Spent</div>
                   <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${spentAmt > sanctionAmt ? 'text-rose-400' : 'text-slate-100'}`}>
                     ₹{(spentAmt / 100000).toFixed(2)} L
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">
-                    {overrunPct > 0 ? `+${overrunPct.toFixed(1)}% Overrun` : 'Within Sanction'}
+                    {overrunPct > 0 ? `+${overrunPct.toFixed(1)}% Over Budget` : 'Within Budget'}
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Physical Progress</div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Work Completed</div>
                   <div className="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono mt-1">
                     {progressPct.toFixed(0)}%
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">
                     {progressPct === 0 && spentAmt > 0 ? (
                       <span className="text-rose-400 font-bold">Ghost Scheme Alert</span>
-                    ) : 'Site Velocity'}
+                    ) : 'Ground Progress'}
                   </div>
                 </div>
 
                 <div className={`p-4 rounded-xl border ${
                   isCritical ? 'bg-rose-950/40 border-rose-500/40' : 'bg-slate-900/80 border-slate-800'
                 }`}>
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Composite Risk Score</div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Fraud Risk Level</div>
                   <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`}>
                     {riskScore.toFixed(3)} / 1.000
                   </div>
@@ -322,7 +314,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 })}
               </div>
 
-              {/* TAB 1: AI Explainer & CAG Audit Memo */}
+              {/* TAB 1: AI Explainer & Investigation Report */}
               {activeTab === 'ai_memo' && (
                 <div className="space-y-4">
                   
@@ -331,9 +323,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     <div className="flex items-center space-x-3">
                       <Sparkles className="w-5 h-5 text-violet-400" />
                       <div>
-                        <div className="text-sm sm:text-base font-bold text-white font-display">National CAG Autonomous Audit Memo Engine</div>
+                        <div className="text-sm sm:text-base font-bold text-white font-display">AI Case Investigation Report</div>
                         <div className="text-xs text-slate-300">
-                          Synthesizes MPLADS Para 3.12, GFR Rule 144, and anomaly indicators into legal audit memo.
+                          Reviews budget allocations, contractor payouts, and physical progress in simple, everyday statements.
                         </div>
                       </div>
                     </div>
@@ -341,83 +333,197 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     <button
                       onClick={startStreamingExplainer}
                       disabled={isStreaming}
-                      className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-500 text-white transition-all disabled:opacity-50 flex items-center space-x-2 shadow-lg shadow-violet-500/30"
+                      className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-500 text-white transition-all disabled:opacity-50 flex items-center space-x-2 shadow-lg shadow-violet-500/30 cursor-pointer"
                     >
                       <span className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-emerald-400 animate-ping' : 'bg-white'}`} />
-                      <span>{isStreaming ? 'Streaming Tokens...' : 'Stream Live Memo'}</span>
+                      <span>{isStreaming ? 'Streaming Report...' : 'Stream Live Report'}</span>
                     </button>
                   </div>
 
                   {/* Streaming Output Display */}
                   {isStreaming || streamedContent ? (
-                    <div className="p-5 rounded-xl bg-slate-900/90 border border-violet-500/40 font-mono text-sm text-slate-100 whitespace-pre-wrap leading-relaxed shadow-inner">
+                    <div className="p-5 rounded-xl bg-slate-900/90 border border-violet-500/40 font-sans text-sm text-slate-100 whitespace-pre-wrap leading-relaxed shadow-inner">
                       {streamedContent}
                       {isStreaming && <span className="inline-block w-2 h-4 bg-violet-400 animate-pulse ml-1">▍</span>}
                     </div>
                   ) : null}
 
-                  {/* Structured CAG Audit Memo */}
+                  {/* Structured Audit Memo */}
                   {aiLoading ? (
                     <div className="py-12 text-center text-slate-400 font-mono text-sm">
-                      Formulating CAG Audit Finding Memorandum...
+                      Formulating clear case investigation report...
                     </div>
                   ) : aiData ? (
                     <div className="space-y-4">
-                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-                        <div className="text-sm font-mono font-bold uppercase text-violet-400 tracking-wide">
-                          1. Executive Finding &amp; Violation Type
+                      
+                      {/* Section 1: Summary of Findings */}
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs sm:text-sm font-mono font-bold uppercase text-violet-400 tracking-wide">
+                            1. What Was Found (Summary)
+                          </div>
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                            Key Overview
+                          </span>
                         </div>
-                        <p className="text-sm sm:text-base text-slate-100 leading-relaxed">
-                          {typeof aiData?.explanation === 'string'
+
+                        {(() => {
+                          const raw = typeof aiData?.explanation === 'string'
                             ? aiData.explanation
-                            : (aiData?.explanation?.case_summary || aiData?.explanation?.primary_finding || aiData?.case_summary || 'Composite statistical anomaly detected exceeding statutory variance thresholds.')}
-                        </p>
+                            : (aiData?.explanation?.case_summary || aiData?.explanation?.primary_finding || aiData?.case_summary || '');
+                          
+                          // Clean up ugly raw authority names like North 24 Parganas(DISTRICT MAGISTRATE...)
+                          const cleanedText = (raw || '').replace(/\([A-Z0-9_\s]{12,}\)/g, '');
+
+                          // If it contains pipe tags like [Finance] ... | [Vendor] ...
+                          if (cleanedText.includes('|') || cleanedText.includes('[')) {
+                            const intro = cleanedText.split(/\[Finance\]|\|/)[0].trim();
+                            const matches = Array.from(cleanedText.matchAll(/\[(.*?)\]\s*([^|\[]+)/g));
+
+                            return (
+                              <div className="space-y-3">
+                                {intro && (
+                                  <p className="text-sm sm:text-base text-slate-100 leading-relaxed font-medium">
+                                    {intro}
+                                  </p>
+                                )}
+                                {matches.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                    {matches.map((m, idx) => {
+                                      const tag = m[1].toLowerCase();
+                                      let val = m[2].trim();
+                                      if (val.endsWith('.')) val = val.slice(0, -1);
+
+                                      let icon = '📌';
+                                      let label = 'Finding';
+                                      let border = 'border-slate-800';
+                                      if (tag.includes('finance')) {
+                                        icon = '💰';
+                                        label = 'Budget & Spending Mismatch';
+                                        border = 'border-rose-500/30 bg-rose-950/10';
+                                      } else if (tag.includes('vendor')) {
+                                        icon = '🏢';
+                                        label = 'Contractor Monopoly';
+                                        border = 'border-amber-500/30 bg-amber-950/10';
+                                      } else if (tag.includes('compliance')) {
+                                        icon = '⚠️';
+                                        label = 'Government Rule Violation';
+                                        border = 'border-violet-500/30 bg-violet-950/10';
+                                      } else if (tag.includes('timeline')) {
+                                        icon = '⏳';
+                                        label = 'Project Stalled';
+                                        border = 'border-sky-500/30 bg-sky-950/10';
+                                      }
+
+                                      return (
+                                        <div key={idx} className={`p-3 rounded-xl border ${border} flex items-start gap-2.5`}>
+                                          <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
+                                          <div>
+                                            <div className="text-xs font-bold text-slate-200 mb-0.5">{label}</div>
+                                            <div className="text-xs text-slate-300 leading-relaxed">{val}</div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          // Simple direct sentence
+                          return (
+                            <p className="text-sm sm:text-base text-slate-100 leading-relaxed font-medium">
+                              {cleanedText || 'Composite statistical anomaly detected exceeding permissible project variance thresholds.'}
+                            </p>
+                          );
+                        })()}
                       </div>
 
-                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-                        <div className="text-sm font-mono font-bold uppercase text-amber-400 tracking-wide">
-                          2. Statutory Contraventions &amp; Forensic Red Flags
+                      {/* Section 2: Major Red Flags */}
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs sm:text-sm font-mono font-bold uppercase text-amber-400 tracking-wide">
+                            2. Major Red Flags &amp; Suspicious Activity
+                          </div>
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            Warning Signs
+                          </span>
                         </div>
-                        <div className="text-sm text-slate-200 space-y-2">
+
+                        <div className="text-xs sm:text-sm text-slate-200 space-y-2.5">
                           {Array.isArray(aiData?.explanation?.red_flags) && aiData.explanation.red_flags.length > 0 ? (
-                            aiData.explanation.red_flags.map((flag, idx) => (
-                              <p key={idx} className="flex items-start gap-2">
-                                <span className="text-amber-400 font-bold">•</span>
-                                <span>{typeof flag === 'string' ? flag : JSON.stringify(flag)}</span>
-                              </p>
-                            ))
+                            aiData.explanation.red_flags.map((flag, idx) => {
+                              const flagStr = (typeof flag === 'string' ? flag : JSON.stringify(flag)).replace(/\([A-Z0-9_\s]{12,}\)/g, '');
+                              return (
+                                <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                  <span className="text-amber-400 font-bold text-sm leading-none mt-0.5">●</span>
+                                  <span className="leading-relaxed text-slate-200">{flagStr}</span>
+                                </div>
+                              );
+                            })
                           ) : (
                             <>
-                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>GFR 2017 Rule 144:</strong> Breach of competitive public procurement guidelines.</span></p>
-                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>MPLADS Guidelines 2023 (Para 3.12):</strong> Mandate for geo-tagged completion proofs prior to final tranche disbursement.</span></p>
-                              <p className="flex items-start gap-2"><span className="text-amber-400 font-bold">•</span><span><strong>CAG Manual of Standing Orders (Audit):</strong> Discrepancy between reported physical execution and ledger withdrawals.</span></p>
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-amber-400 font-bold text-sm leading-none mt-0.5">●</span>
+                                <span className="leading-relaxed text-slate-200"><strong>Funds Disbursed Without Construction:</strong> Most money paid out before physical ground completion.</span>
+                              </div>
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-amber-400 font-bold text-sm leading-none mt-0.5">●</span>
+                                <span className="leading-relaxed text-slate-200"><strong>Missing Physical Photos:</strong> No geo-tagged site photographs uploaded as required by law.</span>
+                              </div>
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-amber-400 font-bold text-sm leading-none mt-0.5">●</span>
+                                <span className="leading-relaxed text-slate-200"><strong>Contractor Dominance:</strong> High percentage of constituency works assigned to a single contractor.</span>
+                              </div>
                             </>
                           )}
                         </div>
                       </div>
 
-                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-                        <div className="text-sm font-mono font-bold uppercase text-rose-400 tracking-wide">
-                          3. Recommended Administrative &amp; Legal Directives
+                      {/* Section 3: Action Required */}
+                      <div className="p-5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs sm:text-sm font-mono font-bold uppercase text-rose-400 tracking-wide">
+                            3. Recommended Actions / What Needs to Be Done
+                          </div>
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                            Action Plan
+                          </span>
                         </div>
-                        <div className="text-sm text-slate-200 space-y-2">
+
+                        <div className="text-xs sm:text-sm text-slate-200 space-y-2.5">
                           {aiData?.explanation?.recommended_action ? (
-                            <p className="flex items-start gap-2">
-                              <span className="text-rose-400 font-bold">•</span>
-                              <span>{typeof aiData.explanation.recommended_action === 'string' ? aiData.explanation.recommended_action : JSON.stringify(aiData.explanation.recommended_action)}</span>
-                            </p>
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-rose-950/20 border border-rose-500/30">
+                              <span className="text-rose-400 font-bold text-base leading-none mt-0.5">👉</span>
+                              <span className="leading-relaxed text-rose-200 font-medium">
+                                {(typeof aiData.explanation.recommended_action === 'string'
+                                  ? aiData.explanation.recommended_action
+                                  : JSON.stringify(aiData.explanation.recommended_action)
+                                ).replace(/\([A-Z0-9_\s]{12,}\)/g, '')}
+                              </span>
+                            </div>
                           ) : (
-                            <>
-                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">1.</span><span>Immediate freezing of 3rd and subsequent tranches under District Authority account.</span></p>
-                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">2.</span><span>Physical inspection warrant assigned to Sub-Divisional Magistrate (SDM).</span></p>
-                              <p className="flex items-start gap-2"><span className="text-rose-400 font-bold">3.</span><span>Summons to Implementing Agency for reconciliation of contractor muster rolls.</span></p>
-                            </>
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-rose-400 font-bold font-mono">1.</span>
+                                <span className="leading-relaxed text-slate-200">Send an independent field officer to the site within 14 days to physically confirm if the asset exists.</span>
+                              </div>
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-rose-400 font-bold font-mono">2.</span>
+                                <span className="leading-relaxed text-slate-200">Freeze subsequent payment tranches until geo-tagged photo proofs and muster rolls are verified.</span>
+                              </div>
+                              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-950/40 border border-slate-800/80">
+                                <span className="text-rose-400 font-bold font-mono">3.</span>
+                                <span className="leading-relaxed text-slate-200">Audit contractor credentials and verify bank account beneficiary details.</span>
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-slate-400 p-5">AI audit memo ready to be generated.</div>
+                    <div className="text-sm text-slate-400 p-5">Case investigation report ready to be generated.</div>
                   )}
 
                 </div>

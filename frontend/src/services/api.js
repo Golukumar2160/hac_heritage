@@ -77,7 +77,8 @@ export const api = {
         { username: 'ministry_admin', name: 'MoSPI Ministry Official', role: 'ministry', designation: 'Central Vigilance & National Oversight' },
         { username: 'state_nodal_up', name: 'State Nodal Authority - UP', role: 'state', state: 'Uttar Pradesh', designation: 'Principal Secretary (Planning)' },
         { username: 'district_pilibhit', name: 'District Authority - Pilibhit', role: 'district', state: 'Uttar Pradesh', ida: 'PILIBHIT', designation: 'District Magistrate & Collector' },
-        { username: 'mp_javed', name: 'Shri Javed Ali Khan (MP)', role: 'mp', mp_name: 'Shri Javed Ali Khan', state: 'Uttar Pradesh', designation: 'Member of Parliament (Rajya Sabha)' }
+        { username: 'mp_javed', name: 'Shri Javed Ali Khan (MP)', role: 'mp', mp_name: 'Shri Javed Ali Khan', state: 'Uttar Pradesh', designation: 'Member of Parliament (Rajya Sabha)' },
+        { username: 'citizen_pilibhit', name: 'Shri Rajesh Verma', role: 'citizen', state: 'Uttar Pradesh', ida: 'PILIBHIT', designation: 'Jan-Drishti Public Watchdog' }
       ]
     };
   },
@@ -233,6 +234,10 @@ export const api = {
     };
   },
 
+  async getWork(workId) {
+    return this.getWorkDetail(workId);
+  },
+
   // AI Explainer & CAG Memo
   async getAiExplanation(workId) {
     const res = await fetch(`${API_BASE}/api/explain/work/${encodeURIComponent(workId)}`, { headers: getHeaders() });
@@ -254,8 +259,27 @@ export const api = {
     return `${API_BASE}/api/work/${encodeURIComponent(workId)}/qr-code`;
   },
 
-  async submitCitizenFeedback(workId, { report_type = 'ground_empty', description = '', citizen_name = '', citizen_contact = '' } = {}) {
-    const res = await fetch(`${API_BASE}/api/work/${encodeURIComponent(workId)}/citizen-feedback`, {
+  async submitCitizenFeedback(workId, { report_type = 'ghost_asset', description = '', citizen_name = '', citizen_contact = '' } = {}) {
+    try {
+      const res = await fetch(`${API_BASE}/api/citizen/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          work_id: String(workId),
+          report_type,
+          description,
+          citizen_name,
+          citizen_contact,
+        }),
+      });
+      if (res.ok) {
+        return await handleResponse(res);
+      }
+    } catch {
+      // fallback to path endpoint below
+    }
+
+    const fallbackRes = await fetch(`${API_BASE}/api/work/${encodeURIComponent(workId)}/citizen-feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -265,7 +289,7 @@ export const api = {
         citizen_contact,
       }),
     });
-    return handleResponse(res);
+    return handleResponse(fallbackRes);
   },
 
   // Statutory Audit Investigation PDF Export
@@ -413,6 +437,10 @@ export const api = {
   async getOcrFlags() {
     const res = await fetch(`${API_BASE}/api/image-forensics/ocr-flags`, { headers: getHeaders() });
     return handleResponse(res);
+  },
+
+  async getForensicsOcrFlags() {
+    return this.getOcrFlags();
   },
 
   async getForensicsDuplicates() {

@@ -5,18 +5,22 @@ import ExecutiveKpis from './components/ExecutiveKpis';
 import QuickStatsCharts from './components/QuickStatsCharts';
 import LiveAlertFeed from './components/LiveAlertFeed';
 import CaseFileModal from './components/CaseFileModal';
-import BenfordView from './components/BenfordView';
 import VendorNetworkView from './components/VendorNetworkView';
 import GeoRiskMapView from './components/GeoRiskMapView';
 import AuditLedgerView from './components/AuditLedgerView';
 import SecretaryBriefingModal from './components/SecretaryBriefingModal';
-import OcrLabView from './components/OcrLabView';
-import PHashViewer from './components/PHashViewer';
+import VisualForensicsLab from './components/VisualForensicsLab';
 import ModelValidationView from './components/ModelValidationView';
 import EarlyWarningRadar from './components/EarlyWarningRadar';
 import AuthModal from './components/AuthModal';
 import { api } from './services/api';
 import AshokaChakra from './components/AshokaChakra';
+import { 
+  CitizenDashboard, 
+  CitizenAnomalyFeed, 
+  CitizenCaseModal, 
+  CitizenPlaqueView 
+} from './citizen';
 import { 
   ShieldAlert, 
   Sparkles, 
@@ -38,9 +42,16 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeRole, setActiveRole] = useState('ministry');
   const [currentUser, setCurrentUser] = useState(() => api.getCurrentUser());
+  const isCitizen = currentUser?.role === 'citizen';
+  const [activeTab, setActiveTab] = useState(() => {
+    const user = api.getCurrentUser();
+    return user?.role === 'citizen' ? 'citizen_overview' : 'overview';
+  });
+  const [activeRole, setActiveRole] = useState(() => {
+    const user = api.getCurrentUser();
+    return user?.role || 'ministry';
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [selectedWorkId, setSelectedWorkId] = useState(null);
@@ -97,6 +108,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // URL Deep-Linking: Check for ?verify= or ?work_id= from QR codes or direct links
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const verifyId = params.get('verify') || params.get('work_id');
+      if (verifyId) {
+        setSelectedWorkId(decodeURIComponent(verifyId).trim());
+      }
+    } catch (e) {
+      console.warn('Could not parse verify param from URL:', e);
+    }
+  }, []);
+
 
   const loadKpis = async () => {
     if (!currentUser) return;
@@ -120,6 +144,11 @@ export default function App() {
     setCurrentUser(user);
     setActiveRole(user.role || 'ministry');
     setShowAuthModal(false);
+    if (user.role === 'citizen') {
+      setActiveTab('citizen_overview');
+    } else {
+      setActiveTab('overview');
+    }
     loadKpis();
     showToast(`Welcome, ${user.name} (${(user.role || 'Official').toUpperCase()})`);
   };
@@ -127,6 +156,8 @@ export default function App() {
   const handleLogout = () => {
     api.logout();
     setCurrentUser(null);
+    setActiveTab('overview');
+    setActiveRole('ministry');
     setKpis(null);
     showToast('Signed out of official account');
   };
@@ -163,6 +194,22 @@ export default function App() {
           onAuthSuccess={handleAuthSuccess}
           activeRole={activeRole}
         />
+        {/* Deep-Linked Citizen Verification Modal for Scanned / Shared QR links */}
+        {selectedWorkId && (
+          <CitizenCaseModal
+            workId={selectedWorkId}
+            onClose={() => {
+              setSelectedWorkId(null);
+              const url = new URL(window.location.href);
+              url.searchParams.delete('verify');
+              url.searchParams.delete('work_id');
+              window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+            }}
+            onFeedbackSubmitted={() => {
+              showToast(`Citizen report for #${selectedWorkId} registered with district vigilance.`);
+            }}
+          />
+        )}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl glass-panel-glow border border-violet-500/40 text-sm font-semibold text-violet-200 shadow-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-5">
             <Sparkles className="w-4 h-4 text-violet-400" />
@@ -180,10 +227,15 @@ export default function App() {
     early_warning: 'Early Warning & Predictive Forecast',
     map: 'Geospatial Risk Map',
     vendors: 'Contractor Syndicates & Cartels',
-    ocr: 'Physical Evidence & OCR Lab',
-    phash: 'Photo Forensics & pHash Vault',
+    visual_forensics: 'Visual & Media Forensics Lab',
+    ocr: 'Visual & Media Forensics Lab',
+    phash: 'Visual & Media Forensics Lab',
     audit: 'Statutory Audit Ledger',
-    validation: 'Model Validation & ROC'
+    validation: 'Model Validation & ROC',
+    citizen_overview: 'District Fraud Watch',
+    citizen_alerts: 'District Anomaly Radar',
+    citizen_map: 'District Geospatial Map',
+    citizen_plaques: 'Jan-Drishti Plaque & QR'
   };
 
   return (
@@ -299,8 +351,37 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 1: COMMAND CENTRE */}
-          {activeTab === 'overview' && (
+          {/* CITIZEN VIEWS */}
+          {isCitizen && (activeTab === 'citizen_overview' || activeTab === 'overview') && (
+            <CitizenDashboard
+              key={`citizen-dash-${currentUser?.ida || 'dist'}`}
+              currentUser={currentUser}
+              onSelectWork={setSelectedWorkId}
+              onNavigateTab={setActiveTab}
+              theme={theme}
+            />
+          )}
+
+          {isCitizen && (activeTab === 'citizen_alerts' || activeTab === 'alerts') && (
+            <CitizenAnomalyFeed
+              key={`citizen-feed-${currentUser?.ida || 'dist'}`}
+              district={currentUser?.ida || 'PILIBHIT'}
+              state={currentUser?.state || 'Uttar Pradesh'}
+              onSelectWork={setSelectedWorkId}
+            />
+          )}
+
+          {isCitizen && activeTab === 'citizen_plaques' && (
+            <CitizenPlaqueView
+              key={`citizen-plaque-${currentUser?.ida || 'dist'}`}
+              district={currentUser?.ida || 'PILIBHIT'}
+              state={currentUser?.state || 'Uttar Pradesh'}
+              onSelectWork={setSelectedWorkId}
+            />
+          )}
+
+          {/* OFFICIAL TAB 1: COMMAND CENTRE */}
+          {!isCitizen && activeTab === 'overview' && (
             <div className="space-y-6">
               
               {/* Command Centre Telemetry Banner */}
@@ -312,7 +393,7 @@ export default function App() {
                   </span>
                   <div>
                     <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                      NATIONAL COMMAND ACTIVE — {(kpis?.total_works || 98649).toLocaleString()} WORKS
+                      NATIONAL COMMAND ACTIVE
                     </span>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations</p>
                   </div>
@@ -371,8 +452,8 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 2: LIVE ALERTS FEED */}
-          {activeTab === 'alerts' && (
+          {/* OFFICIAL TAB 2: LIVE ALERTS FEED */}
+          {!isCitizen && activeTab === 'alerts' && (
             <div className="space-y-4">
               <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div>
@@ -399,8 +480,8 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}
-          {activeTab === 'early_warning' && (
+          {/* OFFICIAL TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}
+          {!isCitizen && activeTab === 'early_warning' && (
             <EarlyWarningRadar 
               key={`early-warning-${activeRole}`}
               onSelectWork={setSelectedWorkId} 
@@ -408,32 +489,18 @@ export default function App() {
             />
           )}
 
-          {/* TAB: MODEL ACCURACY & VALIDATION */}
-          {activeTab === 'validation' && (
+          {/* OFFICIAL TAB: MODEL ACCURACY & VALIDATION */}
+          {!isCitizen && activeTab === 'validation' && (
             <ModelValidationView onSelectWork={setSelectedWorkId} />
           )}
 
-          {/* TAB 3: BENFORD'S LAW FORENSIC MODULE */}
-          {activeTab === 'benford' && (
-            <BenfordView 
-              key={`benford-${activeRole}`} 
-              activeRole={activeRole} 
-              onSelectWork={setSelectedWorkId} 
-            />
+          {/* VISUAL & MEDIA FORENSICS LAB (COMBINED PHASH, TAMPER ELA & OCR) */}
+          {(activeTab === 'visual_forensics' || activeTab === 'phash' || activeTab === 'ocr') && (
+            <VisualForensicsLab onSelectWork={setSelectedWorkId} />
           )}
 
-          {/* TAB 4: OCR CERTIFICATE LAB */}
-          {activeTab === 'ocr' && (
-            <OcrLabView onSelectWork={setSelectedWorkId} />
-          )}
-
-          {/* TAB 5: PHASH PHOTO FORENSICS */}
-          {activeTab === 'phash' && (
-            <PHashViewer onSelectWork={setSelectedWorkId} />
-          )}
-
-          {/* TAB 6: CONTRACTOR SYNDICATES & CARTELS */}
-          {activeTab === 'vendors' && (
+          {/* OFFICIAL TAB 6: CONTRACTOR SYNDICATES & CARTELS */}
+          {!isCitizen && activeTab === 'vendors' && (
             <VendorNetworkView 
               key={`vendors-${activeRole}`} 
               activeRole={activeRole} 
@@ -442,7 +509,7 @@ export default function App() {
           )}
 
           {/* TAB 7: GEOSPATIAL MAP */}
-          {activeTab === 'map' && (
+          {(activeTab === 'map' || activeTab === 'citizen_map') && (
             <GeoRiskMapView 
               key={`map-${activeRole}`} 
               activeRole={activeRole} 
@@ -450,8 +517,8 @@ export default function App() {
             />
           )}
 
-          {/* TAB 8: IMMUTABLE AUDIT LEDGER */}
-          {activeTab === 'audit' && (
+          {/* OFFICIAL TAB 8: IMMUTABLE AUDIT LEDGER */}
+          {!isCitizen && activeTab === 'audit' && (
             <AuditLedgerView 
               key={`audit-${activeRole}`} 
               activeRole={activeRole} 
@@ -463,18 +530,41 @@ export default function App() {
 
         {/* Forensic Case File Modal (Deep-Dive Drawer) */}
         {selectedWorkId && (
-          <CaseFileModal
-            workId={selectedWorkId}
-            onClose={() => setSelectedWorkId(null)}
-            onActionLogged={() => {
-              showToast(`Auditor action for #${selectedWorkId} permanently sealed.`);
-              loadKpis();
-            }}
-          />
+          isCitizen ? (
+            <CitizenCaseModal
+              workId={selectedWorkId}
+              onClose={() => {
+                setSelectedWorkId(null);
+                const url = new URL(window.location.href);
+                url.searchParams.delete('verify');
+                url.searchParams.delete('work_id');
+                window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+              }}
+              onFeedbackSubmitted={() => {
+                showToast(`Citizen report for #${selectedWorkId} registered with district vigilance.`);
+                loadKpis();
+              }}
+            />
+          ) : (
+            <CaseFileModal
+              workId={selectedWorkId}
+              onClose={() => {
+                setSelectedWorkId(null);
+                const url = new URL(window.location.href);
+                url.searchParams.delete('verify');
+                url.searchParams.delete('work_id');
+                window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+              }}
+              onActionLogged={() => {
+                showToast(`Auditor action for #${selectedWorkId} permanently sealed.`);
+                loadKpis();
+              }}
+            />
+          )
         )}
 
-        {/* MoSPI Secretary AI Briefing Modal */}
-        {showSecretaryBriefing && (
+        {/* MoSPI Secretary AI Briefing Modal (Statutory central authorities only) */}
+        {!isCitizen && showSecretaryBriefing && (
           <SecretaryBriefingModal
             onClose={() => setShowSecretaryBriefing(false)}
           />

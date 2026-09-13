@@ -81,6 +81,13 @@ export default function Header({
       subtitle: 'Parliamentary Constituency Watchdog',
       icon: Vote,
       color: 'bg-amber-950 border-amber-700 text-amber-300'
+    },
+    { 
+      id: 'citizen', 
+      name: 'Shri Rajesh Verma (Citizen)', 
+      subtitle: 'Jan-Drishti Public Watchdog (Pilibhit)',
+      icon: ShieldCheck,
+      color: 'bg-emerald-950 border-emerald-700 text-emerald-300'
     }
   ];
 
@@ -97,6 +104,8 @@ export default function Header({
         return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
       case 'mp':
         return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      case 'citizen':
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
       default:
         return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
     }
@@ -138,9 +147,7 @@ export default function Header({
               { id: 'overview', label: 'War Room' },
               { id: 'alerts', label: 'Live Flags' },
               { id: 'validation', label: '🎯 Model Accuracy' },
-              { id: 'benford', label: "Benford's Law" },
-              { id: 'ocr', label: '🔬 OCR Lab' },
-              { id: 'phash', label: '🖼️ pHash Viewer' },
+              { id: 'visual_forensics', label: '🖼️ Visual Forensics' },
               { id: 'vendors', label: 'Vendor Rings' },
               { id: 'map', label: '🗺️ India Risk Map' },
               { id: 'audit', label: 'Audit Ledger' },
@@ -337,9 +344,7 @@ export default function Header({
             { id: 'overview', label: 'War Room' },
             { id: 'alerts', label: 'Live Flags' },
             { id: 'validation', label: 'Accuracy' },
-            { id: 'benford', label: "Benford's Law" },
-            { id: 'ocr', label: 'OCR Lab' },
-            { id: 'phash', label: 'pHash' },
+            { id: 'visual_forensics', label: 'Visual Forensics' },
             { id: 'vendors', label: 'Vendors' },
             { id: 'map', label: '🗺️ India Map' },
             { id: 'audit', label: 'Audit Log' },

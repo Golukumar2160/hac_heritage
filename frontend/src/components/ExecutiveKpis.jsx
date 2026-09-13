@@ -1,14 +1,9 @@
 import React from 'react';
 import { 
   AlertTriangle, 
-  IndianRupee, 
   Layers, 
   TrendingUp, 
-  FileWarning, 
-  Image as ImageIcon,
   Flame,
-  ShieldCheck,
-  Zap,
   ArrowUpRight
 } from 'lucide-react';
 
@@ -132,55 +127,6 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
             </div>
           );
         })}
-      </div>
-
-      {/* Secondary Forensic Flags Status Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div 
-          onClick={() => onFilterTier && onFilterTier('critical')}
-          className="glass-panel p-4 rounded-xl cursor-pointer card-interactive flex items-center justify-between group border border-rose-500/30"
-        >
-          <div>
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Critical Priority</div>
-            <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-0.5 group-hover:scale-105 transition-transform">
-              {Number(critical_count).toLocaleString()}
-            </div>
-          </div>
-          <span className="h-3 w-3 rounded-full animate-pulse bg-rose-500" style={{ boxShadow: '0 0 10px rgba(244,63,94,0.6)' }} />
-        </div>
-
-        <div 
-          onClick={() => onFilterTier && onFilterTier('high')}
-          className="glass-panel p-4 rounded-xl cursor-pointer card-interactive flex items-center justify-between group border border-amber-500/30"
-        >
-          <div>
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">High Risk Schemes</div>
-            <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-0.5 group-hover:scale-105 transition-transform">
-              {Number(high_count).toLocaleString()}
-            </div>
-          </div>
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" style={{ boxShadow: '0 0 8px rgba(251,191,36,0.5)' }} />
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl card-interactive flex items-center justify-between border border-violet-500/30">
-          <div>
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Duplicate Photos (pHash)</div>
-            <div className="text-xl font-extrabold text-violet-600 dark:text-violet-300 font-mono mt-0.5">
-              {duplicate_photos_count} Works
-            </div>
-          </div>
-          <ImageIcon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl card-interactive flex items-center justify-between border border-emerald-500/30">
-          <div>
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-300">Low / Verified Works</div>
-            <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-              {Number(low_count).toLocaleString()}
-            </div>
-          </div>
-          <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-        </div>
       </div>
     </section>
   );

@@ -44,7 +44,7 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
       code: 'GFR-144-V1',
       desc: 'Detects artificial invoice fragmentation right below ₹50 Lakh statutory e-procurement thresholds.',
       status: 'ACTIVE SURVEILLANCE',
-      stat: 'Chi-Sq Benford Score: 44.2',
+      stat: 'Tender Evasion Flagged: 128',
       color: 'border-violet-500/30 text-violet-400 bg-violet-950/20'
     },
     {
@@ -222,16 +222,24 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
               style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.85) 0%, rgba(99,102,241,0.85) 100%)', boxShadow: '0 8px 32px -4px rgba(139,92,246,0.4)' }}
             >
               <ShieldCheck className="w-5 h-5" />
-              <span>Authenticate &amp; Enter Command Centre</span>
+              <span>Authenticate Official</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 
             <button
+              onClick={() => onOpenAuthModal('login')}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-emerald-200 hover:text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-lg border border-emerald-500/40 hover:border-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/50 backdrop-blur-md"
+            >
+              <span className="text-emerald-400">👤</span>
+              <span>Citizen Vigilance Portal</span>
+            </button>
+
+            <button
               onClick={() => onOpenAuthModal('register')}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-slate-200 hover:text-white transition-all flex items-center justify-center space-x-2 text-base backdrop-blur-md cursor-pointer border border-white/10 hover:border-violet-500/40"
+              className="w-full sm:w-auto px-7 py-4 rounded-xl font-semibold text-slate-200 hover:text-white transition-all flex items-center justify-center space-x-2 text-base backdrop-blur-md cursor-pointer border border-white/10 hover:border-violet-500/40"
               style={{ background: 'rgba(0,0,0,0.4)' }}
             >
-              <span>Register Official Credentials</span>
+              <span>Register Credentials</span>
             </button>
           </div>
         </div>
@@ -307,7 +315,7 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
               </div>
               <h3 className="font-bold text-white text-lg">5-Model AI Fraud Ensemble</h3>
               <p className="text-sm text-slate-300 leading-relaxed">
-                Isolation Forest for cost overruns, Benford's Law Chi-Square tests for invoice manipulation, and SentenceTransformers for monopoly cartel detection.
+                Isolation Forest for cost overruns, GFR threshold splitting tests for invoice manipulation, and SentenceTransformers for monopoly cartel detection.
               </p>
               <div className="pt-2 flex items-center space-x-2 text-xs font-semibold text-violet-300 font-mono">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -418,7 +426,7 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Audit Pillars</h4>
             <ul className="space-y-2 text-xs text-slate-300 font-medium">
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Benford's Law Digit Forensics</li>
+              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Predictive Early Warning Radar</li>
               <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> RapidOCR Neural PDF Stamping</li>
               <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> 64-bit DCT pHash Duplicate Vault</li>
               <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> GFR 2017 Tender Split Radar</li>

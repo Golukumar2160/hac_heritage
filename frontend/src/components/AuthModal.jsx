@@ -22,7 +22,8 @@ import {
   KeyRound,
   ChevronDown,
   Layers,
-  Database
+  Database,
+  UserCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import emblemLogo from '../assets/logo_dark.jpg';
@@ -210,11 +211,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
       return;
     }
 
-    if (selectedRole === 'state' && !signupForm.state) {
-      setError('Please select your designated State / Union Territory jurisdiction');
+    if ((selectedRole === 'state' || selectedRole === 'district' || selectedRole === 'citizen') && !signupForm.state) {
+      setError('Please select your designated State / Union Territory');
       return;
     }
-    if (selectedRole === 'district' && (!signupForm.state || !signupForm.ida)) {
+    if ((selectedRole === 'district' || selectedRole === 'citizen') && (!signupForm.state || !signupForm.ida)) {
       setError('Please select both State and Implementing District Authority (IDA)');
       return;
     }
@@ -231,11 +232,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
         role: selectedRole,
         name: signupForm.name.trim(),
         email: cleanEmail.toLowerCase(),
-        designation: signupForm.designation.trim() || undefined,
+        designation: selectedRole === 'citizen' ? 'Jan-Drishti Public Watchdog' : (signupForm.designation.trim() || undefined),
         state: selectedRole !== 'ministry' ? signupForm.state : undefined,
-        ida: selectedRole === 'district' ? signupForm.ida : undefined,
+        ida: (selectedRole === 'district' || selectedRole === 'citizen') ? signupForm.ida : undefined,
         mp_name: selectedRole === 'mp' ? signupForm.mp_name : undefined,
-        clearance_code: signupForm.clearance_code || undefined,
+        clearance_code: selectedRole === 'citizen' ? 'CITIZEN-PUBLIC' : (signupForm.clearance_code || undefined),
       };
 
       const user = await api.register(payload);
@@ -277,6 +278,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
       badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
       icon: Vote,
       desc: 'Parliamentary constituency recommendations, contractor syndicate watch, and public expenditure monitoring.'
+    },
+    citizen: {
+      title: 'Citizen Vigilance / Jan-Drishti Oversight',
+      badgeText: 'PUBLIC WATCHDOG • DISTRICT LEVEL',
+      badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      icon: UserCheck,
+      desc: 'Ground reality public verification, monitoring district project fraud, and reporting stalled or ghost infrastructure.'
     }
   };
 
@@ -355,24 +363,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
           </div>
         </div>
 
-        {/* Supabase PostgreSQL Cloud Database Connection Status */}
-        <div className="mx-6 mt-3 px-4 py-2.5 rounded-2xl bg-[#030611] border border-violet-500/25 flex items-center justify-between text-xs font-mono">
-          <div className="flex items-center space-x-2.5">
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span className="text-slate-200 font-semibold">Supabase PostgreSQL Database</span>
-            <span className="hidden sm:inline text-slate-500">•</span>
-            <span className="hidden sm:inline text-slate-400 text-[11px]">Official Credentials Store</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
-              {supabaseStatus.connected ? 'Live Connected' : 'Synchronized'}
-            </span>
-          </div>
-        </div>
+
 
         {/* Error Banner */}
         {error && (
@@ -447,6 +438,25 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                       <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">MP</span>
                     </div>
                     <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">Shri Javed Ali Khan (Watchdog)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('citizen_pilibhit', 'Citizen@2026')}
+                    className="col-span-2 p-2 rounded-xl bg-[#040714] hover:bg-emerald-950/60 border border-emerald-500/35 hover:border-emerald-400 text-left transition-all group cursor-pointer shadow-sm"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white group-hover:text-emerald-300">
+                      <span className="truncate flex items-center gap-1.5">
+                        <span className="text-emerald-400">👤</span>
+                        <span>Citizen Vigilance (Pilibhit District)</span>
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                        CITIZEN WATCHDOG
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">
+                      Shri Rajesh Verma • District-level public fraud scrutiny &amp; ground feedback
+                    </div>
                   </button>
                 </div>
               </div>
@@ -564,6 +574,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                     <option value="state">State Nodal Authority (State Jurisdiction &amp; Planning)</option>
                     <option value="district">District Authority (District Magistrate / IDA)</option>
                     <option value="mp">Member of Parliament (Lok Sabha / Rajya Sabha)</option>
+                    <option value="citizen">Citizen (Jan-Drishti Public Oversight &amp; District Vigilance)</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -584,14 +595,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                 <div className="p-4 rounded-2xl bg-[#040714]/90 border border-violet-500/20 space-y-3.5">
                   <div className="text-xs sm:text-sm font-mono uppercase tracking-wider text-violet-400 font-bold flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
-                    Official Assignment &amp; Jurisdiction
+                    {selectedRole === 'citizen' ? 'Home Jurisdiction & District Oversight' : 'Official Assignment & Jurisdiction'}
                   </div>
 
-                  {/* State Nodal & District Authority: State Select */}
-                  {(selectedRole === 'state' || selectedRole === 'district') && (
+                  {/* State Nodal, District Authority & Citizen: State Select */}
+                  {(selectedRole === 'state' || selectedRole === 'district' || selectedRole === 'citizen') && (
                     <div>
                       <label className="block text-xs sm:text-sm font-bold text-slate-200 mb-1.5 font-mono">
-                        Designated State / Union Territory ({authOptions.states.length} States &amp; UTs) <span className="text-rose-400">*</span>
+                        {selectedRole === 'citizen' ? 'Select Your State / Union Territory' : 'Designated State / Union Territory'} ({authOptions.states.length} States &amp; UTs) <span className="text-rose-400">*</span>
                       </label>
                       <select
                         value={signupForm.state}
@@ -611,11 +622,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                     </div>
                   )}
 
-                  {/* District Authority: IDA District Select */}
-                  {selectedRole === 'district' && (
+                  {/* District Authority & Citizen: IDA District Select */}
+                  {(selectedRole === 'district' || selectedRole === 'citizen') && (
                     <div>
                       <label className="block text-xs sm:text-sm font-bold text-slate-200 mb-1.5 font-mono">
-                        Implementing District Authority (IDA - {currentDistricts.length} Official Districts) <span className="text-rose-400">*</span>
+                        {selectedRole === 'citizen' ? 'Select Your District to Monitor' : 'Implementing District Authority (IDA)'} ({currentDistricts.length} Official Districts) <span className="text-rose-400">*</span>
                       </label>
                       <select
                         value={signupForm.ida}

@@ -1,1713 +1,16 @@
 {
   "stats": {
-    "total_documents_scanned": 11,
-    "total_evidence_photos_extracted": 120,
+    "total_documents_scanned": 0,
+    "total_evidence_photos_extracted": 0,
     "duplicate_photo_pairs": 157,
-    "money_mismatch_alerts": 3,
-    "cross_scheme_alerts": 2,
-    "vendor_discrepancies": 5,
-    "location_mismatch_alerts": 2,
+    "money_mismatch_alerts": 0,
+    "cross_scheme_alerts": 0,
+    "vendor_discrepancies": 0,
+    "location_mismatch_alerts": 0,
     "verified_geotagged_works": 0,
     "missing_photo_works": 100
   },
-  "document_verdicts": [
-    {
-      "pdf_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC.pdf",
-      "image_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "58482",
-        "canonical_work_id": "WS/MP18278/2024-2025/134671",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 500000.0,
-        "work_description": "CC Road- From the Godhan Raju ahead of the house.",
-        "completion_date": "08-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "21.09.24",
-          "22.08.24",
-          "26.09.24"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "21.09.24",
-        "22.08.24",
-        "26.09.24"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58482_Vidhayak_Nidhi_DoubleClaim.pdf",
-      "image_file": "KAMLESH_JANGDE_58482_Vidhayak_Nidhi_DoubleClaim_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "58482",
-        "canonical_work_id": "WS/MP18278/2024-2025/134671",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 500000.0,
-        "work_description": "CC Road- From the Godhan Raju ahead of the house.",
-        "completion_date": "08-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "Vidhayak Nidhi (State MLA Scheme - Cross-Scheme Claim)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": "",
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": 2500000.0,
-        "approved_amount": 2500000.0,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": "K9921048",
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "Vidhayak Nidhi (State MLA Scheme - Cross-Scheme Claim)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": 2500000.0,
-      "approved_amount": 2500000.0,
-      "vendor_name": null,
-      "utr_number": "K9921048",
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": true,
-      "findings": [
-        {
-          "task": 1,
-          "task_name": "Money Mismatch Detection",
-          "severity": "HIGH",
-          "code": "PAPER_EXCEEDS_PORTAL_AMOUNT",
-          "title": "Paper Approved Exceeds Portal Allocation",
-          "detail": "Physical paper certificate approved ₹2,500,000.00, exceeding portal recorded disbursement of ₹500,000.00 by ₹2,000,000.00.",
-          "portal_disbursed": 500000.0,
-          "paper_approved": 2500000.0,
-          "unaccounted_difference": -2000000.0
-        },
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "CRITICAL",
-          "code": "CROSS_SCHEME_FRAUD",
-          "title": "Cross-Scheme Double-Dipping Detected",
-          "detail": "🚨 [CRITICAL: CROSS-SCHEME FRAUD] Double-claiming State MLA funds (MLALAD / MLA LOCAL AREA) under Central MPLADS scheme detected on scanned certificate header!",
-          "scheme_type": "Vidhayak Nidhi (State MLA Scheme - Cross-Scheme Claim)",
-          "matched_keywords": [
-            "MLALAD",
-            "MLA LOCAL AREA"
-          ],
-          "statutory_alert": "🚨 [CRITICAL: CROSS-SCHEME FRAUD] Double-claiming State MLA funds (MLALAD / MLA LOCAL AREA) under Central MPLADS scheme detected on scanned certificate header!",
-          "legal_statutes": [
-            "General Financial Rules (GFR) Rule 144: Ineligible expenditure and falsification of public records.",
-            "MPLADS Guidelines Clause 3.12: Prohibition of co-financing and double-claiming from state legislative funds."
-          ]
-        },
-        {
-          "task": 3,
-          "task_name": "Ghost Vendor & Subcontractor Detection",
-          "severity": "HIGH",
-          "code": "UNREPORTED_VENDOR_DISCREPANCY",
-          "title": "Unreported Private Beneficiary Discovered",
-          "detail": "Portal records conceal contractor under generic authority 'JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)'. Scanned certificate table reveals hidden private beneficiary: 'Hidden Private Contractor' (Bank A/C: N/A, UTR: K9921048). Connected to Vendor Network Graph for monopoly ring tracing.",
-          "vendor_name": "Hidden Private Contractor",
-          "account_no": "N/A",
-          "utr_number": "K9921048",
-          "portal_authority": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)"
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi.pdf",
-      "image_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "58483",
-        "canonical_work_id": "WS/MP18278/2024-2025/134668",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1500000.0,
-        "work_description": "CC Road- Amit Sahu ahead of the house.",
-        "completion_date": "06-Dec-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "16.08.2024",
-          "22.08.24"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "16.08.2024",
-        "22.08.24"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59090_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59090_mukta_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "59090",
-        "canonical_work_id": "WS/MP18278/2024-2025/134638",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 300000.0,
-        "work_description": "Construction of common sitting area (Chaburta)",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "02.09.2024"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "02.09.2024"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59092_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59092_mukta_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "59092",
-        "canonical_work_id": "WS/MP18278/2024-2025/134644",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1000000.0,
-        "work_description": "CC Road- Ahead from the main road towards the canal. ",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "02.09.2024",
-          "15.11.2024"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "02.09.2024",
-        "15.11.2024"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59093_singhra.pdf",
-      "image_file": "KAMLESH_JANGDE_59093_singhra_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "59093",
-        "canonical_work_id": "WS/MP18278/2024-2025/134646",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 999550.0,
-        "work_description": "CC Road- From the road towards the Colony",
-        "completion_date": "25-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "23.08.2024",
-          "23/08/2024"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "23.08.2024",
-        "23/08/2024"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59786_pipersatti.pdf",
-      "image_file": "KAMLESH_JANGDE_59786_pipersatti_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "59786",
-        "canonical_work_id": "WS/MP18278/2024-2025/134674",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 998000.0,
-        "work_description": "CC Road- Community Building to Patharri pond (Taalab).",
-        "completion_date": "27-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "21.11.2024",
-          "27.08.2024"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "21.11.2024",
-        "27.08.2024"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_61364_sasha.pdf",
-      "image_file": "KAMLESH_JANGDE_61364_sasha_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "61364",
-        "canonical_work_id": "WS/MP18278/2024-2025/134672",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 991511.0,
-        "work_description": "CC Road- From the high school towards the Fair Ground",
-        "completion_date": "17-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "07.08.24"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "07.08.24"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "Mahesh_Sharma_62689_Document_47.pdf",
-      "image_file": "Mahesh_Sharma_62689_Document_47_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "62689",
-        "canonical_work_id": "WS/MP777/2024-2025/136656",
-        "mp_name": "Mahesh Sharma",
-        "ida_name": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)",
-        "constituency": "GAUTAM BUDDHA NAGAR",
-        "state": "Uttar Pradesh",
-        "disbursed_amount": 995046.0,
-        "work_description": "Gram Bhogpur main Mahkesh Ke Makaan Se lekar Gyano Devi Ke ghar ki ore interlocking va nali nirman karya, 80 meter",
-        "completion_date": "09-Sep-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": "Mahesh Sharma",
-        "nodal_authority": null,
-        "work_name": "Construction of roads, link roads, pathways or any other road with or without",
-        "location": "Bhabokara",
-        "sanction_date": "07/09/2024",
-        "payment_date": "27/06/2025",
-        "sanctioned_amount": 998102.11,
-        "approved_amount": 728528.0,
-        "vendor_name": "V914400022814 Siddhi Associates",
-        "vendor_code": "V914400022814",
-        "account_no": "125002807586",
-        "utr_number": "0150129426",
-        "gps_coordinates": null,
-        "dates_detected": [
-          "07/09/2024",
-          "27/06/2025"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "Mahesh Sharma",
-      "sanctioned_amount": 998102.11,
-      "approved_amount": 728528.0,
-      "vendor_name": "V914400022814 Siddhi Associates",
-      "utr_number": "0150129426",
-      "gps_coordinates": null,
-      "dates_detected": [
-        "07/09/2024",
-        "27/06/2025"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 1,
-          "task_name": "Money Mismatch Detection",
-          "severity": "CRITICAL",
-          "code": "PORTAL_PAPER_AMOUNT_MISMATCH",
-          "title": "Portal vs. Paper Financial Discrepancy",
-          "detail": "[FINANCIAL DISCREPANCY] Portal records claim ₹995,046.00 disbursed, but physical engineer's certificate approved only ₹728,528.00. Unaccounted retained balance: ₹266,518.00.",
-          "portal_disbursed": 995046.0,
-          "paper_approved": 728528.0,
-          "unaccounted_difference": 266518.0
-        },
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        },
-        {
-          "task": 3,
-          "task_name": "Ghost Vendor & Subcontractor Detection",
-          "severity": "HIGH",
-          "code": "UNREPORTED_VENDOR_DISCREPANCY",
-          "title": "Unreported Private Beneficiary Discovered",
-          "detail": "Portal records conceal contractor under generic authority 'GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)'. Scanned certificate table reveals hidden private beneficiary: 'V914400022814 Siddhi Associates' (Bank A/C: 125002807586, UTR: 0150129426). Connected to Vendor Network Graph for monopoly ring tracing.",
-          "vendor_name": "V914400022814 Siddhi Associates",
-          "account_no": "125002807586",
-          "utr_number": "0150129426",
-          "portal_authority": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)"
-        },
-        {
-          "task": 4,
-          "task_name": "GPS Watermark & Location Verification",
-          "severity": "HIGH",
-          "code": "LOCATION_MISMATCH",
-          "title": "Paper Certificate Location Conflicts with Portal Record",
-          "detail": "Location on paper certificate ('Bhabokara') conflicts with Portal claimed location ('Gram Bhogpur main Mahkesh Ke Makaan Se lekar Gyano Devi Ke ghar ki ore...'). Potential site substitution fraud.",
-          "paper_location": "Bhabokara",
-          "portal_location": "Gram Bhogpur main Mahkesh Ke Makaan Se lekar Gyano Devi Ke ghar ki ore interlocking va nali nirman karya, 80 meter"
-        }
-      ]
-    },
-    {
-      "pdf_file": "Mahesh_Sharma_62692_Document_47.pdf",
-      "image_file": "Mahesh_Sharma_62692_Document_47_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "62692",
-        "canonical_work_id": "WS/MP777/2024-2025/135874",
-        "mp_name": "Mahesh Sharma",
-        "ida_name": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)",
-        "constituency": "GAUTAM BUDDHA NAGAR",
-        "state": "Uttar Pradesh",
-        "disbursed_amount": 997045.0,
-        "work_description": "Noida ke Shribalaji Enclave Unnati Vihar Sector 123 men Jagdeep Sing Bisht ke ghar se lekar Rajesh Rai ke ghar ki ore interloking & naali kary, 86 meter",
-        "completion_date": "09-Sep-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": "Mahesh Sharma",
-        "nodal_authority": null,
-        "work_name": "Construction of roads, link roads, pathways or any other road with or without",
-        "location": "Bhabokara",
-        "sanction_date": "07/09/2024",
-        "payment_date": "27/06/2025",
-        "sanctioned_amount": 998102.11,
-        "approved_amount": 728528.0,
-        "vendor_name": "V914400022814 Siddhi Associates",
-        "vendor_code": "V914400022814",
-        "account_no": "125002807586",
-        "utr_number": "0150129426",
-        "gps_coordinates": null,
-        "dates_detected": [
-          "07/09/2024",
-          "27/06/2025"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "Mahesh Sharma",
-      "sanctioned_amount": 998102.11,
-      "approved_amount": 728528.0,
-      "vendor_name": "V914400022814 Siddhi Associates",
-      "utr_number": "0150129426",
-      "gps_coordinates": null,
-      "dates_detected": [
-        "07/09/2024",
-        "27/06/2025"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 1,
-          "task_name": "Money Mismatch Detection",
-          "severity": "CRITICAL",
-          "code": "PORTAL_PAPER_AMOUNT_MISMATCH",
-          "title": "Portal vs. Paper Financial Discrepancy",
-          "detail": "[FINANCIAL DISCREPANCY] Portal records claim ₹997,045.00 disbursed, but physical engineer's certificate approved only ₹728,528.00. Unaccounted retained balance: ₹268,517.00.",
-          "portal_disbursed": 997045.0,
-          "paper_approved": 728528.0,
-          "unaccounted_difference": 268517.0
-        },
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        },
-        {
-          "task": 3,
-          "task_name": "Ghost Vendor & Subcontractor Detection",
-          "severity": "HIGH",
-          "code": "UNREPORTED_VENDOR_DISCREPANCY",
-          "title": "Unreported Private Beneficiary Discovered",
-          "detail": "Portal records conceal contractor under generic authority 'GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)'. Scanned certificate table reveals hidden private beneficiary: 'V914400022814 Siddhi Associates' (Bank A/C: 125002807586, UTR: 0150129426). Connected to Vendor Network Graph for monopoly ring tracing.",
-          "vendor_name": "V914400022814 Siddhi Associates",
-          "account_no": "125002807586",
-          "utr_number": "0150129426",
-          "portal_authority": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)"
-        },
-        {
-          "task": 4,
-          "task_name": "GPS Watermark & Location Verification",
-          "severity": "HIGH",
-          "code": "LOCATION_MISMATCH",
-          "title": "Paper Certificate Location Conflicts with Portal Record",
-          "detail": "Location on paper certificate ('Bhabokara') conflicts with Portal claimed location ('Noida ke Shribalaji Enclave Unnati Vihar Sector 123 men Jagdeep Sing B...'). Potential site substitution fraud.",
-          "paper_location": "Bhabokara",
-          "portal_location": "Noida ke Shribalaji Enclave Unnati Vihar Sector 123 men Jagdeep Sing Bisht ke ghar se lekar Rajesh Rai ke ghar ki ore interloking & naali kary, 86 meter"
-        }
-      ]
-    },
-    {
-      "pdf_file": "Shri_NK_Premachandran_57817_KLLAD_Certificate.pdf",
-      "image_file": "Shri_NK_Premachandran_57817_KLLAD_Certificate_p1_rendered_300dpi.png",
-      "document_classification": "Scanned Certificate Header (PyMuPDF 300 DPI)",
-      "portal_record": {
-        "work_id": "57817",
-        "canonical_work_id": "WS/MP345/2024-2025/134123",
-        "mp_name": "Shri NK Premachandran",
-        "ida_name": "KOLLAM(DISTRICT COLLECTOR KOLLAM_IDA)",
-        "constituency": "KOLLAM",
-        "state": "Kerala",
-        "disbursed_amount": 4740188.0,
-        "work_description": "Construction of building for Kadamancode Tribal LP School in Kulathupuzha Grama Panchayat in  Punalur Constituency (ST)",
-        "completion_date": "06-Dec-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "KLLAD (State MLA Scheme - Cross-Scheme Claim)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": ".",
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": 2500000.0,
-        "approved_amount": 2500000.0,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": "9182301977",
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "KLLAD (State MLA Scheme - Cross-Scheme Claim)",
-      "mp_name": "Shri NK Premachandran",
-      "sanctioned_amount": 2500000.0,
-      "approved_amount": 2500000.0,
-      "vendor_name": null,
-      "utr_number": "9182301977",
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": true,
-      "findings": [
-        {
-          "task": 1,
-          "task_name": "Money Mismatch Detection",
-          "severity": "CRITICAL",
-          "code": "PORTAL_PAPER_AMOUNT_MISMATCH",
-          "title": "Portal vs. Paper Financial Discrepancy",
-          "detail": "[FINANCIAL DISCREPANCY] Portal records claim ₹4,740,188.00 disbursed, but physical engineer's certificate approved only ₹2,500,000.00. Unaccounted retained balance: ₹2,240,188.00.",
-          "portal_disbursed": 4740188.0,
-          "paper_approved": 2500000.0,
-          "unaccounted_difference": 2240188.0
-        },
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "CRITICAL",
-          "code": "CROSS_SCHEME_FRAUD",
-          "title": "Cross-Scheme Double-Dipping Detected",
-          "detail": "🚨 [CRITICAL: CROSS-SCHEME FRAUD] Double-claiming State MLA funds (KLLAD / VIDHAYAK NIDHI / VIDHAYAK) under Central MPLADS scheme detected on scanned certificate header!",
-          "scheme_type": "KLLAD (State MLA Scheme - Cross-Scheme Claim)",
-          "matched_keywords": [
-            "KLLAD",
-            "VIDHAYAK NIDHI",
-            "VIDHAYAK"
-          ],
-          "statutory_alert": "🚨 [CRITICAL: CROSS-SCHEME FRAUD] Double-claiming State MLA funds (KLLAD / VIDHAYAK NIDHI / VIDHAYAK) under Central MPLADS scheme detected on scanned certificate header!",
-          "legal_statutes": [
-            "General Financial Rules (GFR) Rule 144: Ineligible expenditure and falsification of public records.",
-            "MPLADS Guidelines Clause 3.12: Prohibition of co-financing and double-claiming from state legislative funds."
-          ]
-        },
-        {
-          "task": 3,
-          "task_name": "Ghost Vendor & Subcontractor Detection",
-          "severity": "HIGH",
-          "code": "UNREPORTED_VENDOR_DISCREPANCY",
-          "title": "Unreported Private Beneficiary Discovered",
-          "detail": "Portal records conceal contractor under generic authority 'KOLLAM(DISTRICT COLLECTOR KOLLAM_IDA)'. Scanned certificate table reveals hidden private beneficiary: 'Hidden Private Contractor' (Bank A/C: N/A, UTR: 9182301977). Connected to Vendor Network Graph for monopoly ring tracing.",
-          "vendor_name": "Hidden Private Contractor",
-          "account_no": "N/A",
-          "utr_number": "9182301977",
-          "portal_authority": "KOLLAM(DISTRICT COLLECTOR KOLLAM_IDA)"
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC.pdf",
-      "image_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "58482",
-        "canonical_work_id": "WS/MP18278/2024-2025/134671",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 500000.0,
-        "work_description": "CC Road- From the Godhan Raju ahead of the house.",
-        "completion_date": "08-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": "V2237900872698 27-08-2024",
-        "vendor_code": "V2237900872698",
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "2/18/2020",
-          "27-08-2024"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": "V2237900872698 27-08-2024",
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "2/18/2020",
-        "27-08-2024"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        },
-        {
-          "task": 3,
-          "task_name": "Ghost Vendor & Subcontractor Detection",
-          "severity": "HIGH",
-          "code": "UNREPORTED_VENDOR_DISCREPANCY",
-          "title": "Unreported Private Beneficiary Discovered",
-          "detail": "Portal records conceal contractor under generic authority 'JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)'. Scanned certificate table reveals hidden private beneficiary: 'V2237900872698 27-08-2024' (Bank A/C: N/A, UTR: N/A). Connected to Vendor Network Graph for monopoly ring tracing.",
-          "vendor_name": "V2237900872698 27-08-2024",
-          "account_no": "N/A",
-          "utr_number": "N/A",
-          "portal_authority": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)"
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC.pdf",
-      "image_file": "KAMLESH_JANGDE_58482_GOVINDA_UCCC_p3_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "58482",
-        "canonical_work_id": "WS/MP18278/2024-2025/134671",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 500000.0,
-        "work_description": "CC Road- From the Godhan Raju ahead of the house.",
-        "completion_date": "08-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi.pdf",
-      "image_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "58483",
-        "canonical_work_id": "WS/MP18278/2024-2025/134668",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1500000.0,
-        "work_description": "CC Road- Amit Sahu ahead of the house.",
-        "completion_date": "06-Dec-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi.pdf",
-      "image_file": "KAMLESH_JANGDE_58483_cc_rod_mauhadih_gi_p3_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "58483",
-        "canonical_work_id": "WS/MP18278/2024-2025/134668",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1500000.0,
-        "work_description": "CC Road- Amit Sahu ahead of the house.",
-        "completion_date": "06-Dec-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59090_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59090_mukta_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "59090",
-        "canonical_work_id": "WS/MP18278/2024-2025/134638",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 300000.0,
-        "work_description": "Construction of common sitting area (Chaburta)",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "3/8/2029"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "3/8/2029"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59090_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59090_mukta_p3_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "59090",
-        "canonical_work_id": "WS/MP18278/2024-2025/134638",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 300000.0,
-        "work_description": "Construction of common sitting area (Chaburta)",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59092_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59092_mukta_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "59092",
-        "canonical_work_id": "WS/MP18278/2024-2025/134644",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1000000.0,
-        "work_description": "CC Road- Ahead from the main road towards the canal. ",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59092_mukta.pdf",
-      "image_file": "KAMLESH_JANGDE_59092_mukta_p3_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "59092",
-        "canonical_work_id": "WS/MP18278/2024-2025/134644",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 1000000.0,
-        "work_description": "CC Road- Ahead from the main road towards the canal. ",
-        "completion_date": "12-Feb-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59093_singhra.pdf",
-      "image_file": "KAMLESH_JANGDE_59093_singhra_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "59093",
-        "canonical_work_id": "WS/MP18278/2024-2025/134646",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 999550.0,
-        "work_description": "CC Road- From the road towards the Colony",
-        "completion_date": "25-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59093_singhra.pdf",
-      "image_file": "KAMLESH_JANGDE_59093_singhra_p3_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "59093",
-        "canonical_work_id": "WS/MP18278/2024-2025/134646",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "SAKTI(COLLECTOR SAKTI_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 999550.0,
-        "work_description": "CC Road- From the road towards the Colony",
-        "completion_date": "25-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59786_pipersatti.pdf",
-      "image_file": "KAMLESH_JANGDE_59786_pipersatti_p2_img2.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "59786",
-        "canonical_work_id": "WS/MP18278/2024-2025/134674",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 998000.0,
-        "work_description": "CC Road- Community Building to Patharri pond (Taalab).",
-        "completion_date": "27-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_59786_pipersatti.pdf",
-      "image_file": "KAMLESH_JANGDE_59786_pipersatti_p3_img2.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "59786",
-        "canonical_work_id": "WS/MP18278/2024-2025/134674",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 998000.0,
-        "work_description": "CC Road- Community Building to Patharri pond (Taalab).",
-        "completion_date": "27-Nov-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_61364_sasha.pdf",
-      "image_file": "KAMLESH_JANGDE_61364_sasha_p2_img2.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "61364",
-        "canonical_work_id": "WS/MP18278/2024-2025/134672",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 991511.0,
-        "work_description": "CC Road- From the high school towards the Fair Ground",
-        "completion_date": "17-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "KAMLESH_JANGDE_61364_sasha.pdf",
-      "image_file": "KAMLESH_JANGDE_61364_sasha_p3_img2.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 3",
-      "portal_record": {
-        "work_id": "61364",
-        "canonical_work_id": "WS/MP18278/2024-2025/134672",
-        "mp_name": "KAMLESH JANGDE",
-        "ida_name": "JANJGIR-CHAMPA(DISTRICT COLLECTOR JANJGIR CHAMPA_IDA)",
-        "constituency": "JANJGIR CHAMPA(SC)",
-        "state": "Chhattisgarh",
-        "disbursed_amount": 991511.0,
-        "work_description": "CC Road- From the high school towards the Fair Ground",
-        "completion_date": "17-Oct-2024"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": [
-          "16/08/20"
-        ]
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "KAMLESH JANGDE",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [
-        "16/08/20"
-      ],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "Mahesh_Sharma_62689_Document_47.pdf",
-      "image_file": "Mahesh_Sharma_62689_Document_47_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "62689",
-        "canonical_work_id": "WS/MP777/2024-2025/136656",
-        "mp_name": "Mahesh Sharma",
-        "ida_name": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)",
-        "constituency": "GAUTAM BUDDHA NAGAR",
-        "state": "Uttar Pradesh",
-        "disbursed_amount": 995046.0,
-        "work_description": "Gram Bhogpur main Mahkesh Ke Makaan Se lekar Gyano Devi Ke ghar ki ore interlocking va nali nirman karya, 80 meter",
-        "completion_date": "09-Sep-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "Mahesh Sharma",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    },
-    {
-      "pdf_file": "Mahesh_Sharma_62692_Document_47.pdf",
-      "image_file": "Mahesh_Sharma_62692_Document_47_p2_img1.jpeg",
-      "document_classification": "Site Evidence Photo / Completion Page 2",
-      "portal_record": {
-        "work_id": "62692",
-        "canonical_work_id": "WS/MP777/2024-2025/135874",
-        "mp_name": "Mahesh Sharma",
-        "ida_name": "GAUTAM BUDDHA NAGAR(DISTRICT MAGISTRATE GAUTAMBUDHNAGAR)",
-        "constituency": "GAUTAM BUDDHA NAGAR",
-        "state": "Uttar Pradesh",
-        "disbursed_amount": 997045.0,
-        "work_description": "Noida ke Shribalaji Enclave Unnati Vihar Sector 123 men Jagdeep Sing Bisht ke ghar se lekar Rajesh Rai ke ghar ki ore interloking & naali kary, 86 meter",
-        "completion_date": "09-Sep-2025"
-      },
-      "paper_extracted": {
-        "scheme_type": "MPLADS (Central Sansad Nidhi)",
-        "mp_name": null,
-        "nodal_authority": null,
-        "work_name": null,
-        "location": null,
-        "sanction_date": null,
-        "payment_date": null,
-        "sanctioned_amount": null,
-        "approved_amount": null,
-        "vendor_name": null,
-        "vendor_code": null,
-        "account_no": null,
-        "utr_number": null,
-        "gps_coordinates": null,
-        "dates_detected": []
-      },
-      "scheme_type": "MPLADS (Central Sansad Nidhi)",
-      "mp_name": "Mahesh Sharma",
-      "sanctioned_amount": null,
-      "approved_amount": null,
-      "vendor_name": null,
-      "utr_number": null,
-      "gps_coordinates": null,
-      "dates_detected": [],
-      "exif_metadata": {
-        "has_exif": false
-      },
-      "has_cross_scheme_fraud": false,
-      "findings": [
-        {
-          "task": 2,
-          "task_name": "Cross-Scheme Double-Dipping",
-          "severity": "VERIFIED",
-          "code": "CENTRAL_SCHEME_VERIFIED",
-          "title": "Central MPLADS Scheme Verified",
-          "detail": "Scanned certificate header verified under Central Ministry MPLADS (Sansad Nidhi). No State Legislative Assembly markings found."
-        }
-      ]
-    }
-  ],
+  "document_verdicts": [],
   "duplicate_photos": [
     {
       "file_1": "KAMLESH_JANGDE_59786_pipersatti_p1_img1.jpeg",
@@ -6108,403 +4411,403 @@
   ],
   "missing_photos": [
     {
-      "work_id": "WS/MP18217/2025-2026/197245",
-      "mp_name": "Akshaya Yadav",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 6997000.0,
-      "risk_score": 72.1,
+      "work_id": "WS/MP761/2025-2026/192157",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18217/2025-2026/197246",
-      "mp_name": "Akshaya Yadav",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 4399000.0,
-      "risk_score": 71.5,
+      "work_id": "WS/MP761/2025-2026/192158",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 350000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/164664",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 71.4,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18302/2024-2025/136067",
-      "mp_name": "Shri Sanjay Seth",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 3250000.0,
-      "risk_score": 71.3,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18371/2024-2025/162865",
-      "mp_name": "Angomcha Bimol Akoijam",
-      "state": "Manipur",
-      "sanction_amount": 2000000.0,
-      "risk_score": 71.1,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/151736",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 1000000.0,
-      "risk_score": 71.1,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/151757",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 900000.0,
-      "risk_score": 70.8,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18217/2025-2026/197247",
-      "mp_name": "Akshaya Yadav",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 3000000.0,
-      "risk_score": 70.6,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18161/2024-2025/138073",
-      "mp_name": "Sanjna Jatav",
-      "state": "Rajasthan",
-      "sanction_amount": 500000.0,
-      "risk_score": 70.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18321/2024-2025/145742",
-      "mp_name": "Shobhanaben Mahendrasinh Baraiya",
-      "state": "Gujarat",
-      "sanction_amount": 500000.0,
-      "risk_score": 70.3,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160475",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
+      "work_id": "WS/MP18138/2025-2026/239390",
+      "mp_name": "Richard Vanlalhmangaiha",
+      "state": "Mizoram",
       "sanction_amount": 800000.0,
-      "risk_score": 70.2,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/159604",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160449",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/151542",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160450",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/151575",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/164493",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160363",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 800000.0,
-      "risk_score": 70.2,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160446",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 775000.0,
-      "risk_score": 70.0,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/160443",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 775000.0,
-      "risk_score": 70.0,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP163/2024-2025/136111",
-      "mp_name": "Shri R. Girirajan",
-      "state": "Tamil Nadu",
-      "sanction_amount": 1000000.0,
-      "risk_score": 69.7,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/164642",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 700000.0,
-      "risk_score": 69.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18094/2025-2026/164665",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 650000.0,
-      "risk_score": 69.3,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18217/2025-2026/197961",
-      "mp_name": "Akshaya Yadav",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 2397000.0,
-      "risk_score": 69.3,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18284/2025-2026/179040",
-      "mp_name": "Shri Ashok Singh",
+      "work_id": "WS/MP641/2024-2025/133919",
+      "mp_name": "Gajendra Singh Patel",
       "state": "Madhya Pradesh",
-      "sanction_amount": 1000000.0,
-      "risk_score": 69.0,
+      "sanction_amount": 200000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/151543",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP18138/2025-2026/239386",
+      "mp_name": "Richard Vanlalhmangaiha",
+      "state": "Mizoram",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18100/2025-2026/251100",
-      "mp_name": "Bunty Vivek Sahu",
-      "state": "Madhya Pradesh",
-      "sanction_amount": 100000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP18138/2025-2026/239387",
+      "mp_name": "Richard Vanlalhmangaiha",
+      "state": "Mizoram",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160484",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP18138/2025-2026/239389",
+      "mp_name": "Richard Vanlalhmangaiha",
+      "state": "Mizoram",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160496",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP761/2025-2026/192185",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160466",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP761/2025-2026/192186",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18100/2025-2026/251103",
-      "mp_name": "Bunty Vivek Sahu",
-      "state": "Madhya Pradesh",
-      "sanction_amount": 100000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP18190/2025-2026/192000",
+      "mp_name": "Balram Naik Porika",
+      "state": "Telangana",
+      "sanction_amount": 80000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160362",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP761/2025-2026/192013",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160468",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.7,
+      "work_id": "WS/MP761/2026-2027/191982",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160364",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.6,
+      "work_id": "WS/MP761/2025-2026/192251",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160473",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.6,
+      "work_id": "WS/MP761/2026-2027/192252",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/160368",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.6,
+      "work_id": "WS/MP761/2025-2026/192253",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18094/2025-2026/164662",
-      "mp_name": "Vishweshwar Hegde Kageri",
-      "state": "Karnataka",
-      "sanction_amount": 600000.0,
-      "risk_score": 68.6,
+      "work_id": "WS/MP761/2025-2026/192254",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18217/2025-2026/197967",
-      "mp_name": "Akshaya Yadav",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 2098000.0,
-      "risk_score": 68.5,
+      "work_id": "WS/MP761/2025-2026/192255",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP431/2025-2026/223766",
-      "mp_name": "Rao Inderjit Singh",
+      "work_id": "WS/MP18062/2025-2026/192223",
+      "mp_name": "Jai Parkash",
       "state": "Haryana",
+      "sanction_amount": 106184.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192248",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192339",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 495000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP728/2025-2026/191749",
+      "mp_name": "Rahul Kaswan",
+      "state": "Rajasthan",
+      "sanction_amount": 699547.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18369/2025-2026/239887",
+      "mp_name": "Sanjay Uttamrao Deshmukh",
+      "state": "Maharashtra",
       "sanction_amount": 1000000.0,
-      "risk_score": 68.1,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18217/2025-2026/197966",
-      "mp_name": "Akshaya Yadav",
+      "work_id": "WS/MP18069/2025-2026/239912",
+      "mp_name": "Rajeev Bhardwaj",
+      "state": "Himachal Pradesh",
+      "sanction_amount": 500000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192355",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192366",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192342",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 350000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192347",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 350000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192349",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192352",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP761/2025-2026/192354",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 300000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18213/2025-2026/240471",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 1799000.0,
-      "risk_score": 68.0,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18217/2025-2026/197965",
-      "mp_name": "Akshaya Yadav",
+      "work_id": "WS/MP18213/2025-2026/240474",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 1898000.0,
-      "risk_score": 67.9,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP544/2025-2026/176646",
-      "mp_name": "Mr Gopal Jee Thakur",
-      "state": "Bihar",
-      "sanction_amount": 495000.0,
-      "risk_score": 67.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP544/2025-2026/176644",
-      "mp_name": "Mr Gopal Jee Thakur",
-      "state": "Bihar",
-      "sanction_amount": 495000.0,
-      "risk_score": 67.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP544/2025-2026/176649",
-      "mp_name": "Mr Gopal Jee Thakur",
-      "state": "Bihar",
-      "sanction_amount": 495000.0,
-      "risk_score": 67.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP544/2025-2026/176648",
-      "mp_name": "Mr Gopal Jee Thakur",
-      "state": "Bihar",
-      "sanction_amount": 495000.0,
-      "risk_score": 67.5,
-      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
-    },
-    {
-      "work_id": "WS/MP18217/2025-2026/197248",
-      "mp_name": "Akshaya Yadav",
+      "work_id": "WS/MP18213/2025-2026/240479",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 1596000.0,
-      "risk_score": 67.4,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18217/2025-2026/197968",
-      "mp_name": "Akshaya Yadav",
+      "work_id": "WS/MP18213/2025-2026/240484",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 1749000.0,
-      "risk_score": 67.3,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP189/2023-2024/79565",
-      "mp_name": "Shri Kapil Sibal",
+      "work_id": "WS/MP18213/2025-2026/240488",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 849600.0,
-      "risk_score": 67.0,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP18212/2024-2025/158844",
-      "mp_name": "Anand Bhadauriya",
-      "state": "Uttar Pradesh",
-      "sanction_amount": 175423.33,
-      "risk_score": 67.0,
+      "work_id": "WS/MP761/2025-2026/192362",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     },
     {
-      "work_id": "WS/MP189/2023-2024/79434",
-      "mp_name": "Shri Kapil Sibal",
+      "work_id": "WS/MP761/2025-2026/192363",
+      "mp_name": "Arvind Dharmapuri",
+      "state": "Telangana",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP591/2025-2026/240549",
+      "mp_name": "Krishan Pal Gurjar",
+      "state": "Haryana",
+      "sanction_amount": 397620.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP598/2025-2026/191622",
+      "mp_name": "Suresh Kumar Kashyap",
+      "state": "Himachal Pradesh",
+      "sanction_amount": 250000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP719/2025-2026/240527",
+      "mp_name": "Bhagirath Chaudhary",
+      "state": "Rajasthan",
+      "sanction_amount": 499761.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP719/2025-2026/240528",
+      "mp_name": "Bhagirath Chaudhary",
+      "state": "Rajasthan",
+      "sanction_amount": 499761.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18213/2025-2026/240539",
+      "mp_name": "Devesh Shakya",
       "state": "Uttar Pradesh",
-      "sanction_amount": 707000.0,
-      "risk_score": 66.9,
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18213/2025-2026/240540",
+      "mp_name": "Devesh Shakya",
+      "state": "Uttar Pradesh",
+      "sanction_amount": 241000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18338/2025-2026/241589",
+      "mp_name": "Chamala Kiran Kumar Reddy",
+      "state": "Telangana",
+      "sanction_amount": 500000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18326/2025-2026/238314",
+      "mp_name": "Chandubhai Chhaganbhai Shihora",
+      "state": "Gujarat",
+      "sanction_amount": 400000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18147/2025-2026/238108",
+      "mp_name": "Naba Charan Majhi",
+      "state": "Odisha",
+      "sanction_amount": 500000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP428/2025-2026/238063",
+      "mp_name": "Santosh Pandey",
+      "state": "Chhattisgarh",
+      "sanction_amount": 500000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP598/2025-2026/207201",
+      "mp_name": "Suresh Kumar Kashyap",
+      "state": "Himachal Pradesh",
+      "sanction_amount": 100000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP18160/2025-2026/191311",
+      "mp_name": "Ummeda Ram Beniwal",
+      "state": "Rajasthan",
+      "sanction_amount": 1000000.0,
+      "risk_score": 85.0,
+      "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
+    },
+    {
+      "work_id": "WS/MP728/2025-2026/191316",
+      "mp_name": "Rahul Kaswan",
+      "state": "Rajasthan",
+      "sanction_amount": 1099998.0,
+      "risk_score": 85.0,
       "verdict": "Work marked 100% completed on portal without mandatory eSAKSHI geo-tagged photograph."
     }
   ]

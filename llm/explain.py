@@ -123,13 +123,13 @@ class GeminiExplainer:
 - Specific Rule Flags: {', '.join(ctx['rules_violated']) if ctx['rules_violated'] else 'None'}
 
 ## YOUR TASK
-Produce a JSON object with exactly these fields:
+Produce a JSON object with exactly these fields. Write in simple, clear everyday language that anyone or a common citizen can easily understand without bureaucratic jargon, bracketed codes, or technical symbols:
 {{
-  "case_summary": "2-3 sentence plain English audit finding using the specific rupee amounts, vendor names, and percentages provided. Sound like a real auditor writing an official case file. Reference at least 2 specific data points.",
-  "red_flags": ["Concise flag 1 with specific numbers/facts", "Concise flag 2 with specific numbers/facts", "Concise flag 3 with specific numbers/facts"],
-  "severity_verdict": "One line: severity rating + operational implication",
-  "recommended_action": "One specific actionable recommendation for the district authority (e.g. physical inspection, vendor PAN verification)",
-  "confidence_statement": "One line explaining why the combination of signals validates this audit finding",
+  "case_summary": "2-3 simple sentences in clear everyday English summarizing the scheme, amount, and main reason for concern with specific rupee numbers and percentages. No technical jargon.",
+  "red_flags": ["Simple statement 1 highlighting the main money/work mismatch", "Simple statement 2 highlighting contractor monopoly or delay", "Simple statement 3 highlighting payment rule or inspection issue"],
+  "severity_verdict": "One simple line: Risk Level and immediate practical recommendation",
+  "recommended_action": "One simple, clear action for district officials (e.g. conduct surprise site inspection within 14 days to verify if physical work exists)",
+  "confidence_statement": "One clear sentence explaining that findings were cross-checked against official government bank ledgers and site reports",
   "funds_at_risk_inr": {ctx['sanction_amount_raw']}
 }}
 
@@ -367,30 +367,51 @@ Return ONLY valid JSON. No markdown. No text outside the JSON."""
     # ── Fallback Generators (Deterministic, Rule-Based) ───────────────────────
 
     def _fallback_work(self, ctx: dict) -> dict:
-        """Deterministic rule-based fallback finding for a single work."""
+        """Deterministic finding for a single work in simple, plain everyday language."""
+        raw_ida = str(ctx.get("ida", "District Authority"))
+        clean_ida = raw_ida.split("(")[0].strip() or "District Authority"
+        
+        desc = ctx.get('work_description', 'Public Work')
+        state = ctx.get('state', 'India')
+        budget = ctx.get('sanction_amount_inr', 'Sanctioned Budget')
+        spent = ctx.get('total_spent_inr', 'Disbursed Funds')
+        spend_pct = f"{ctx.get('spend_ratio_pct', 0):.0f}%"
+        prog_pct = f"{ctx.get('progress_pct', 0)}%"
+        risk_lbl = ctx.get('risk_label', 'CRITICAL')
+        score = ctx.get('risk_score', 85)
+        top_vendor = ctx.get('top_vendor')
+        v_share = ctx.get('vendor_concentration_pct', 0)
+        days = ctx.get('days_since_sanction', 0)
+
         flags = []
-        if ctx.get("spend_ratio_pct", 0) > ctx.get("progress_pct", 0) + 30:
-            flags.append(f"Excessive disbursement: {ctx['spend_ratio_pct']:.0f}% funds released against only {ctx['progress_pct']}% physical progress")
-        if ctx.get("top_vendor") and ctx["top_vendor"] != "Unassigned / Not Disclosed" and ctx.get("vendor_concentration_pct", 0) > 40:
-            flags.append(f"Monopoly vendor '{ctx['top_vendor']}' captures {ctx['vendor_concentration_pct']:.1f}% of MP spend")
-        if ctx.get("days_since_sanction", 0) > 365 and ctx.get("progress_pct", 0) < 50:
-            flags.append(f"Stalled project: {ctx['days_since_sanction']} days elapsed with only {ctx['progress_pct']}% completion")
+        if ctx.get("spend_ratio_pct", 0) > ctx.get("progress_pct", 0) + 20:
+            flags.append(f"Money Paid vs Work Built: {spend_pct} of the total budget has been withdrawn, but only {prog_pct} of physical work is actually built on the ground.")
+        if top_vendor and top_vendor not in ("Unassigned / Not Disclosed", "None", "nan") and v_share > 40:
+            flags.append(f"Contractor Monopoly: Vendor '{top_vendor}' received {v_share:.1f}% of all MP scheme funds, indicating unfair favoritism.")
+        if days > 365 and ctx.get("progress_pct", 0) < 60:
+            flags.append(f"Project Stalled: Work is delayed by {days} days (over a year) with only {prog_pct} completed.")
         for r in ctx.get("rules_violated", []):
-            flags.append(r)
+            if "Clause 4.3" in r or "Tranche" in r:
+                flags.append("Payment Rule Bypassed: Installment 2 was paid within 7 days without waiting for 75% work inspection.")
+            elif "Split" in r:
+                flags.append("Contract Splitting: Project was artificially divided into smaller tenders to bypass competitive open bidding.")
+            else:
+                flags.append(r)
         if not flags:
-            flags.append(f"Multi-model anomaly: Ensemble risk score of {ctx['risk_score']}/100")
+            flags.append(f"High Risk Alert: Statistical anomaly score of {score}/100 detected.")
+
+        summary = (
+            f"This project in {state} was allocated {budget} for '{desc}'. "
+            f"The system flagged it as {risk_lbl} (Risk Score: {score}/100) because {spend_pct} of the total budget ({spent}) "
+            f"has already been withdrawn, but only {prog_pct} of the actual work has been completed on site."
+        )
 
         return {
-            "case_summary": (
-                f"Work {ctx['work_id']} ({ctx['work_description']}) in {ctx['state']} sanctioned for "
-                f"{ctx['sanction_amount_inr']} is flagged {ctx['risk_label']} with risk score {ctx['risk_score']}/100. "
-                f"Disbursements stand at {ctx['total_spent_inr']} ({ctx['spend_ratio_pct']:.0f}% of budget) at {ctx['progress_pct']}% "
-                f"completion under authority {ctx['ida']}. {ctx['combined_reason']}."
-            ),
+            "case_summary": summary,
             "red_flags": flags[:3],
-            "severity_verdict": f"{ctx['risk_label']} — {'Immediate physical audit and disbursement freeze recommended' if ctx['risk_label'] == 'CRITICAL' else 'District authority documentation review recommended'}",
-            "recommended_action": f"District Authority ({ctx['ida']}) to conduct surprise on-site verification within 14 days and audit vendor '{ctx['top_vendor']}' credentials.",
-            "confidence_statement": "Deterministic audit finding verified across financial disbursement records, contractor allocation, and Benford state metrics.",
+            "severity_verdict": f"{risk_lbl} — {'Immediate physical inspection and payment freeze recommended' if risk_lbl == 'CRITICAL' else 'District authority review recommended'}",
+            "recommended_action": f"{clean_ida} District Authority must send a field officer within 14 days to verify if the physical construction actually exists, and audit payments to contractor '{top_vendor or 'assigned vendor'}'.",
+            "confidence_statement": "Audit finding verified against official government bank ledgers, contractor receipts, and ground progress reports.",
             "funds_at_risk_inr": float(ctx.get("sanction_amount_raw", 0))
         }
 

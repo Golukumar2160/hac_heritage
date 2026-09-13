@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, X, CheckCircle, AlertTriangle, ShieldAlert, ExternalLink, Loader2 } from 'lucide-react';
+import { Printer, X, CheckCircle, AlertTriangle, ShieldAlert, ExternalLink, Loader2, Copy } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 
 export default function JanDrishtiPlaque({ work, onClose }) {
@@ -9,6 +9,7 @@ export default function JanDrishtiPlaque({ work, onClose }) {
   const [submittingReport, setSubmittingReport] = useState(false);
   const [reportRefId, setReportRefId] = useState(null);
   const [qrMode, setQrMode] = useState('portal_url'); // 'portal_url' (fast phone scan) or 'offline_seal' (full text)
+  const [copied, setCopied] = useState(false);
 
   const workObj = work?.work || work || {};
   const workId = workObj?.work_id || workObj?.id || '135269';
@@ -74,7 +75,15 @@ export default function JanDrishtiPlaque({ work, onClose }) {
 
   const cleanWorkId = String(workObj?.work_id || workObj?.id || workId || '135269').trim();
   const displayWorkId = cleanWorkId.startsWith('WS/') ? cleanWorkId : `WS/MP18250/2024-2025/${cleanWorkId}`;
-  const verifyPortalUrl = `https://bharatdrishti.gov.in/verify/${encodeURIComponent(cleanWorkId)}`;
+  
+  // Real working portal verification URL using active origin & local network
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const networkOrigin = isLocalhost ? `http://192.168.101.234:${window.location.port || '3131'}` : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3131');
+  const localOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3131';
+
+  // Mobile-scannable URL (accessible on phone over Wi-Fi) and direct browser URL
+  const verifyPortalUrl = `${networkOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
+  const directVerifyUrl = `${localOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
 
   const offlineSealString = `MPLADS CITIZEN TRANSPARENCY — GOVT OF INDIA
 Work ID: ${displayWorkId}
@@ -87,9 +96,26 @@ FUNDS: ₹${sanctionLakhs}L Sanctioned | ₹${spentLakhs}L Disbursed (${spentPct
 STATUS: ${portalStatus} | AI Risk: CRITICAL
 Days Elapsed: ${daysElapsed}d | Progress: ${progressPct}%
 ---
-Portal: bharatdrishti.gov.in/verify/${cleanWorkId}`;
+Verification: ${directVerifyUrl}`;
 
   const currentQrValue = qrMode === 'portal_url' ? verifyPortalUrl : offlineSealString;
+
+  const handleOpenVerification = () => {
+    if (qrMode === 'portal_url') {
+      window.open(directVerifyUrl, '_blank');
+    } else {
+      navigator.clipboard?.writeText(offlineSealString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const handleCopyLink = () => {
+    const textToCopy = qrMode === 'portal_url' ? directVerifyUrl : offlineSealString;
+    navigator.clipboard?.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -319,14 +345,38 @@ Portal: bharatdrishti.gov.in/verify/${cleanWorkId}`;
                   </button>
                 </div>
 
-                <div className="bg-white p-1 rounded">
+                {/* Interactive QR Code Container */}
+                <div 
+                  onClick={handleOpenVerification}
+                  className="bg-white p-1.5 rounded-lg border-2 border-stone-200 hover:border-amber-500 shadow-xs hover:shadow-md transition-all cursor-pointer group relative"
+                  title={qrMode === 'portal_url' ? 'Click to open live citizen verification dossier' : 'Click to copy offline statutory seal'}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenVerification(); }}
+                >
                   <QRCodeSVG 
                     value={currentQrValue}
-                    size={140}
+                    size={136}
                     level="M"
                     includeMargin={true}
                     aria-label="Citizen Verification QR Code"
                   />
+                  {/* Subtle desktop hover cue */}
+                  <div className="no-print absolute inset-0 bg-stone-950/75 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-white">
+                    {qrMode === 'portal_url' ? (
+                      <>
+                        <ExternalLink className="w-5 h-5 text-amber-400 mb-1" />
+                        <span className="text-[9px] font-bold text-amber-300">Open Dossier</span>
+                        <span className="text-[7.5px] text-stone-300">Click to verify</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-5 h-5 text-amber-400 mb-1" />
+                        <span className="text-[9px] font-bold text-amber-300">{copied ? 'Copied!' : 'Copy Seal'}</span>
+                        <span className="text-[7.5px] text-stone-300">Click to copy</span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="text-[9px] font-extrabold text-stone-800 mt-1.5 tracking-tight">
@@ -335,13 +385,49 @@ Portal: bharatdrishti.gov.in/verify/${cleanWorkId}`;
                 <div className="text-[7.5px] font-mono text-stone-500 mt-0.5 truncate max-w-[150px]" title={displayWorkId}>
                   #{cleanWorkId}
                 </div>
+
+                {/* Quick Action Buttons */}
+                <div className="no-print flex items-center gap-1.5 mt-2 w-full">
+                  {qrMode === 'portal_url' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleOpenVerification}
+                        className="flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-stone-950 text-[8px] font-bold shadow-xs transition-colors cursor-pointer"
+                        title="Open verification dossier in new tab"
+                      >
+                        <ExternalLink className="w-2.5 h-2.5" />
+                        <span>Test Verify</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className="flex items-center justify-center gap-1 px-1.5 py-1 rounded bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700 text-[8px] font-bold transition-colors cursor-pointer"
+                        title="Copy direct verification link"
+                      >
+                        {copied ? <CheckCircle className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
+                        <span>{copied ? 'Copied!' : 'Copy'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded bg-stone-800 hover:bg-stone-900 text-white text-[8px] font-bold transition-colors cursor-pointer"
+                      title="Copy full statutory plaintext certificate to clipboard"
+                    >
+                      {copied ? <CheckCircle className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
+                      <span>{copied ? 'Copied to Clipboard!' : 'Copy Full Seal'}</span>
+                    </button>
+                  )}
+                </div>
                 
                 {/* Backend PNG API Link */}
                 <a
                   href={`${API_BASE}/api/work/${encodeURIComponent(cleanWorkId)}/qr-code`}
                   target="_blank"
                   rel="noreferrer"
-                  className="no-print mt-1 text-[7.5px] font-mono text-cyan-800 hover:text-cyan-950 underline flex items-center gap-0.5"
+                  className="no-print mt-1.5 text-[7.5px] font-mono text-cyan-800 hover:text-cyan-950 underline flex items-center gap-0.5"
                   title="View / Download backend generated PNG stream (/api/work/{id}/qr-code)"
                 >
                   <ExternalLink className="w-2.5 h-2.5" />
