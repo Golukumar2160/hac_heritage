@@ -13,7 +13,8 @@ import {
   Menu, 
   X,
   Clock,
-  QrCode
+  QrCode,
+  UploadCloud
 } from 'lucide-react';
 import emblemLogo from '../assets/logo_dark.jpg';
 
@@ -59,6 +60,11 @@ export default function Sidebar({
       label: 'Visual & Media Forensics',
       icon: ImageIcon,
     },
+    {
+      id: 'batch_audit',
+      label: 'Batch CSV Audit Lab',
+      icon: UploadCloud,
+    },
   ];
 
   const officialNavItems = [
@@ -71,6 +77,11 @@ export default function Sidebar({
       id: 'alerts',
       label: 'Live Anomaly Radar',
       icon: ShieldAlert,
+    },
+    {
+      id: 'batch_audit',
+      label: 'Batch CSV Audit Lab',
+      icon: UploadCloud,
     },
     {
       id: 'early_warning',

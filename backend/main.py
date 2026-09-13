@@ -6,7 +6,7 @@ Includes robust background task workers, regex injection guards,
 and strict numeric/text type integrity.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status, Query, BackgroundTasks, Response, Request
+from fastapi import FastAPI, HTTPException, Depends, status, Query, BackgroundTasks, Response, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
@@ -3079,6 +3079,82 @@ def is_supabase_alive() -> bool:
     _last_supabase_check["connected"] = False
     _last_supabase_check["checked_at"] = now
     return False
+
+# ── Live Batch CSV Audit Lab Endpoints ─────────────────────────────────────────
+
+@app.post("/api/audit/batch-upload", tags=["Batch Audit Lab"])
+async def audit_batch_csv_upload(file: UploadFile = File(...)):
+    """
+    Accepts user-uploaded CSV matching MPLADS raw formats.
+    Executes full multi-model audit pipeline across all 5 models.
+    """
+    from backend.batch_audit_engine import run_batch_audit
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file format. Please upload a valid CSV file (.csv)."
+        )
+    
+    try:
+        content_bytes = await file.read()
+        text = None
+        for enc in ["utf-8-sig", "utf-8", "latin-1", "cp1252"]:
+            try:
+                text = content_bytes.decode(enc)
+                break
+            except Exception:
+                continue
+        
+        if text is None:
+            raise HTTPException(status_code=400, detail="Could not decode CSV text. Please check file encoding.")
+
+        try:
+            df = pd.read_csv(io.StringIO(text), sep=None, engine='python')
+        except Exception:
+            try:
+                df = pd.read_csv(io.StringIO(text), sep=',')
+            except Exception:
+                df = pd.read_csv(io.StringIO(text), sep=';')
+
+        if df is None or df.empty:
+            raise HTTPException(status_code=400, detail="The uploaded CSV is empty or has no readable rows.")
+        
+        result = run_batch_audit(df)
+        result["filename"] = file.filename
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error evaluating batch audit pipeline: {str(e)}")
+
+
+@app.post("/api/audit/demo-benchmark", tags=["Batch Audit Lab"])
+def audit_demo_benchmark():
+    """
+    Runs the live 5-model pipeline on the official hackathon benchmark dataset.
+    """
+    from backend.batch_audit_engine import run_batch_audit, get_demo_benchmark_dataset
+    df = get_demo_benchmark_dataset()
+    result = run_batch_audit(df)
+    result["filename"] = "MPLADS_Hackathon_Benchmark_Dataset.csv"
+    return result
+
+
+@app.get("/api/audit/sample-csv", tags=["Batch Audit Lab"])
+def get_sample_audit_csv():
+    """
+    Returns a downloadable sample CSV template for hackathon demonstration.
+    """
+    from backend.batch_audit_engine import get_demo_benchmark_dataset
+    df = get_demo_benchmark_dataset()
+    csv_str = df.to_csv(index=False)
+    return Response(
+        content=csv_str,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=mplads_batch_audit_sample.csv"
+        }
+    )
 
 @app.get("/api/health", tags=["System"])
 def health():

@@ -17,7 +17,8 @@ import {
   Vote,
   ShieldCheck,
   Sun,
-  Moon
+  Moon,
+  UploadCloud
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -195,10 +196,24 @@ export default function Header({
               </button>
             )}
 
+            {/* Upload CSV Quick Action */}
+            <button
+              onClick={() => setActiveTab && setActiveTab('batch_audit')}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'batch_audit'
+                  ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                  : 'bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/40 hover:border-violet-300'
+              }`}
+              title="Upload CSV & Live Multi-Model Audit"
+            >
+              <UploadCloud className="w-4 h-4 text-violet-400" />
+              <span className="hidden sm:inline">Upload CSV</span>
+            </button>
+
             {/* AI Secretary Briefing Button */}
             <button
               onClick={onOpenSecretaryBriefing}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-violet-600/30 to-fuchsia-600/20 text-violet-200 border border-violet-500/40 hover:border-violet-400 hover:shadow-glow-violet transition-all active:scale-95"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-violet-600/30 to-fuchsia-600/20 text-violet-200 border border-violet-500/40 hover:border-violet-400 hover:shadow-glow-violet transition-all active:scale-95 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-violet-300 animate-spin-slow" />
               <span className="hidden md:inline">Secretary AI Briefing</span>

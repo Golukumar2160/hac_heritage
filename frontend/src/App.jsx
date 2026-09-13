@@ -10,6 +10,7 @@ import GeoRiskMapView from './components/GeoRiskMapView';
 import AuditLedgerView from './components/AuditLedgerView';
 import SecretaryBriefingModal from './components/SecretaryBriefingModal';
 import VisualForensicsLab from './components/VisualForensicsLab';
+import LiveBatchAuditLab from './components/LiveBatchAuditLab';
 import ModelValidationView from './components/ModelValidationView';
 import EarlyWarningRadar from './components/EarlyWarningRadar';
 import AuthModal from './components/AuthModal';
@@ -37,6 +38,7 @@ import {
   Radio,
   Zap,
   ShieldCheck,
+  UploadCloud,
   Sun,
   Moon
 } from 'lucide-react';
@@ -224,6 +226,7 @@ export default function App() {
   const tabTitles = {
     overview: 'Command Centre',
     alerts: 'Live Anomaly Radar',
+    batch_audit: 'Live Batch CSV Audit Lab',
     early_warning: 'Early Warning & Predictive Forecast',
     map: 'Geospatial Risk Map',
     vendors: 'Contractor Syndicates & Cartels',
@@ -312,6 +315,25 @@ export default function App() {
               <span className="hidden sm:inline uppercase font-mono">{currentUser.role || 'Official'}</span>
               <span className="font-mono">Scope</span>
             </div>
+
+            {/* Direct Upload CSV Audit Button (Hackathon Primary Feature) */}
+            <button
+              onClick={() => setActiveTab('batch_audit')}
+              className="flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 group"
+              style={{
+                background: activeTab === 'batch_audit'
+                  ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
+                  : (theme === 'light' ? '#ffffff' : 'rgba(139,92,246,0.15)'),
+                border: activeTab === 'batch_audit'
+                  ? '1px solid #7c3aed'
+                  : (theme === 'light' ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(139,92,246,0.3)'),
+                color: activeTab === 'batch_audit' ? '#ffffff' : (theme === 'light' ? '#6d28d9' : '#c4b5fd')
+              }}
+              title="Launch Live Batch CSV Audit Lab"
+            >
+              <UploadCloud className={`w-3.5 h-3.5 ${activeTab === 'batch_audit' ? 'text-white' : 'text-violet-500'}`} />
+              <span className="font-mono text-xs font-bold hidden sm:inline">UPLOAD CSV AUDIT</span>
+            </button>
 
             {/* Dark / Light Mode Switch */}
             <button
@@ -478,6 +500,11 @@ export default function App() {
                 initialTier={initialTier} 
               />
             </div>
+          )}
+
+          {/* TAB: LIVE BATCH CSV AUDIT LAB (MULTI-MODEL ZERO-SHOT EVALUATION) */}
+          {activeTab === 'batch_audit' && (
+            <LiveBatchAuditLab onSelectWork={setSelectedWorkId} />
           )}
 
           {/* OFFICIAL TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}

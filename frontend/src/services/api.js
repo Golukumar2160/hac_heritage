@@ -469,6 +469,34 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  // Live Batch CSV Audit Lab
+  async uploadAuditCsv(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers = {};
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    const res = await fetch(`${API_BASE}/api/audit/batch-upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    return handleResponse(res);
+  },
+
+  async runDemoBenchmark() {
+    const res = await fetch(`${API_BASE}/api/audit/demo-benchmark`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getSampleCsvUrl() {
+    return `${API_BASE}/api/audit/sample-csv`;
+  },
 };
 
 export default api;

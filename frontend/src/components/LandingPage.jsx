@@ -25,7 +25,9 @@ import {
   ShieldAlert,
   Server,
   Sun,
-  Moon
+  Moon,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import emblemLogo from '../assets/logo_dark.jpg';
 
@@ -218,28 +220,21 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = '
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => onOpenAuthModal('login')}
-              className="w-full sm:w-auto px-9 py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center space-x-3 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-xl"
-              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.85) 0%, rgba(99,102,241,0.85) 100%)', boxShadow: '0 8px 32px -4px rgba(139,92,246,0.4)' }}
+              className="w-full sm:w-auto px-9 py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-xl"
+              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(99,102,241,0.9) 100%)', boxShadow: '0 8px 32px -4px rgba(139,92,246,0.45)' }}
             >
-              <ShieldCheck className="w-5 h-5" />
-              <span>Authenticate Official</span>
+              <LogIn className="w-5 h-5" />
+              <span>Sign In</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 
             <button
-              onClick={() => onOpenAuthModal('login')}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-emerald-200 hover:text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-lg border border-emerald-500/40 hover:border-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/50 backdrop-blur-md"
+              onClick={() => onOpenAuthModal('signup')}
+              className="w-full sm:w-auto px-9 py-4 rounded-xl font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-lg backdrop-blur-md border border-white/15 hover:border-violet-500/50"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
             >
-              <span className="text-emerald-400">👤</span>
-              <span>Citizen Vigilance Portal</span>
-            </button>
-
-            <button
-              onClick={() => onOpenAuthModal('register')}
-              className="w-full sm:w-auto px-7 py-4 rounded-xl font-semibold text-slate-200 hover:text-white transition-all flex items-center justify-center space-x-2 text-base backdrop-blur-md cursor-pointer border border-white/10 hover:border-violet-500/40"
-              style={{ background: 'rgba(0,0,0,0.4)' }}
-            >
-              <span>Register Credentials</span>
+              <UserPlus className="w-5 h-5 text-violet-400" />
+              <span>Register</span>
             </button>
           </div>
         </div>
