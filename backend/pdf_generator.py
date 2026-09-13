@@ -6,6 +6,7 @@ for any flagged MPLADS work using ReportLab.
 """
 
 import io
+import html
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -19,6 +20,13 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
+
+
+def safe_esc(val) -> str:
+    """Safely escape XML entities (&, <, >) for ReportLab Paragraph markup."""
+    if val is None:
+        return ""
+    return html.escape(str(val))
 
 
 def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> bytes:
@@ -149,16 +157,16 @@ def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> byt
     risk_label = str(work_data.get("risk_label", "CRITICAL")).upper()
 
     overview_rows = [
-        [Paragraph("<b>Work ID:</b>", body_style), Paragraph(f"<b>{work_id}</b>", body_bold),
-         Paragraph("<b>Risk Verdict:</b>", body_style), Paragraph(f"<font color='red'><b>{risk_label} ({risk_score:.1f}/100)</b></font>", body_bold)],
-        [Paragraph("<b>Scheme Description:</b>", body_style), Paragraph(str(work_data.get("work_description", work_data.get("work_title", "N/A"))), body_style),
-         Paragraph("<b>Work Category:</b>", body_style), Paragraph(str(work_data.get("work_category", "Normal/Others")), body_style)],
-        [Paragraph("<b>Constituency / MP:</b>", body_style), Paragraph(f"{work_data.get('mp_name', 'N/A')} ({work_data.get('state', 'N/A')})", body_style),
-         Paragraph("<b>District Authority / IDA:</b>", body_style), Paragraph(str(work_data.get("ida", "District Administration")), body_style)],
+        [Paragraph("<b>Work ID:</b>", body_style), Paragraph(f"<b>{safe_esc(work_id)}</b>", body_bold),
+         Paragraph("<b>Risk Verdict:</b>", body_style), Paragraph(f"<font color='red'><b>{safe_esc(risk_label)} ({risk_score:.1f}/100)</b></font>", body_bold)],
+        [Paragraph("<b>Scheme Description:</b>", body_style), Paragraph(safe_esc(work_data.get("work_description", work_data.get("work_title", "N/A"))), body_style),
+         Paragraph("<b>Work Category:</b>", body_style), Paragraph(safe_esc(work_data.get("work_category", "Normal/Others")), body_style)],
+        [Paragraph("<b>Constituency / MP:</b>", body_style), Paragraph(f"{safe_esc(work_data.get('mp_name', 'N/A'))} ({safe_esc(work_data.get('state', 'N/A'))})", body_style),
+         Paragraph("<b>District Authority / IDA:</b>", body_style), Paragraph(safe_esc(work_data.get("ida", "District Administration")), body_style)],
         [Paragraph("<b>Sanctioned Outlay:</b>", body_style), Paragraph(f"Rs. {sanction_amt:,.2f} ({sanction_amt/100000:.2f} Lakhs)", body_bold),
          Paragraph("<b>Disbursed Expenditure:</b>", body_style), Paragraph(f"Rs. {expenditure:,.2f} ({expenditure/100000:.2f} Lakhs)", body_bold)],
-        [Paragraph("<b>Physical Ground Progress:</b>", body_style), Paragraph(f"{progress_val}", body_bold),
-         Paragraph("<b>Primary Contractor / Vendor:</b>", body_style), Paragraph(str(work_data.get("work_top_vendor", "Vendor Details Under Verification")), body_style)],
+        [Paragraph("<b>Physical Ground Progress:</b>", body_style), Paragraph(f"{safe_esc(progress_val)}", body_bold),
+         Paragraph("<b>Primary Contractor / Vendor:</b>", body_style), Paragraph(safe_esc(work_data.get("work_top_vendor", "Vendor Details Under Verification")), body_style)],
     ]
 
     overview_table = Table(overview_rows, colWidths=[110, 160, 110, 140])
@@ -269,7 +277,7 @@ def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> byt
             "The contractor has secured a disproportionate share of local public works without evidence of competitive bidding."
         )
 
-    story.append(Paragraph(f"<b>Primary Auditor Observation:</b> {case_summary}", body_style))
+    story.append(Paragraph(f"<b>Primary Auditor Observation:</b> {safe_esc(case_summary)}", body_style))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("<b>Statutory Guidelines Breached:</b>", body_bold))
@@ -285,7 +293,7 @@ def generate_work_audit_pdf(work_data: dict, ai_explanation: dict = None) -> byt
         story.append(Spacer(1, 4))
         story.append(Paragraph("<b>Specific Evidentiary Red Flags:</b>", body_bold))
         for rf in red_flags[:4]:
-            story.append(Paragraph(f"• {rf}", legal_bullet_style))
+            story.append(Paragraph(f"• {safe_esc(rf)}", legal_bullet_style))
 
     story.append(Spacer(1, 10))
 

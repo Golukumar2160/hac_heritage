@@ -348,7 +348,7 @@ export default function BenfordView({ onSelectWork }) {
                       ₹{((Number(item.sanction_amount || 4980000)) / 100000).toFixed(2)} L
                     </td>
                     <td className="py-2.5 px-2 text-slate-300 font-sans text-xs truncate max-w-[140px]">
-                      {item.district || 'Pilibhit'}, {item.state || 'UP'}
+                      {(item.district || item.ida?.split('(')[0]?.trim() || item.ida || 'Constituency')}, {item.state || 'India'}
                     </td>
                     <td className="py-2.5 px-2 text-right">
                       <button

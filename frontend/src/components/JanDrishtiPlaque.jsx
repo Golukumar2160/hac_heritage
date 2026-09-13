@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, X, CheckCircle, AlertTriangle, XCircle, ShieldAlert, Check, ExternalLink } from 'lucide-react';
+import { Printer, X, CheckCircle, AlertTriangle, ShieldAlert, ExternalLink } from 'lucide-react';
 import { API_BASE } from '../services/api';
 
 export default function JanDrishtiPlaque({ work, onClose }) {

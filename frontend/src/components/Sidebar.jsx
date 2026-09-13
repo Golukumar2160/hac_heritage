@@ -12,7 +12,9 @@ import {
   ChevronRight, 
   Zap, 
   Menu, 
-  X 
+  X,
+  Scale,
+  Clock
 } from 'lucide-react';
 import emblemLogo from '../assets/logo_dark.jpg';
 
@@ -43,6 +45,11 @@ export default function Sidebar({
       icon: ShieldAlert,
     },
     {
+      id: 'early_warning',
+      label: 'Early Warning Radar',
+      icon: Clock,
+    },
+    {
       id: 'map',
       label: 'Geospatial Risk Map',
       icon: Map,
@@ -51,6 +58,11 @@ export default function Sidebar({
       id: 'vendors',
       label: 'Contractor Syndicates',
       icon: Network,
+    },
+    {
+      id: 'benford',
+      label: "Benford's Law Forensics",
+      icon: Scale,
     },
     {
       id: 'ocr',

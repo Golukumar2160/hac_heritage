@@ -341,7 +341,9 @@ export const api = {
   },
 
   // Dismiss / Escalate Flag (Strict 50 chars validation)
-  async submitAuditAction(workId, action, justification, originalRiskScore = 0.85) {
+  async submitAuditAction(workId, action, justification, originalRiskScore = 85.0) {
+    const rawScore = Number(originalRiskScore);
+    const normalizedScore = isNaN(rawScore) ? 85.0 : (rawScore <= 1.0 ? rawScore * 100 : rawScore);
     const res = await fetch(`${API_BASE}/api/audit/dismiss`, {
       method: 'POST',
       headers: getHeaders(),
@@ -349,9 +351,26 @@ export const api = {
         work_id: String(workId),
         action: (action || 'DISMISSED').toUpperCase(),
         justification: String(justification),
-        original_risk_score: Number(originalRiskScore) || 85.0,
+        original_risk_score: normalizedScore,
       }),
     });
+    return handleResponse(res);
+  },
+
+  // Early Warning Radar & Forecasting
+  async getEarlyWarningWorks(state = null, threshold = 0.40) {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (threshold !== undefined && threshold !== null) params.append('threshold', threshold);
+    const res = await fetch(`${API_BASE}/api/works/early-warning?${params.toString()}`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getConstituencyForecast(state = null, limit = 100) {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (limit) params.append('limit', limit);
+    const res = await fetch(`${API_BASE}/api/constituency/unspent-forecast?${params.toString()}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -404,4 +423,6 @@ export const api = {
     return handleResponse(res);
   },
 };
+
+export default api;
 

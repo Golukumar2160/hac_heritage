@@ -13,6 +13,7 @@ import SecretaryBriefingModal from './components/SecretaryBriefingModal';
 import OcrLabView from './components/OcrLabView';
 import PHashViewer from './components/PHashViewer';
 import ModelValidationView from './components/ModelValidationView';
+import EarlyWarningRadar from './components/EarlyWarningRadar';
 import AuthModal from './components/AuthModal';
 import { api } from './services/api';
 import AshokaChakra from './components/AshokaChakra';
@@ -176,6 +177,7 @@ export default function App() {
   const tabTitles = {
     overview: 'Command Centre',
     alerts: 'Live Anomaly Radar',
+    early_warning: 'Early Warning & Predictive Forecast',
     map: 'Geospatial Risk Map',
     vendors: 'Contractor Syndicates & Cartels',
     ocr: 'Physical Evidence & OCR Lab',
@@ -395,6 +397,15 @@ export default function App() {
                 initialTier={initialTier} 
               />
             </div>
+          )}
+
+          {/* TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}
+          {activeTab === 'early_warning' && (
+            <EarlyWarningRadar 
+              key={`early-warning-${activeRole}`}
+              onSelectWork={setSelectedWorkId} 
+              activeRole={activeRole} 
+            />
           )}
 
           {/* TAB: MODEL ACCURACY & VALIDATION */}

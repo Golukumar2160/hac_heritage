@@ -12,15 +12,15 @@ import {
   Building2, 
   MapPin, 
   Activity, 
-  ChevronRight,
-  TrendingUp,
-  Percent,
-  CheckCircle,
+  ChevronRight, 
+  TrendingUp, 
+  Percent, 
+  CheckCircle, 
   HelpCircle,
   RefreshCw,
   Landmark
 } from 'lucide-react';
-import api from '../services/api';
+import { api } from '../services/api';
 
 export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
   const [activeSubTab, setActiveSubTab] = useState('works_radar'); // 'works_radar' | 'constituency_forecaster'
@@ -120,7 +120,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
   });
 
   // Metrics calculations
-  const totalFundsAtRiskCr = earlyWorks.reduce((acc, curr) => acc + (Number(curr.sanctioned_amount || 0) / 10000000), 0);
+  const totalFundsAtRiskCr = earlyWorks.reduce((acc, curr) => acc + (Number(curr.sanction_amount || curr.sanctioned_amount || 0) / 10000000), 0);
   const avgCompletionProb = earlyWorks.length > 0 
     ? (earlyWorks.reduce((acc, curr) => acc + (Number(curr.completion_probability || 0)), 0) / earlyWorks.length) * 100 
     : 0;
@@ -333,7 +333,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                       const prob = Number(item.completion_probability || 0);
                       const probPct = (prob * 100).toFixed(1);
                       const isCritical = prob < 0.30;
-                      const sanctionL = ((Number(item.sanctioned_amount || 0)) / 100000).toFixed(1);
+                      const sanctionL = ((Number(item.sanction_amount || item.sanctioned_amount || 0)) / 100000).toFixed(1);
                       const spentL = ((Number(item.total_spent || 0)) / 100000).toFixed(1);
                       const delayDays = item.projected_delay_days || item.delay_days || 0;
                       const projDate = item.projected_completion_date || 'Target Overrun';

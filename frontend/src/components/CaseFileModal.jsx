@@ -26,9 +26,13 @@ import {
   AlertOctagon,
   CheckCircle2,
   Hash,
-  ExternalLink
+  ExternalLink,
+  Activity,
+  QrCode
 } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
+import IntegrityRadarTab from './IntegrityRadarTab';
+import JanDrishtiPlaque from './JanDrishtiPlaque';
 
 export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const maskAccountNo = (acc) => {
@@ -43,6 +47,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const [activeTab, setActiveTab] = useState('ai_memo');
   const [showSampleOcr, setShowSampleOcr] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showJanDrishtiPlaque, setShowJanDrishtiPlaque] = useState(false);
   
   // AI Explainer state
   const [aiData, setAiData] = useState(null);
@@ -103,6 +108,11 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
     streamRef.current = es;
 
     es.onmessage = (event) => {
+      if (event.data === '[DONE]' || event.data.trim() === '[DONE]') {
+        setIsStreaming(false);
+        es.close();
+        return;
+      }
       try {
         const parsed = JSON.parse(event.data);
         if (parsed.token) {
@@ -134,7 +144,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
     setActionError('');
     setSubmittingAction(true);
     try {
-      const res = await api.submitAuditAction(workId, actionType, justification.trim());
+      const rawScore = Number(workObj?.risk_score);
+      const normalizedScore = !isNaN(rawScore) ? (rawScore <= 1.0 ? rawScore * 100 : rawScore) : 85.0;
+      const res = await api.submitAuditAction(workId, actionType, justification.trim(), normalizedScore);
       setActionSuccess(res.message || 'Audit action registered in immutable ledger.');
       if (onActionLogged) onActionLogged();
     } catch (err) {
@@ -185,10 +197,20 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button
+              onClick={() => setShowJanDrishtiPlaque(true)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 hover:shadow-glow-emerald transition-all cursor-pointer"
+              title="Generate Jan-Drishti Official Citizen Transparency QR Plaque"
+            >
+              <QrCode className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Jan-Drishti QR Plaque</span>
+              <span className="sm:hidden">QR Plaque</span>
+            </button>
+
             <button
               onClick={() => api.downloadWorkPdf(workId)}
-              className="hidden sm:flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-200 border border-violet-500/40 hover:shadow-glow-violet transition-all"
+              className="hidden sm:flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-500/15 hover:bg-violet-500/25 text-violet-200 border border-violet-500/40 hover:shadow-glow-violet transition-all cursor-pointer"
               title="Download Official MoSPI Statutory Audit PDF Dossier"
             >
               <Download className="w-4 h-4 text-violet-400" />
@@ -196,7 +218,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -262,7 +284,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-xl bg-slate-900/70 border border-slate-800 text-sm text-slate-300">
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4 text-violet-400" />
-                  <span><strong>Constituency:</strong> {workObj?.district || 'District'}, {workObj?.state || 'State'}</span>
+                  <span><strong>Constituency:</strong> {workObj?.constituency || workObj?.district || workObj?.ida?.split('(')[0]?.trim() || 'Constituency'}, {workObj?.state || 'State'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Building className="w-4 h-4 text-amber-400" />
@@ -278,6 +300,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 {[
                   { id: 'ai_memo', label: 'AI CAG Audit Memo', icon: Sparkles },
                   { id: 'models', label: 'ML Forensic Scores', icon: Cpu },
+                  { id: 'integrity_radar', label: 'Integrity Radar (5-Axis)', icon: Activity },
                   { id: 'images', label: 'Visual & OCR Forensics', icon: ImageIcon },
                   { id: 'action', label: 'Auditor Action & Resolution', icon: Scale },
                 ].map((t) => {
@@ -515,6 +538,16 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 </div>
               )}
 
+              {/* TAB: 5-Axis Integrity Radar Chart */}
+              {activeTab === 'integrity_radar' && (
+                <div className="space-y-6">
+                  <IntegrityRadarTab 
+                    workObj={workObj} 
+                    dupEvidence={dupEvidence} 
+                  />
+                </div>
+              )}
+
               {/* TAB 3: Visual Forensics & Scanned Document OCR */}
               {activeTab === 'images' && (
                 <div className="space-y-6">
@@ -563,7 +596,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                           {workObj?.exif_latitude ? `${workObj.exif_latitude}° N, ${workObj.exif_longitude}° E` : 'No Hardware EXIF (Missing Geotag)'}
                         </div>
                         <div className="text-xs text-slate-400">
-                          Expected Constituency: {workObj?.district || 'Target Boundary'}
+                          Expected Constituency: {workObj?.constituency || workObj?.district || workObj?.ida?.split('(')[0]?.trim() || 'Target Boundary'}
                         </div>
                       </div>
 
@@ -1289,6 +1322,14 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Jan-Drishti Citizen Transparency QR Plaque Modal */}
+      {showJanDrishtiPlaque && (
+        <JanDrishtiPlaque
+          work={work}
+          onClose={() => setShowJanDrishtiPlaque(false)}
+        />
       )}
     </div>
   );

@@ -1398,12 +1398,64 @@ def _execute_work_vision_audit(work_id: str, sample_file: Optional[str] = None):
 
     return audit_res
 
+# ── Citizen Transparency QR Code Endpoint (Jan-Drishti PS 26102) ───────────────
+@app.get("/api/work/{work_id:path}/qr-code", tags=["Alerts"])
+def get_work_qr_code(work_id: str):
+    """
+    Generate statutory Jan-Drishti Citizen Transparency QR code.
+    Encodes official public audit verification URL: https://bharatdrishti.gov.in/verify/{work_id}
+    Returns dynamic PNG image stream.
+    """
+    import qrcode
+    from io import BytesIO
+
+    df = get_cached_flags()
+    work_id_clean = urllib.parse.unquote(work_id.strip())
+    match = df[df["work_id"] == work_id_clean]
+    if match.empty:
+        match = df[df["work_id"].astype(str).str.contains(work_id_clean, case=False, na=False, regex=False)]
+    if match.empty:
+        raise HTTPException(status_code=404, detail=f"Work '{work_id}' not found.")
+    
+    canon_id = str(match.iloc[0]["work_id"])
+    verify_url = f"https://bharatdrishti.gov.in/verify/{urllib.parse.quote(canon_id)}"
+    
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=8,
+        border=3,
+    )
+    qr.add_data(verify_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#0f172a", back_color="#ffffff")
+    
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png")
+
+
+# ── On-Demand Neural Vision Auditor & ELA Tamper Heatmap Lab ──────────────────
+@app.get("/api/work-vision-audit/{work_id:path}", tags=["Alerts"])
+@app.get("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
+@app.post("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
+def get_work_vision_audit(
+    work_id: str,
+    sample_file: Optional[str] = Query(None, description="Optional specific image filename to audit"),
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    On-Demand Multi-Modal Vision & Error Level Analysis (ELA) Forensic Audit.
+    Audits physical site completion photography for:
+      1. Digital tampering / Photoshop splicing (JPEG DCT compression variance matrix)
+      2. Ground reality scene mismatch vs declared work title (Gemini Multimodal Vision)
+      3. Ghost asset verification
+    """
+    return _execute_work_vision_audit(work_id=work_id, sample_file=sample_file)
+
+
 # ── 360° Single Work Inspection ────────────────────────────────────────────────
-# BUG-012 NOTE: The `:path` wildcard here WILL shadow /api/work/{id}/vision-audit
-# and /api/work/{id}/qr-code if they were registered after this route.
-# The vision-audit and QR routes are handled INSIDE this function via string suffix checks.
-# If you add a new sub-route, always handle it inside get_work_detail() or
-# register it BEFORE this decorator in the file.
 @app.get("/api/work/{work_id:path}", tags=["Alerts"])
 def get_work_detail(
     work_id: str,
@@ -1573,60 +1625,7 @@ def get_work_detail(
         "duplicate_photo_evidence": dup_matches
     }
 
-# ── Citizen Transparency QR Code Endpoint (Jan-Drishti PS 26102) ───────────────
-@app.get("/api/work/{work_id:path}/qr-code", tags=["Alerts"])
-def get_work_qr_code(work_id: str):
-    """
-    Generate statutory Jan-Drishti Citizen Transparency QR code.
-    Encodes official public audit verification URL: https://bharatdrishti.gov.in/verify/{work_id}
-    Returns dynamic PNG image stream.
-    """
-    import qrcode
-    from io import BytesIO
-
-    df = get_cached_flags()
-    work_id_clean = urllib.parse.unquote(work_id.strip())
-    match = df[df["work_id"] == work_id_clean]
-    if match.empty:
-        match = df[df["work_id"].astype(str).str.contains(work_id_clean, case=False, na=False, regex=False)]
-    if match.empty:
-        raise HTTPException(status_code=404, detail=f"Work '{work_id}' not found.")
-    
-    canon_id = str(match.iloc[0]["work_id"])
-    verify_url = f"https://bharatdrishti.gov.in/verify/{urllib.parse.quote(canon_id)}"
-    
-    qr = qrcode.QRCode(
-        version=None,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=8,
-        border=3,
-    )
-    qr.add_data(verify_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="#0f172a", back_color="#ffffff")
-    
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    buf.seek(0)
-    return StreamingResponse(buf, media_type="image/png")
-
-# ── On-Demand Neural Vision Auditor & ELA Tamper Heatmap Lab ──────────────────
-@app.get("/api/work-vision-audit/{work_id:path}", tags=["Alerts"])
-@app.get("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
-@app.post("/api/work/{work_id:path}/vision-audit", tags=["Alerts"])
-def get_work_vision_audit(
-    work_id: str,
-    sample_file: Optional[str] = Query(None, description="Optional specific image filename to audit"),
-    user: Optional[dict] = Depends(get_current_user_optional)
-):
-    """
-    On-Demand Multi-Modal Vision & Error Level Analysis (ELA) Forensic Audit.
-    Audits physical site completion photography for:
-      1. Digital tampering / Photoshop splicing (JPEG DCT compression variance matrix)
-      2. Ground reality scene mismatch vs declared work title (Gemini Multimodal Vision)
-      3. Ghost asset verification
-    """
-    return _execute_work_vision_audit(work_id=work_id, sample_file=sample_file)
+# (Specific QR code and vision-audit endpoints moved above /api/work/{work_id:path} to prevent Starlette route shadowing)
 
 # ── Logistic Regression Completion Prediction Endpoints ───────────────────────
 
@@ -2599,9 +2598,18 @@ def get_flagged_das(user=Depends(decode_token)):
     if user["role"] != "ministry":
         raise HTTPException(status_code=403, detail="Ministry access only.")
     
-    conn = get_db()
-    df = pd.read_sql_query("SELECT * FROM dismissals WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", conn)
-    conn.close()
+    df = pd.DataFrame()
+    pg = get_supabase_conn()
+    if pg:
+        try:
+            df = pd.read_sql_query("SELECT * FROM audit_ledger WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", pg)
+        except Exception as _e:
+            print(f"[!] Warning querying Supabase for flagged DAs: {_e}")
+    
+    if df.empty:
+        conn = get_db()
+        df = pd.read_sql_query("SELECT * FROM dismissals WHERE action IN ('DISMISSED', 'FALSE_POSITIVE') AND original_risk_score >= 80", conn)
+        conn.close()
     
     if df.empty:
         return []

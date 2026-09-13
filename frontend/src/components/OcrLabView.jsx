@@ -115,7 +115,7 @@ export default function OcrLabView({ onSelectWork }) {
   const filteredDocs = documents.filter((doc) => {
     const sev = getDocSeverity(doc);
     if (filterSeverity === 'CRITICAL' && sev !== 'CRITICAL') return false;
-    if (filterSeverity === 'HIGH' && sev !== 'HIGH' && sev !== 'CRITICAL') return false;
+    if (filterSeverity === 'HIGH' && sev !== 'HIGH') return false;
     if (filterSeverity === 'CROSS_SCHEME' && !doc.findings?.some((f) => f.code === 'CROSS_SCHEME_FRAUD')) return false;
     if (filterSeverity === 'MISMATCH' && !doc.findings?.some((f) => f.code === 'PORTAL_PAPER_AMOUNT_MISMATCH')) return false;
     if (filterSeverity === 'VERIFIED' && sev !== 'VERIFIED') return false;
