@@ -1,19 +1,16 @@
 # ==============================================================================
-# BHARAT-DRISHTI // Render.com Infrastructure Blueprint
+# BHARAT-DRISHTI // Render.com Docker Infrastructure Blueprint
 # ==============================================================================
 services:
   - type: web
     name: bharat-drishti-backend
-    runtime: python
+    env: docker
     region: singapore
     plan: free
     branch: main
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 1
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: DATABASE_URL
