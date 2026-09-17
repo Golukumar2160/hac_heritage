@@ -14,9 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency definition and install wheels
+# Create isolated Python virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install dependencies into /opt/venv
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # ── Runtime Stage ─────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
@@ -31,14 +36,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root system user for security
-RUN groupadd -r drishti && useradd -r -g drishti -d /app -s /sbin/nologin drishti
-
-# Copy installed Python packages from builder
-COPY --from=builder /root/.local /home/drishti/.local
-ENV PATH=/home/drishti/.local/bin:$PATH
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create non-root system user for security
+RUN groupadd -r drishti && useradd -r -g drishti -d /app -s /sbin/nologin drishti
 
 # Copy backend application code and required modules
 COPY backend /app/backend
@@ -62,5 +68,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://127.0.0.1:${PORT:-8000}/api/health || exit 1
 
-# Production server start with Uvicorn supporting both local port 8000 and Render $PORT
+# Production server start with Uvicorn supporting dynamic Render $PORT
 CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
