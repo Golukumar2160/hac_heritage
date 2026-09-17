@@ -13,7 +13,7 @@ import VisualForensicsLab from './components/VisualForensicsLab';
 import LiveBatchAuditLab from './components/LiveBatchAuditLab';
 import ModelValidationView from './components/ModelValidationView';
 import EarlyWarningRadar from './components/EarlyWarningRadar';
-import AuthModal from './components/AuthModal';
+import AuthModal from './components/auth/AuthModal';
 import { api } from './services/api';
 import AshokaChakra from './components/AshokaChakra';
 import { 

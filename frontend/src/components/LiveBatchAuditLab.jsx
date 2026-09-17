@@ -26,16 +26,12 @@ import {
   FileText,
   X,
   Copy,
-  Calendar,
-  User,
-  MapPin,
-  Landmark,
-  FileCheck,
   Users,
   CheckCircle,
-  XCircle
+  XCircle,
+  Trash2
 } from 'lucide-react';
-import { api, API_BASE } from '../services/api';
+import { api } from '../services/api';
 
 export default function LiveBatchAuditLab({ onSelectWork }) {
   const [file, setFile] = useState(null);
@@ -51,22 +47,6 @@ export default function LiveBatchAuditLab({ onSelectWork }) {
   const [viewMode, setViewMode] = useState('citizen'); // 'citizen' (default) | 'auditor'
   const [lang, setLang] = useState('en'); // 'en' | 'hi'
   const fileInputRef = useRef(null);
-
-  // Auto-run demo benchmark on mount if no data exists
-  useEffect(() => {
-    handleRunBenchmark();
-  }, []);
-
-  // Keyboard shortcut: close modal on ESC
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setSelectedBatchWork(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   const handleRunBenchmark = async () => {
     setLoading(true);
@@ -84,23 +64,64 @@ export default function LiveBatchAuditLab({ onSelectWork }) {
     }
   };
 
-  const handleFileUpload = async (selectedFile) => {
-    if (!selectedFile) return;
-    if (!selectedFile.name.toLowerCase().endsWith('.csv')) {
-      setError('Please upload a valid CSV file (.csv).');
+  // Auto-run demo benchmark on mount if no data exists
+  useEffect(() => {
+    handleRunBenchmark();
+  }, []);
+
+  // Keyboard shortcut: close modal on ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedBatchWork(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleFileUpload = async (selectedFileOrFiles) => {
+    if (!selectedFileOrFiles) return;
+    let filesToProcess = [];
+    if (selectedFileOrFiles instanceof FileList || Array.isArray(selectedFileOrFiles)) {
+      filesToProcess = Array.from(selectedFileOrFiles).filter((f) =>
+        f.name.toLowerCase().endsWith('.csv')
+      );
+    } else if (
+      selectedFileOrFiles &&
+      selectedFileOrFiles.name &&
+      selectedFileOrFiles.name.toLowerCase().endsWith('.csv')
+    ) {
+      filesToProcess = [selectedFileOrFiles];
+    }
+
+    if (filesToProcess.length === 0) {
+      setError('Please upload at least one valid CSV file (.csv).');
       return;
     }
-    setFile(selectedFile);
+
+    if (filesToProcess.length === 1) {
+      setFile(filesToProcess[0]);
+    } else {
+      const totalSize = filesToProcess.reduce((acc, f) => acc + (f.size || 0), 0);
+      setFile({
+        name: `${filesToProcess.length} CSV Files Combined`,
+        size: totalSize,
+        isMultiple: true,
+        count: filesToProcess.length
+      });
+    }
+
     setLoading(true);
     setError(null);
     setSelectedModelFilter(null);
 
     try {
-      const data = await api.uploadAuditCsv(selectedFile);
+      const data = await api.uploadAuditCsv(filesToProcess);
       if (data.success) {
         setAuditData(data);
       } else {
-        throw new Error(data.error || 'Failed to process CSV file.');
+        throw new Error(data.error || 'Failed to process CSV file(s).');
       }
     } catch (err) {
       console.error('Upload audit error:', err);
@@ -123,7 +144,7 @@ export default function LiveBatchAuditLab({ onSelectWork }) {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileUpload(e.dataTransfer.files[0]);
+      handleFileUpload(e.dataTransfer.files);
     }
   };
 
@@ -220,6 +241,56 @@ ${
     });
   };
 
+  // Remove individual record with dynamic KPI recalculation
+  const handleRemoveRecord = (workIdToRemove) => {
+    if (!auditData || !auditData.results) return;
+    const updatedResults = auditData.results.filter(
+      (w) => String(w.work_id) !== String(workIdToRemove)
+    );
+    const total_works = updatedResults.length;
+    const critical_count = updatedResults.filter((w) => w.severity === 'CRITICAL').length;
+    const high_count = updatedResults.filter((w) => w.severity === 'HIGH').length;
+    const medium_count = updatedResults.filter((w) => w.severity === 'MEDIUM').length;
+    const low_count = updatedResults.filter((w) => w.severity === 'LOW' || w.severity === 'CLEAN').length;
+    const avg_score = total_works > 0
+      ? Number((updatedResults.reduce((acc, w) => acc + (w.risk_score || 0), 0) / total_works).toFixed(1))
+      : 0;
+    const funds_at_risk = updatedResults
+      .filter((w) => w.severity === 'CRITICAL' || w.severity === 'HIGH')
+      .reduce((acc, w) => acc + (Number(w.sanction_amount) || Number(w.fund_disbursed) || 0), 0);
+
+    setAuditData({
+      ...auditData,
+      results: updatedResults,
+      kpis: {
+        ...auditData.kpis,
+        total_works,
+        critical_count,
+        high_count,
+        medium_count,
+        low_count,
+        avg_risk_score: avg_score,
+        funds_at_risk
+      }
+    });
+
+    if (selectedBatchWork && String(selectedBatchWork.work_id) === String(workIdToRemove)) {
+      setSelectedBatchWork(null);
+    }
+  };
+
+  // Clear batch completely and reset view
+  const handleClearBatch = () => {
+    setAuditData(null);
+    setFile(null);
+    setError(null);
+    setSelectedBatchWork(null);
+    setSelectedModelFilter(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Filtered rows
   const results = auditData?.results || [];
   const kpis = auditData?.kpis || {};
@@ -281,26 +352,6 @@ ${
           </p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2">
-          <button
-            onClick={handleRunBenchmark}
-            disabled={loading}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-500 text-white shadow-md shadow-violet-600/30 transition-all cursor-pointer disabled:opacity-50"
-            title="Run Curated Demo Works"
-          >
-            <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>⚡ Run Instant Benchmark (5 Works)</span>
-          </button>
-
-          <button
-            onClick={handleDownloadSample}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs"
-            title="Download CSV Template"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Sample CSV</span>
-          </button>
-        </div>
       </div>
 
       {/* Interactive Drag & Drop Uploader */}
@@ -319,10 +370,11 @@ ${
           ref={fileInputRef}
           type="file"
           accept=".csv"
+          multiple
           className="hidden"
           onChange={(e) => {
             if (e.target.files && e.target.files.length > 0) {
-              handleFileUpload(e.target.files[0]);
+              handleFileUpload(e.target.files);
             }
           }}
         />
@@ -335,27 +387,70 @@ ${
           <div className="space-y-1">
             <p className="text-sm font-bold text-slate-900 dark:text-white">
               {loading
-                ? 'Ingesting & Evaluating Multi-Model Pipeline...'
+                ? 'Converting & Evaluating Multi-Model Pipeline Across All Works...'
                 : file
                 ? `Active File: ${file.name} (${file.size ? (file.size / 1024).toFixed(1) + ' KB' : 'Benchmark Data'})`
-                : 'Drop any MPLADS CSV file here, or browse from computer'}
+                : 'Drop any MPLADS CSV file(s) here, or browse from computer'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Compatible with <code className="text-violet-600 dark:text-violet-400 font-mono">Works Sanctioned.csv</code> and <code className="text-violet-600 dark:text-violet-400 font-mono">Expenditure.csv</code> from Ministry Portal
+              Compatible with <code className="text-violet-600 dark:text-violet-400 font-mono">Works Sanctioned.csv</code>, <code className="text-violet-600 dark:text-violet-400 font-mono">Expenditure.csv</code>, or custom multi-district CSVs
             </p>
           </div>
 
-          <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+          {/* Direct Action Trigger: Convert All Works */}
+          <div className="flex items-center gap-2 pt-1 flex-wrap justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => {
+                if (file) {
+                  handleFileUpload(file);
+                } else if (fileInputRef.current) {
+                  fileInputRef.current.click();
+                }
+              }}
+              disabled={loading}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-mono font-bold text-xs shadow-md shadow-emerald-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>
+                {auditData?.kpis?.total_works
+                  ? `⚡ Convert All (${auditData.kpis.total_works} Works Evaluated)`
+                  : '⚡ Convert All Works in CSV'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+            >
+              Select Another CSV
+            </button>
+
+            {auditData && (
+              <button
+                type="button"
+                onClick={handleClearBatch}
+                className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-mono text-xs border border-rose-500/30 transition-all cursor-pointer flex items-center gap-1.5"
+                title="Clear current batch records"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{lang === 'hi' ? 'सभी रिकॉर्ड हटाएं' : 'Clear Batch'}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 pt-1">
             <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">Auto-Detect Headers</span>
             <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">5 ML Models</span>
-            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">Plain-English Explanations</span>
+            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">Supports Multi-CSV Merging</span>
           </div>
         </div>
 
         {loading && (
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center space-x-3 text-violet-300 font-mono text-xs">
             <RefreshCw className="w-5 h-5 animate-spin text-violet-400" />
-            <span>Executing Isolation Forest, Vendor Cartel, and Compliance Rules...</span>
+            <span>Executing Isolation Forest, Vendor Cartel, and Compliance Rules Across All Works...</span>
           </div>
         )}
       </div>
@@ -381,7 +476,7 @@ ${
           >
             <Users className="w-3.5 h-3.5" />
             <span>Common Citizen Mode</span>
-            <span className="text-[10px] opacity-80">(आम नागरिक)</span>
+            {lang === 'hi' && <span className="text-[10px] opacity-80">(आम नागरिक)</span>}
           </button>
           <button
             onClick={() => setViewMode('auditor')}
@@ -791,6 +886,22 @@ ${
       {/* ========================================================================= */}
       {/* MAIN RESULTS SECTION: ROW-BY-ROW AUDIT CARDS WITH SCORE & LAYMAN REASONS */}
       {/* ========================================================================= */}
+      {auditData && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono text-emerald-400">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-bold text-slate-900 dark:text-emerald-300">
+              {lang === 'hi' 
+                ? `सफलतापूर्वक रूपांतरण संपन्न: CSV के सभी ${kpis.total_works || results.length} कार्यों का 5 AI मॉडल्स द्वारा विश्लेषण पूर्ण` 
+                : `100% Converted: All ${kpis.total_works || results.length} Works Across Entire CSV Evaluated Through All 5 AI Models`}
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-500 dark:text-emerald-400/80">
+            {auditData.filename || 'Uploaded CSV'} // {results.length} records active
+          </span>
+        </div>
+      )}
+
       {filteredResults.length === 0 ? (
         <div className="py-16 text-center text-slate-500 dark:text-slate-400 font-mono text-xs">
           No works match the selected filter. Try uploading another CSV or resetting filters.
@@ -901,15 +1012,29 @@ ${
                       </div>
                     </div>
 
-                    {/* Open Built-in Work Dossier Modal */}
-                    <button
-                      onClick={() => setSelectedBatchWork(work)}
-                      className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-violet-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1 shadow-xs mt-1"
-                      title="Inspect Multi-Model Dossier"
-                    >
-                      <span>{lang === 'hi' ? 'दस्तावेज देखें' : 'View Dossier'}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Actions: View Dossier & Remove Record */}
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap justify-end">
+                      <button
+                        onClick={() => setSelectedBatchWork(work)}
+                        className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-violet-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                        title="Inspect Multi-Model Dossier"
+                      >
+                        <span>{lang === 'hi' ? 'दस्तावेज देखें' : 'View Dossier'}</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveRecord(work.work_id);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1 border border-rose-500/30 shadow-xs"
+                        title={lang === 'hi' ? 'इस रिकॉर्ड को सूची से हटाएं' : 'Remove record from batch'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{lang === 'hi' ? 'हटाएं' : 'Remove'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

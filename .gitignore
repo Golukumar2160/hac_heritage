@@ -2,11 +2,12 @@ venv/
 __pycache__/
 *.log
 .DS_Store
-fraud_flags.csv
-fraud_summary.txt
-audit_log.db
-mplads_audit.db
+/fraud_summary.txt
+/audit_log.db
+/mplads_audit.db
 .env
+*.env
+.env.*
 
 # Frontend build & dependencies
 frontend/node_modules/
@@ -28,4 +29,7 @@ images/downloaded_pdfs/
 scratch/*.geojson
 scratch/*.svg
 
+!data/processed/fraud_flags.csv
+
 .github/
+

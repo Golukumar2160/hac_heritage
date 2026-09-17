@@ -77,7 +77,10 @@ else:
 # Item 6: Hardcoded Windows Scripts/python.exe
 with open(os.path.join(ROOT_DIR, "backend", "main.py"), "r", encoding="utf-8") as f:
     m = f.read()
-with open(os.path.join(ROOT_DIR, "run_audit_pipeline.py"), "r", encoding="utf-8") as f:
+run_audit_path = os.path.join(ROOT_DIR, "pipelines", "run_audit_pipeline.py")
+if not os.path.exists(run_audit_path):
+    run_audit_path = os.path.join(ROOT_DIR, "run_audit_pipeline.py")
+with open(run_audit_path, "r", encoding="utf-8") as f:
     r = f.read()
 if "sys.executable" in m and "sys.executable" in r and "os.name == \"nt\"" in m:
     record(6, "Hardcoded Windows Scripts/python.exe", "FIXED & VERIFIED",
@@ -146,7 +149,10 @@ else:
     record(12, "Boolean Parsing Failure", "FAILED", "Strict boolean check still in place.")
 
 # Item 13: Quadratic Byte Accumulation
-with open(os.path.join(ROOT_DIR, "download_pdfs_live.py"), "r", encoding="utf-8") as f:
+dl_path = os.path.join(ROOT_DIR, "scripts", "download_pdfs_live.py")
+if not os.path.exists(dl_path):
+    dl_path = os.path.join(ROOT_DIR, "download_pdfs_live.py")
+with open(dl_path, "r", encoding="utf-8") as f:
     dl = f.read()
 if 'state["total_bytes_downloaded"] = initial_total_bytes + session_bytes' in dl:
     record(13, "Quadratic Byte Count Accumulation (download_pdfs_live.py)", "FIXED & VERIFIED",

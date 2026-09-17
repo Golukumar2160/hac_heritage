@@ -1,0 +1,66 @@
+# ==============================================================================
+# BHARAT-DRISHTI // Production Backend Dockerfile
+# ==============================================================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Install system compilation and native library dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    libpq-dev \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency definition and install wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ── Runtime Stage ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Install only minimal runtime shared libraries (libpq for postgres, libgl for OpenCV/RapidOCR)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq5 \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root system user for security
+RUN groupadd -r drishti && useradd -r -g drishti -d /app -s /sbin/nologin drishti
+
+# Copy installed Python packages from builder
+COPY --from=builder /root/.local /home/drishti/.local
+ENV PATH=/home/drishti/.local/bin:$PATH
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Copy backend application code and required modules
+COPY backend /app/backend
+COPY benford /app/benford
+COPY forensics /app/forensics
+COPY llm /app/llm
+COPY models /app/models
+COPY pipelines /app/pipelines
+COPY scraper /app/scraper
+COPY data /app/data
+COPY tests /app/tests
+
+# Set directory permissions for non-root user
+RUN chown -R drishti:drishti /app
+
+USER drishti
+
+EXPOSE 8000
+
+# Container Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://127.0.0.1:8000/api/health || exit 1
+
+# Production server start with Uvicorn
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

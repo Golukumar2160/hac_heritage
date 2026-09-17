@@ -9,7 +9,6 @@ import {
   Flame,
   Globe,
   Crosshair,
-  Radio,
   ZoomIn,
   ZoomOut,
   RotateCcw,
@@ -25,25 +24,19 @@ import {
 import { api } from '../services/api';
 import { 
   SVG_MAP_CONFIG, 
-  INDIA_STATE_PATHS, 
-  GPS_EVIDENCE_POINTS,
-  projectGeoPoint
+  INDIA_STATE_PATHS
 } from '../data/indiaMapData';
 
 export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }) {
   const [states, setStates] = useState([]);
   const [selectedState, setSelectedState] = useState('Uttar Pradesh');
   const [districts, setDistricts] = useState([]);
-  const [gpsPoints, setGpsPoints] = useState(GPS_EVIDENCE_POINTS);
   const [loading, setLoading] = useState(true);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   
   // Interactive Controls
   const [activeMetric, setActiveMetric] = useState('risk'); // 'risk' | 'critical' | 'funds' | 'monopoly'
-  const [showGpsLayer, setShowGpsLayer] = useState(true);
   const [hoveredState, setHoveredState] = useState(null);
-  const [hoveredGps, setHoveredGps] = useState(null);
-  const [selectedGps, setSelectedGps] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -85,38 +78,12 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
     return {
       badge: 'National Geospatial Vigilance Grid',
       title: 'Geographic Vulnerability Distribution & Risk Clusters',
-      desc: 'Interactive multi-tier vector map of India mapping 98,649 MPLADS schemes across all 36 States & Union Territories. Overlayed with 12 ground-truthed physical GPS coordinates extracted directly from scanned completion document watermarks.',
+      desc: 'Interactive multi-tier vector map of India mapping 98,649 MPLADS schemes across all 36 States & Union Territories.',
       jurisdictionLabel: 'Audited States',
       jurisdictionVal: `${states.length || 36} Jurisdictions`,
       scopeBannerText: null
     };
   }, [activeRole, states.length]);
-
-  // Load States Aggregates & GPS points (Re-fetches on activeRole switch)
-  useEffect(() => {
-    setLoading(true);
-    Promise.allSettled([
-      api.getMapStates(),
-      api.getMapGpsPoints()
-    ]).then(([statesRes, gpsRes]) => {
-      if (statesRes.status === 'fulfilled' && Array.isArray(statesRes.value)) {
-        setStates(statesRes.value);
-        if (statesRes.value.length > 0) {
-          const upExists = statesRes.value.find(s => s.state === 'Uttar Pradesh');
-          const defaultState = upExists ? 'Uttar Pradesh' : statesRes.value[0].state;
-          setSelectedState(defaultState);
-          handleSelectState(defaultState);
-        }
-      }
-      if (gpsRes.status === 'fulfilled' && Array.isArray(gpsRes.value) && gpsRes.value.length > 0) {
-        setGpsPoints(gpsRes.value);
-      }
-    }).catch(err => {
-      console.error('Error loading geospatial map data:', err);
-    }).finally(() => {
-      setLoading(false);
-    });
-  }, [activeRole]);
 
   const handleSelectState = (stateName) => {
     setSelectedState(stateName);
@@ -126,6 +93,29 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
       .catch((err) => console.error('Error loading district map data:', err))
       .finally(() => setLoadingDistricts(false));
   };
+
+  // Load States Aggregates (Re-fetches on activeRole switch)
+  useEffect(() => {
+    setLoading(true);
+    api.getMapStates()
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStates(data);
+          if (data.length > 0) {
+            const upExists = data.find(s => s.state === 'Uttar Pradesh');
+            const defaultState = upExists ? 'Uttar Pradesh' : data[0].state;
+            setSelectedState(defaultState);
+            handleSelectState(defaultState);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading geospatial map data:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [activeRole]);
 
   // Create state lookup dictionary by db_name
   const stateDataMap = useMemo(() => {
@@ -389,23 +379,8 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
               ))}
             </div>
 
-            {/* GPS Forensic Radar Overlay Toggle & Zoom */}
+            {/* Zoom Controls */}
             <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowGpsLayer(!showGpsLayer)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-1.5 border ${
-                  showGpsLayer
-                    ? 'bg-rose-950/60 text-rose-300 border-rose-700 shadow-md shadow-rose-950/50'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-                }`}
-              >
-                <Radio className={`w-3.5 h-3.5 ${showGpsLayer ? 'text-rose-400' : ''}`} />
-                <span>12 Forensic GPS Pins</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-900/80 text-rose-200 font-bold">
-                  Ground Truth
-                </span>
-              </button>
-
               <button
                 onClick={() => setZoomLevel(prev => Math.min(prev + 0.25, 2))}
                 title="Zoom In"
@@ -523,57 +498,10 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                 })}
               </g>
 
-              {/* 3. Layer: 12 Ground-Truthed Forensic GPS Radar Pins */}
-              {showGpsLayer && (
-                <g className="gps-markers">
-                  {gpsPoints.map((p, idx) => {
-                    const isSelected = selectedGps && selectedGps.work_id === p.work_id;
-                    const isHovered = hoveredGps && hoveredGps.work_id === p.work_id;
-                    const coords = (p.svg_x != null && p.svg_y != null) 
-                      ? [p.svg_x, p.svg_y] 
-                      : (p.latitude != null && p.longitude != null) 
-                        ? projectGeoPoint(p.latitude, p.longitude) 
-                        : [0, 0];
-                    const px = coords[0];
-                    const py = coords[1];
-
-                    return (
-                      <g 
-                        key={idx}
-                        className="cursor-pointer transition-transform duration-150 hover:scale-125"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedGps(p);
-                        }}
-                        onMouseEnter={() => setHoveredGps(p)}
-                        onMouseLeave={() => setHoveredGps(null)}
-                      >
-                        {/* Static Marker Pin */}
-                        <circle 
-                          cx={px} 
-                          cy={py} 
-                          r={isSelected ? "7" : "5"} 
-                          fill="#f43f5e" 
-                          stroke="#ffffff" 
-                          strokeWidth={isSelected ? "2" : "1.2"} 
-                        />
-                        
-                        {/* Center Core Pinpoint */}
-                        <circle 
-                          cx={px} 
-                          cy={py} 
-                          r="2" 
-                          fill="#ffffff" 
-                        />
-                      </g>
-                    );
-                  })}
-                </g>
-              )}
             </svg>
 
             {/* Hover Floating Tooltip */}
-            {hoveredState && !hoveredGps && (
+            {hoveredState && (
               <div 
                 className="absolute pointer-events-none z-30 p-3 rounded-xl bg-slate-900/95 border border-cyan-500/50 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[200px]"
                 style={{
@@ -610,35 +538,6 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
               </div>
             )}
 
-            {/* Hover Floating Tooltip for GPS Radar Point */}
-            {hoveredGps && (
-              <div 
-                className="absolute pointer-events-none z-40 p-3.5 rounded-xl bg-rose-950/95 border border-rose-500 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[240px]"
-                style={{
-                  left: Math.min(tooltipPos.x, 340),
-                  top: Math.min(tooltipPos.y, 380)
-                }}
-              >
-                <div className="flex items-center justify-between text-rose-300 font-mono text-xs uppercase font-bold border-b border-rose-800 pb-1">
-                  <span className="flex items-center gap-1.5">
-                    <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-                    Verified GPS Coordinate
-                  </span>
-                  <span>#{hoveredGps.work_id}</span>
-                </div>
-                <div className="text-sm font-bold text-white">{hoveredGps.mp_name} (MP)</div>
-                <div className="text-xs text-slate-300">
-                  Lat: <span className="font-mono text-violet-300 font-bold">{hoveredGps.latitude.toFixed(6)}° N</span>
-                </div>
-                <div className="text-xs text-slate-300">
-                  Lon: <span className="font-mono text-violet-300 font-bold">{hoveredGps.longitude.toFixed(6)}° E</span>
-                </div>
-                <div className="text-xs font-mono text-rose-300 pt-1 border-t border-rose-900/60">
-                  Source: {hoveredGps.gps_source}
-                </div>
-              </div>
-            )}
-
             {/* Bottom-Right Legend Card */}
             <div className="absolute bottom-3 right-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs space-y-1.5">
               <div className="text-xs font-mono uppercase text-slate-400 font-bold">
@@ -667,82 +566,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
               </div>
             </div>
 
-            {/* Bottom-Left GPS Status Pill */}
-            {showGpsLayer && (
-              <div className="absolute bottom-3 left-3 px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs font-mono flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                <span className="text-slate-300">12 Camera Watermarks Triangulated in Bijnor/UP</span>
-              </div>
-            )}
-
           </div>
 
         </div>
 
       </div>
-
-      {/* ── GROUND-TRUTHED GPS DOSSIER MODAL / PINNED CARD (IF CLICKED) ──── */}
-      {selectedGps && (
-        <div className="glass-panel p-5 rounded-2xl border border-rose-800/80 bg-rose-950/20 space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="p-1.5 rounded-lg bg-rose-900/60 text-rose-300 border border-rose-700">
-                <Radio className="w-4 h-4 text-rose-400" />
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-white font-display">
-                  Physically Verified Work #{selectedGps.work_id} ({selectedGps.canonical_work_id || selectedGps.work_id})
-                </h4>
-                <div className="text-xs text-rose-300">
-                  Extracted via Vision AI Optical Coordinate OCR from Completion Photo Watermark
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedGps(null)}
-              className="text-xs font-mono text-slate-400 hover:text-white px-2.5 py-1 rounded bg-slate-900 border border-slate-800"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Member of Parliament</div>
-              <div className="text-white font-bold mt-0.5">{selectedGps.mp_name}</div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Constituency</div>
-              <div className="text-cyan-300 font-bold mt-0.5">{selectedGps.constituency || 'Nagina (SC)'}</div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Exact Coordinates</div>
-              <div className="text-emerald-400 font-bold mt-0.5">
-                {selectedGps.latitude.toFixed(6)}° N, {selectedGps.longitude.toFixed(6)}° E
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div className="text-[10px] text-slate-400 uppercase">Watermark Source</div>
-              <div className="text-amber-300 font-bold mt-0.5">{selectedGps.gps_source}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t border-rose-900/40">
-            <span className="text-xs text-slate-300">
-              Description: {selectedGps.work_description || 'Interlocking road / CC work'}
-            </span>
-            {onSelectWork && (
-              <button
-                onClick={() => onSelectWork(selectedGps.canonical_work_id || selectedGps.work_id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 flex items-center gap-1.5 transition-all"
-              >
-                <span>Open Full Statutory Case Dossier</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── DISTRICT BREAKDOWN TABLE BELOW MAP (AS CONFIRMED IN A2) ──────── */}
       <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
@@ -882,30 +710,25 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
           </div>
         </div>
 
-        {/* ── JUDGE DEFENSE & METHODOLOGY BRIEFING ────────────────────────── */}
+        {/* ── METHODOLOGY BRIEFING ────────────────────────── */}
         <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-violet-400" />
-              Choropleth vs Coordinate Cluster Defense
+              Choropleth Boundary Intelligence
             </h5>
             <p className="text-xs text-slate-400 leading-relaxed">
-              When raw completion datasets omit GPS coordinates, naive pin maps render blank screens. 
-              Bharat-Drishti utilizes a <strong>two-layer defense architecture</strong>: an administrative boundary choropleth 
-              aggregating all 98,649 works across 36 states, augmented by an optical watermark extraction pipeline that 
-              uncovered 12 exact physical completion coordinates in high-risk zones.
+              Bharat-Drishti utilizes an administrative boundary choropleth aggregating all 98,649 works across 36 states and union territories, calibrated against official CAG expenditure schedules.
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
             <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <Radio className="w-4 h-4 text-rose-400" />
-              Physical Completion Audit Protocol
+              <ShieldAlert className="w-4 h-4 text-rose-400" />
+              Sovereign District &amp; State Audit Protocol
             </h5>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Our Vision OCR parser extracted camera watermark text (e.g. <em>29.3436° N, 78.3148° E</em>) from scanned completion 
-              certificates in Uttar Pradesh. This allows MoSPI and CAG vigilance inspectors to dispatch field verification squads 
-              to the exact physical coordinate of the audited work.
+              Multi-tier vigilance scoring correlates district-level allocations against execution timelines and contractor concentration, enabling senior administrators and citizens to pinpoint irregularities instantly.
             </p>
           </div>
         </div>

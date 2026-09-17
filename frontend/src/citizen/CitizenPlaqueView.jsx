@@ -127,8 +127,8 @@ export default function CitizenPlaqueView({
 
   // Working portal verification URL using active origin & local network
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const networkOrigin = isLocalhost ? `http://192.168.101.234:${window.location.port || '3131'}` : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3131');
-  const localOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3131';
+  const networkOrigin = isLocalhost ? `http://192.168.101.234:${window.location.port || '3232'}` : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3232');
+  const localOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3232';
 
   const verifyPortalUrl = `${networkOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
   const directVerifyUrl = `${localOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;

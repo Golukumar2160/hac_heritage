@@ -27,6 +27,8 @@ from PIL.ExifTags import TAGS, GPSTAGS
 import imagehash
 import pandas as pd
 from rapidocr_onnxruntime import RapidOCR
+import logging
+logger = logging.getLogger("image_forensics")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 THIS_DIR       = os.path.dirname(os.path.abspath(__file__))
@@ -108,8 +110,8 @@ def extract_gps_from_ocr_text(text: str) -> Optional[dict]:
             lon = float(m1.group(2))
             if 6.0 <= lat <= 38.0 and 68.0 <= lon <= 98.0:
                 return {"latitude": round(lat, 6), "longitude": round(lon, 6), "source": "Camera Watermark (Hindi/Bilingual)"}
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug(f"Pattern 1 GPS parse error: {_e}")
 
     # Try Pattern 2: DMS (Degrees, Minutes, Seconds) e.g. 21°59'14.5"N 82°33'40.2"E
     m2 = DMS_GPS_PATTERN.search(text)
@@ -119,8 +121,8 @@ def extract_gps_from_ocr_text(text: str) -> Optional[dict]:
             lon = dms_to_dd_calc(m2.group(5), m2.group(6), m2.group(7), m2.group(8))
             if 6.0 <= lat <= 38.0 and 68.0 <= lon <= 98.0:
                 return {"latitude": round(lat, 6), "longitude": round(lon, 6), "source": "Camera Watermark (NoteCam DMS)"}
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug(f"Pattern 2 GPS parse error: {_e}")
 
     # Try Pattern 3: Standard decimal degrees with N/E markers
     m3 = DECIMAL_GPS_PATTERN.search(text)
@@ -130,8 +132,8 @@ def extract_gps_from_ocr_text(text: str) -> Optional[dict]:
             lon = float(m3.group(2))
             if 6.0 <= lat <= 38.0 and 68.0 <= lon <= 98.0:
                 return {"latitude": round(lat, 6), "longitude": round(lon, 6), "source": "Camera Watermark (Decimal Degrees)"}
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug(f"Pattern 3 GPS parse error: {_e}")
 
     # Try Pattern 4: Legacy patterns
     m_legacy = GPS_PATTERN_1.search(text) or GPS_PATTERN_2.search(text)
@@ -141,8 +143,8 @@ def extract_gps_from_ocr_text(text: str) -> Optional[dict]:
             lon = float(m_legacy.group(2))
             if 6.0 <= lat <= 38.0 and 68.0 <= lon <= 98.0:
                 return {"latitude": round(lat, 6), "longitude": round(lon, 6), "source": "Watermark Overlay"}
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug(f"Pattern 4 GPS parse error: {_e}")
 
     # Try Pattern 5: Multi-line independent Latitude and Longitude blocks
     p_lat = re.search(r'(?:Latitude|Lat|अक्षांश)\s*[:\s]?\s*([0-9]{1,2}\.[0-9]{3,8})', text, re.IGNORECASE)

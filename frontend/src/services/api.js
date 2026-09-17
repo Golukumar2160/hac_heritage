@@ -479,9 +479,16 @@ export const api = {
   },
 
   // Live Batch CSV Audit Lab
-  async uploadAuditCsv(file) {
+  async uploadAuditCsv(fileOrFiles) {
     const formData = new FormData();
-    formData.append('file', file);
+    if (Array.isArray(fileOrFiles) || (fileOrFiles && typeof fileOrFiles.length === 'number' && typeof fileOrFiles.item === 'function')) {
+      for (let i = 0; i < fileOrFiles.length; i++) {
+        formData.append('files', fileOrFiles[i]);
+      }
+    } else if (fileOrFiles) {
+      formData.append('file', fileOrFiles);
+      formData.append('files', fileOrFiles);
+    }
     const headers = {};
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;

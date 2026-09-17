@@ -1,0 +1,32 @@
+# ==============================================================================
+# BHARAT-DRISHTI // Render.com Infrastructure Blueprint
+# ==============================================================================
+services:
+  - type: web
+    name: bharat-drishti-backend
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PASSWORD_SALT
+        value: mospi-mplads-vigilance-salt-2026
+      - key: ALLOWED_ORIGINS
+        value: "*"

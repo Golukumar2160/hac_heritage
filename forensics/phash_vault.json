@@ -2554,5 +2554,19 @@
       "work_description": "Construction of building for Kadamancode Tribal LP School in Kulathupuzha Grama Panchayat in  Punalur Constituency (ST)",
       "completion_date": "06-Dec-2024"
     }
+  },
+  {
+    "work_id": "DEMO_LUCKNOW_7001",
+    "phash": "8000000000000000",
+    "file_name": "nominal_stream_DEMO_LUCKNOW_7001.jpeg",
+    "sha256": "6228c342b84ca442ffabf205c3e24b45bcc5b118bb8f9a2f5189dc584a7652e9",
+    "indexed_at": "2026-09-18T00:12:18.313916"
+  },
+  {
+    "work_id": "DEMO_KANPUR_7002",
+    "phash": "8000000000000000",
+    "file_name": "Hon_ble_MP_Kanpur_DEMO_KANPUR_7002_evidence_triage.jpeg",
+    "sha256": "a8e6f24510ccf54bf350d67a7a856e735e72be21522d6b8cef231675fea03518",
+    "indexed_at": "2026-09-18T00:12:18.388608"
   }
 ]

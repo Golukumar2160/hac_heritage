@@ -22,8 +22,13 @@ import numpy as np
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(ROOT_DIR, "models", "isolation_forest.joblib")
+try:
+    from backend.core.config import settings
+    ROOT_DIR = settings.ROOT_PATH
+    MODEL_PATH = settings.IFOREST_MODEL_FILE
+except Exception:
+    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    MODEL_PATH = os.path.join(ROOT_DIR, "models", "isolation_forest.joblib")
 
 # Try loading trained Isolation Forest
 _IFOREST_MODEL = None
@@ -109,8 +114,8 @@ def normalize_input_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     c_state = _find_col(["state"])
     c_const = _find_col(["constituency"])
     c_ida = _find_col(["ida"])
-    c_sanc = _find_col(["sanction_amount", "sanctioned_amount", "amount"])
-    c_disb = _find_col(["fund_disbursed", "disbursed_amount", "expenditure", "total_spent", "spent"])
+    c_sanc = _find_col(["sanction_amount", "sanctioned_amount", "sanction", "approved_amount"], exclude=["disbursed", "spent", "released"]) or _find_col(["amount"], exclude=["disbursed", "spent", "expenditure"])
+    c_disb = _find_col(["fund_disbursed", "disbursed_amount", "expenditure", "total_spent", "spent", "disbursed"])
     c_vendor = _find_col(["vendor", "contractor", "agency"])
     c_status = _find_col(["work_status", "payment_status", "status"])
     c_date = _find_col(["sanction_date", "expenditure_date", "recommended_date", "date"])
@@ -141,16 +146,24 @@ def normalize_input_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Sanction Amount
     if c_sanc is not None:
         res["sanction_amount"] = df[c_sanc].apply(_clean_amount)
+    elif c_disb is not None:
+        # When CSV only has disbursed/expenditure, sanction amount defaults to disbursed value
+        res["sanction_amount"] = df[c_disb].apply(_clean_amount)
     else:
         res["sanction_amount"] = 500000.0
+
+    # Vendor, Status & Date
+    res["vendor_name"] = df[c_vendor].fillna("Unspecified Private Contractor").astype(str) if c_vendor is not None else "Unspecified Private Contractor"
+    res["work_status"] = df[c_status].fillna("Sanction").astype(str) if c_status is not None else "Sanction"
+    res["sanction_date"] = df[c_date].fillna("15-Aug-2024").astype(str) if c_date is not None else "15-Aug-2024"
 
     # Fund Disbursed
     if c_disb is not None:
         res["fund_disbursed"] = df[c_disb].apply(_clean_amount)
     else:
         def _infer_spent(row):
-            st = str(df.loc[row.name, c_status] if c_status is not None else "").lower()
-            amt = float(row["sanction_amount"])
+            st = str(row.get("work_status", "")).lower()
+            amt = float(row.get("sanction_amount", 0.0) or 0.0)
             if "complete" in st:
                 return amt
             elif "partially" in st or "progress" in st:
@@ -159,11 +172,6 @@ def normalize_input_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 return amt * 0.95
             return amt * 0.30
         res["fund_disbursed"] = res.apply(_infer_spent, axis=1)
-
-    # Vendor
-    res["vendor_name"] = df[c_vendor].fillna("Unspecified Private Contractor").astype(str) if c_vendor is not None else "Unspecified Private Contractor"
-    res["work_status"] = df[c_status].fillna("Sanction").astype(str) if c_status is not None else "Sanction"
-    res["sanction_date"] = df[c_date].fillna("15-Aug-2024").astype(str) if c_date is not None else "15-Aug-2024"
 
     return res
 
@@ -510,75 +518,205 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
 
 def get_demo_benchmark_dataset() -> pd.DataFrame:
     """
-    Returns a curated benchmark DataFrame representing realistic MPLADS works
+    Returns the comprehensive 15-works benchmark DataFrame representing realistic MPLADS works
     from data/raw containing clean projects, split tenders, premature payouts,
-    and vendor monopolies for the hackathon live demonstration.
+    and vendor monopolies across multiple states for the hackathon live demonstration.
     """
+    base_dir = os.path.dirname(__file__)
+    candidate_paths = [
+        os.path.abspath(os.path.join(base_dir, "..", "data", "raw", "test_sample_15_works.csv")),
+        os.path.abspath(os.path.join(base_dir, "..", "test_sample_15_works.csv")),
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p):
+            try:
+                df = pd.read_csv(p)
+                if df is not None and not df.empty:
+                    return df
+            except Exception:
+                pass
+
+    # 15-Works Fallback Benchmark Data
     data = [
         {
-            "Work ID": "WS/MP18278/2024-2025/62689",
-            "Work description": "Construction of Interlocking Road & Drain from Mahkesh House to Gyano Devi House",
-            "Hon'ble Members of Parliament": "Dr. Mahesh Sharma",
-            "State": "Uttar Pradesh",
-            "Constituency": "GAUTAM BUDDHA NAGAR",
-            "IDA": "DISTRICT MAGISTRATE GAUTAM BUDDH NAGAR",
-            "Sanction Amount ( ₹ )": 4985000,
-            "Fund Disbursed Amount ( ₹ )": 4985000,
-            "Vendor Name": "Gautam Associates Infra",
-            "Work Status": "Physical Inspection",
-            "Sanction Date": "14-Jul-2024"
+            "Sr. No.": 27292,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18326/2025-2026/241226-Construction of roads, link roads, pathways or any other road with or without drainage system",
+            "State": "Gujarat",
+            "IDA": "SURENDRANAGAR(DISTRICT COLLECTOR SURENDRANAGAR_IDA)",
+            "Work Description": "Paver block work in Kalmad village from Jaisingbhai Ramubhai house towards Praveenbhai Kanjibhai house",
+            "Hon'ble Members of Parliament": "CHANDUBHAI CHHAGANBHAI SHIHORA",
+            "Constituency": "SURENDRANAGAR",
+            "Completion Date": "10-Feb-2026",
+            "Amount Disbursed ( ₹ )": 499054
         },
         {
-            "Work ID": "WS/MP18218/2025-2026/233777",
-            "Work description": "Construction of concrete roads with RCC drainage network in industrial precinct",
-            "Hon'ble Members of Parliament": "Atul Garg",
-            "State": "Uttar Pradesh",
-            "Constituency": "GHAZIABAD",
-            "IDA": "DISTRICT MAGISTRATE GHAZIABAD",
-            "Sanction Amount ( ₹ )": 6500000,
-            "Fund Disbursed Amount ( ₹ )": 7991460,
-            "Vendor Name": "DARSH BUILDCON",
-            "Work Status": "Payment In-Progress",
-            "Sanction Date": "21-Aug-2025"
+            "Sr. No.": 16096,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP437/2025-2026/230702-Construction of roads, link roads, pathways or any other road with or without drainage system",
+            "State": "Jharkhand",
+            "IDA": "PALAMU(DEPUTY COMMISSIONER PALAMAU_IDA)",
+            "Work Description": "Construction of 300 feet PCC road from Suresh Paswan house to Kuldeep Paswan house via Paswan Tola in village phulia",
+            "Hon'ble Members of Parliament": "Vishnu Dayal Ram",
+            "Constituency": "PALAMU(SC)",
+            "Completion Date": "24-Jul-2026",
+            "Amount Disbursed ( ₹ )": 449600
         },
         {
-            "Work ID": "WS/MP18278/2024-2025/58482",
-            "Work description": "CC Road from Godhan Raju ahead of the house in Govinda Village",
-            "Hon'ble Members of Parliament": "Kamlesh Jangde",
+            "Sr. No.": 15271,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP418/2025-2026/227493-Setting up of laboratories",
+            "State": "Bihar",
+            "IDA": "ARARIA(DISTRICT PLANNING OFFICER ARARIA_IDA)",
+            "Work Description": "Purchase of Equipment and furniture accessories for setting up Laboratories as per enclosed list in following schools institutions UHS MADANPUR WEST",
+            "Hon'ble Members of Parliament": "Pradeep Kumar Singh",
+            "Constituency": "ARARIA",
+            "Completion Date": "01-Dec-2025",
+            "Amount Disbursed ( ₹ )": 2475000
+        },
+        {
+            "Sr. No.": 29904,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18216/2025-2026/187497-Construction of roads, link roads, pathways or any other road with or without drainage system",
+            "State": "Uttar Pradesh",
+            "IDA": "FATEHPUR(DISTRICT MAGISTRATE FATEHPUR_IDA)",
+            "Work Description": "BLOCK DEV MAI LACHHIKHEDA DEV MAI SAMPARK MARG SE RANITAL ME HARISHCHANDRA PASWAN KE MAKAN TAK RCC DURI 130M",
+            "Hon'ble Members of Parliament": "NARESH CHANDRA UTTAM PATEL",
+            "Constituency": "FATEHPUR",
+            "Completion Date": "24-Aug-2026",
+            "Amount Disbursed ( ₹ )": 1097697
+        },
+        {
+            "Sr. No.": 9254,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18169/2025-2026/185441-Construction of boundary walls of existing public and community buildings",
+            "State": "Rajasthan",
+            "IDA": "NAGAUR(DISTRICT COLLECTOR NAGAUR_IDA)",
+            "Work Description": "sark talab ki suraksha divaar ka nirmaan arniyala",
+            "Hon'ble Members of Parliament": "MAHIMA KUMARI MEWAR",
+            "Constituency": "RAJSAMAND",
+            "Completion Date": "04-Feb-2026",
+            "Amount Disbursed ( ₹ )": 999884
+        },
+        {
+            "Sr. No.": 15732,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18043/2025-2026/198626-Installing hand pumps",
+            "State": "Bihar",
+            "IDA": "KAIMUR (BHABUA)(DISTRICT PLANNING OFFICER KAIMUR BHABUA_IDA)",
+            "Work Description": "shree mayank kumar ke makaan ke paas",
+            "Hon'ble Members of Parliament": "MANOJ KUMAR",
+            "Constituency": "SASARAM(SC)",
+            "Completion Date": "16-Sep-2025",
+            "Amount Disbursed ( ₹ )": 223281
+        },
+        {
+            "Sr. No.": 6926,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18324/2024-2025/162970-Construction of roads, link roads, pathways or any other road with or without drainage system",
+            "State": "Gujarat",
+            "IDA": "AMRELI(DISTRICT COLLECTOR AMRELI_IDA)",
+            "Work Description": "Paver block work from Main Road to Jayantibhai Savaliya house in Ningalal-2 village",
+            "Hon'ble Members of Parliament": "BHARATBHAI MANUBHAI SUTARIYA",
+            "Constituency": "AMRELI",
+            "Completion Date": "07-Aug-2025",
+            "Amount Disbursed ( ₹ )": 300000
+        },
+        {
+            "Sr. No.": 17606,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18043/2025-2026/203625-Installation of multi-gym equipment",
+            "State": "Bihar",
+            "IDA": "KAIMUR (BHABUA)(DISTRICT PLANNING OFFICER KAIMUR BHABUA_IDA)",
+            "Work Description": "apagred highy secondary school, dadar me open gym ka nirman kary",
+            "Hon'ble Members of Parliament": "MANOJ KUMAR",
+            "Constituency": "SASARAM(SC)",
+            "Completion Date": "06-Oct-2025",
+            "Amount Disbursed ( ₹ )": 1499860
+        },
+        {
+            "Sr. No.": 24461,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18278/2025-2026/239130-Street lights",
             "State": "Chhattisgarh",
+            "IDA": "SAKTI(COLLECTOR SAKTI_IDA)",
+            "Work Description": "SOLAR HIGHMAST LIGHT PRATISTHAPAN KARYA (NARMADA PRASAD GHAR KE SAMANE)",
+            "Hon'ble Members of Parliament": "KAMLESH JANGDE",
             "Constituency": "JANJGIR CHAMPA(SC)",
-            "IDA": "DISTRICT COLLECTOR JANJGIR CHAMPA",
-            "Sanction Amount ( ₹ )": 500000,
-            "Fund Disbursed Amount ( ₹ )": 500000,
-            "Vendor Name": "Janpad Panchayat Works",
-            "Work Status": "Sanction",
-            "Sanction Date": "08-Oct-2024"
+            "Completion Date": "28-Jan-2026",
+            "Amount Disbursed ( ₹ )": 499668
         },
         {
-            "Work ID": "WS/MP18278/2024-2025/135269",
-            "Work description": "Installation of High-Flow Arsenic and Iron Water Filtration Units in Pilibhit Rural",
-            "Hon'ble Members of Parliament": "Shri Javed Ali Khan",
+            "Sr. No.": 18869,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP812/2024-2025/147526-Lighting of public spaces",
             "State": "Uttar Pradesh",
-            "Constituency": "PILIBHIT",
-            "IDA": "DISTRICT MAGISTRATE PILIBHIT",
-            "Sanction Amount ( ₹ )": 1250000,
-            "Fund Disbursed Amount ( ₹ )": 1250000,
-            "Vendor Name": "Public Health Engineering Division (PHED)",
-            "Work Status": "Work Completed",
-            "Sanction Date": "11-May-2024"
+            "IDA": "Kushinagar(DISTRICT MAGISTRATE KUSHINAGAR PADRAUNA_IDA)",
+            "Work Description": "DEVPREET DIGREE COLLEGE BALUA BLOCK SUKRAULI ME HIGH MAST KI STHAPANA",
+            "Hon'ble Members of Parliament": "Vijay Kumar Dubey",
+            "Constituency": "KUSHI NAGAR",
+            "Completion Date": "10-Apr-2026",
+            "Amount Disbursed ( ₹ )": 236315
         },
         {
-            "Work ID": "WS/MP620/2024-2025/133166",
-            "Work description": "Construction of Community Cultural Bhavan at Navalgund TQ Belavatagi Village",
-            "Hon'ble Members of Parliament": "Pralhad Venkatesh Joshi",
-            "State": "Karnataka",
-            "Constituency": "DHARWAD",
-            "IDA": "DEPUTY COMMISSIONER DHARWAR",
-            "Sanction Amount ( ₹ )": 497185,
-            "Fund Disbursed Amount ( ₹ )": 497185,
-            "Vendor Name": "Public Works Department (PWD)",
-            "Work Status": "Work Completed",
-            "Sanction Date": "09-Jul-2024"
+            "Sr. No.": 1279,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP386/2024-2025/142425-Construction of water tanks",
+            "State": "Rajasthan",
+            "IDA": "NAGAUR(DISTRICT COLLECTOR NAGAUR_IDA)",
+            "Work Description": "Construction of Public Water Tank in Village Oladan in front of residance of dhansingh and ramsingh",
+            "Hon'ble Members of Parliament": "Shri Hanuman Beniwal",
+            "Constituency": "NAGAUR",
+            "Completion Date": "07-Nov-2025",
+            "Amount Disbursed ( ₹ )": 99677
+        },
+        {
+            "Sr. No.": 24294,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18278/2025-2026/246820-Installing hand pumps",
+            "State": "Chhattisgarh",
+            "IDA": "SAKTI(COLLECTOR SAKTI_IDA)",
+            "Work Description": "HEND PUMP KHANAN PRATISTHPANA KARYA (SATNAMI MOHALLA ME MUKTIDHAM KE PASS)",
+            "Hon'ble Members of Parliament": "KAMLESH JANGDE",
+            "Constituency": "JANJGIR CHAMPA(SC)",
+            "Completion Date": "28-Jan-2026",
+            "Amount Disbursed ( ₹ )": 150000
+        },
+        {
+            "Sr. No.": 13125,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18228/2025-2026/156212-Street lights",
+            "State": "Uttar Pradesh",
+            "IDA": "VARANASI(DISTRICT MAGISTRAE VARANASI_IDA)",
+            "Work Description": "1- LAL BAHADUR PATEL S/O SHYAMDEV PATEL, 2- MUKESH PATEL S/O BIRDHAR PATEL K GHAR K PASS 2 NAG SOLAR LIGHT",
+            "Hon'ble Members of Parliament": "PRIYA SAROJ",
+            "Constituency": "MACHHLISHAHR(SC)",
+            "Completion Date": "14-Aug-2025",
+            "Amount Disbursed ( ₹ )": 41888
+        },
+        {
+            "Sr. No.": 26796,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP18054/2025-2026/236342-Construction of roads, link roads, pathways or any other road with or without drainage system",
+            "State": "Gujarat",
+            "IDA": "MAHESANA(DISTRICT COLLECTOR MAHESANA_IDA)",
+            "Work Description": "CONSTRUCTION OF C.C ROAD WORK INCOMPLETE IN GAYATRI TUBEWELL NALIYA",
+            "Hon'ble Members of Parliament": "HARIBHAI PATEL",
+            "Constituency": "MAHESANA",
+            "Completion Date": "10-Feb-2026",
+            "Amount Disbursed ( ₹ )": 110000
+        },
+        {
+            "Sr. No.": 11394,
+            "Work Category": "Normal/Others",
+            "Work": "WS/MP743/2025-2026/161098-Purchase of sports equipment",
+            "State": "Tamil Nadu",
+            "IDA": "CHENGALPATTU(District Collector Chengalpattu_IDA)",
+            "Work Description": "Supply of Sports Equipments to Govt. Higher Sec School Thozhupedu",
+            "Hon'ble Members of Parliament": "Ganesan Selvam",
+            "Constituency": "KANCHEEPURAM(SC)",
+            "Completion Date": "21-Jul-2025",
+            "Amount Disbursed ( ₹ )": 250000
         }
     ]
     return pd.DataFrame(data)

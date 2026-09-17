@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+.env.local
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+
+# Agent & Logs
+.agents/
+logs/
+.system_generated/
+*.log
+
+# Temp files
+tmp/
+.tempmediaStorage/
+.user_uploaded/

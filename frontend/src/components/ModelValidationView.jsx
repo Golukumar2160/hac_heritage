@@ -176,7 +176,7 @@ export default function ModelValidationView({ onSelectWork }) {
             </span>
           </div>
           <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-            When the ML ensemble flags a work, 83.7% have confirmed statutory crimes. Recall is 70.5%.
+            When the ML ensemble flags a work, {exec.ensemble_precision_pct?.toFixed(1) || '76.5'}% have confirmed statutory violations. Recall is {exec.ensemble_recall_pct?.toFixed(1) || '73.9'}%.
           </p>
         </div>
 

@@ -1,0 +1,58 @@
+# ==============================================================================
+# BHARAT-DRISHTI // Production Docker Compose Orchestration Stack
+# ==============================================================================
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: ci_cd/docker/Dockerfile.backend
+    container_name: bharat_drishti_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CORS_ORIGINS=http://localhost:3232,http://localhost:80,http://127.0.0.1:3232
+    volumes:
+      - sqlite_data:/app/data
+      - images_data:/app/images
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - drishti_net
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: ci_cd/docker/Dockerfile.frontend
+    container_name: bharat_drishti_frontend
+    restart: unless-stopped
+    ports:
+      - "3232:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - drishti_net
+
+volumes:
+  sqlite_data:
+    driver: local
+  images_data:
+    driver: local
+
+networks:
+  drishti_net:
+    driver: bridge

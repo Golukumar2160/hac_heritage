@@ -20,6 +20,16 @@ export default function VendorNetworkView({ onSelectWork }) {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [search, setSearch] = useState('');
 
+  const handleSelectVendor = (vendorName) => {
+    if (!vendorName) return;
+    setSelectedVendor(vendorName);
+    setLoadingProfile(true);
+    api.getVendorProfile(vendorName)
+      .then((data) => setVendorProfile(data))
+      .catch((err) => console.error('Error fetching vendor profile:', err))
+      .finally(() => setLoadingProfile(false));
+  };
+
   useEffect(() => {
     setLoading(true);
     api.getVendorLeaderboard(60)
@@ -32,16 +42,6 @@ export default function VendorNetworkView({ onSelectWork }) {
       .catch((err) => console.error('Error fetching vendors:', err))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleSelectVendor = (vendorName) => {
-    if (!vendorName) return;
-    setSelectedVendor(vendorName);
-    setLoadingProfile(true);
-    api.getVendorProfile(vendorName)
-      .then((data) => setVendorProfile(data))
-      .catch((err) => console.error('Error fetching vendor profile:', err))
-      .finally(() => setLoadingProfile(false));
-  };
 
   const filteredVendors = vendors.filter((v) =>
     (v.work_top_vendor || '').toLowerCase().includes(search.toLowerCase())

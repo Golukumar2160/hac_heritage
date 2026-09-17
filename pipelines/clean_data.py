@@ -76,7 +76,8 @@ def clean_mp_name(series: pd.Series) -> pd.Series:
 def clean_amount(series: pd.Series) -> pd.Series:
     """Convert amount strings to float. Corrupt/unparseable -> NaN."""
     return pd.to_numeric(
-        series.str.replace(',', '', regex=False)
+        series.astype(str)
+              .str.replace(',', '', regex=False)
               .str.replace(r'[^\d.]', '', regex=True),
         errors='coerce'
     )
