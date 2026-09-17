@@ -100,18 +100,26 @@ class Settings:
     NETWORK_TIMEOUT_SECONDS: float = 2.0
 
     # CORS Allowed Origins
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3232",
-        "http://127.0.0.1:3232",
-        "http://localhost:3333",
-        "http://127.0.0.1:3333",
-        "http://localhost:3131",
-        "http://127.0.0.1:3131",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    _env_origins = os.getenv("ALLOWED_ORIGINS", "")
+    ALLOWED_ORIGINS: List[str] = (
+        [o.strip() for o in _env_origins.split(",") if o.strip()]
+        if _env_origins
+        else [
+            "http://localhost:3232",
+            "http://127.0.0.1:3232",
+            "http://localhost:3333",
+            "http://127.0.0.1:3333",
+            "http://localhost:3131",
+            "http://127.0.0.1:3131",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+    )
+    CORS_ORIGIN_REGEX: str = os.getenv(
+        "CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app|https://.*\.onrender\.com"
+    )
 
 
 # Singleton instance

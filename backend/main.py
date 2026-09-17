@@ -82,14 +82,21 @@ app = FastAPI(
 )
 
 # ── CORS Middleware Configuration ──────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_kwargs = {
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if "*" in ALLOWED_ORIGINS:
+    cors_kwargs["allow_origins"] = ["*"]
+    cors_kwargs["allow_credentials"] = False
+else:
+    cors_kwargs["allow_origins"] = ALLOWED_ORIGINS
+    cors_kwargs["allow_credentials"] = True
+    cors_regex = getattr(settings, "CORS_ORIGIN_REGEX", None)
+    if cors_regex:
+        cors_kwargs["allow_origin_regex"] = cors_regex
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # ── Static File Mount for Scanned Images & PDFs ───────────────────────────────
 IMAGES_DIR = settings.IMAGES_PATH
