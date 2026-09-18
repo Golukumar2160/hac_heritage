@@ -138,7 +138,19 @@ init_supabase_users_table()
 try:
     replay_local_dismissals_to_supabase()
 except Exception as _sync_err:
-    logger.warning(f"[*] Offline audit replay check deferred: {_sync_err}")
+    logger.warning(f"Initial sync warning: {_sync_err}")
+
+
+@app.on_event("startup")
+async def startup_warmup():
+    """Pre-warm in-memory data cache and allocations during server boot to eliminate first-user latency."""
+    try:
+        from backend.core.data_cache import get_cached_flags, get_cached_allocations
+        get_cached_flags()
+        get_cached_allocations()
+        logger.info("[*] In-memory datasets pre-warmed successfully on startup.")
+    except Exception as _e:
+        logger.warning(f"[!] Startup cache warmup warning: {_e}")
 
 # ── Non-Blocking Background Pipeline Execution (Persisted in SQLite) ───────────
 _pipeline_lock = threading.Lock()

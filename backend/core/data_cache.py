@@ -47,32 +47,47 @@ def get_cached_flags() -> pd.DataFrame:
             _aggregate_cache.clear()
             df = pd.read_csv(flags_file, encoding="utf-8-sig", low_memory=False)
 
-            # 1. Clean & Cast Numeric Columns (Strict float/int, never empty string)
+            # 1. Clean & Cast Numeric Columns (Strict float32 to reduce memory footprint by 50%)
             numeric_cols = [
                 "sanction_amount", "total_spent", "risk_score", "progress_pct",
                 "anomaly_score", "vendor_score", "work_vendor_score", "timeline_score",
                 "rule_score", "compliance_score", "cost_overrun_pct",
                 "vendor_concentration", "work_vendor_concentration",
-                "exif_latitude", "exif_longitude", "completion_probability"
+                "exif_latitude", "exif_longitude", "completion_probability",
+                "days_since_sanction", "days_to_sanction", "anomaly_score_pct",
+                "vendor_score_pct", "compliance_score_pct", "timeline_score_pct"
             ]
             for col in numeric_cols:
                 if col in df.columns:
-                    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+                    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0).astype("float32")
 
-            # 2. Clean & Cast Boolean Flags
+            # 2. Clean & Cast Boolean Flags (Strict 1-byte boolean)
             bool_cols = [
                 "work_vendor_flag", "rule_missing_photo", "rule_overspend", "is_duplicate",
-                "rule_premature_tranche", "rule_stalled_execution", "rule_early_payment", "rule_mp_over_budget",
-                "rule_split_tender"
+                "rule_premature_tranche", "rule_stalled_execution", "rule_early_payment",
+                "rule_mp_over_budget", "rule_split_tender", "implausible_amount_flag", "rule_implausible"
             ]
             for col in bool_cols:
                 if col in df.columns:
                     df[col] = df[col].astype(str).str.lower().isin(["true", "1"])
 
-            # 3. Clean Object/String Columns (Strict string, fillna with "")
+            # 3. Clean & Cast Categorical String Columns (Low cardinality repeated text -> category)
+            category_cols = [
+                "state", "district", "constituency", "house", "work_category", "ida",
+                "work_status", "risk_label", "flag_status", "risk_tier", "scheme_type",
+                "category", "sub_category", "source_type", "recommended_by_type"
+            ]
+            for col in category_cols:
+                if col in df.columns:
+                    df[col] = df[col].fillna("").astype("category")
+
+            # 4. Clean Remaining Object/String Columns (Strict string, fillna with "")
             for col in df.columns:
-                if col not in numeric_cols and col not in bool_cols:
+                if col not in numeric_cols and col not in bool_cols and col not in category_cols:
                     df[col] = df[col].fillna("").astype(str)
+
+            import gc
+            gc.collect()
 
             _flags_cache = df
             _flags_mtime = mtime

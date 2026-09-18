@@ -69,5 +69,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://127.0.0.1:${PORT:-8000}/api/health || exit 1
 
-# Production server start with Uvicorn supporting dynamic Render $PORT
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+# Production server start with Uvicorn supporting dynamic Render $PORT and multi-worker concurrency
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2}"]

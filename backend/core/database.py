@@ -24,18 +24,94 @@ DB_FILE = settings.SQLITE_DB_FILE
 SUPABASE_DB_URL = settings.DATABASE_URL
 
 
-def get_supabase_conn():
-    """Connect to Supabase PostgreSQL for cloud credentials and tamper-evident audit ledger."""
+# Centralized ThreadedConnectionPool for Supabase PostgreSQL
+_supabase_pool = None
+_pool_lock = threading.Lock()
+
+
+class PooledConnectionWrapper:
+    """Wrapper that returns connections to the ThreadedConnectionPool upon close()."""
+    def __init__(self, conn, pool):
+        self._conn = conn
+        self._pool = pool
+        self._closed = False
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        if not self._closed:
+            self._closed = True
+            if self._pool and not self._conn.closed:
+                try:
+                    self._pool.putconn(self._conn)
+                except Exception:
+                    try:
+                        self._conn.close()
+                    except Exception:
+                        pass
+            else:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+
+
+def _init_pool():
+    global _supabase_pool
     db_url = settings.DATABASE_URL
     if not db_url:
         return None
     try:
+        from psycopg2 import pool
+        _supabase_pool = pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            dsn=db_url,
+            connect_timeout=2
+        )
+        logger.info("[*] Supabase ThreadedConnectionPool initialized (1-10 connections, 2s timeout).")
+    except Exception as _e:
+        logger.warning(f"Supabase ThreadedConnectionPool initialization deferred: {_e}")
+        _supabase_pool = None
+    return _supabase_pool
+
+
+def get_supabase_conn():
+    """Acquire a pooled connection to Supabase PostgreSQL or create fallback direct connection."""
+    global _supabase_pool
+    db_url = settings.DATABASE_URL
+    if not db_url:
+        return None
+
+    if _supabase_pool is None:
+        with _pool_lock:
+            if _supabase_pool is None:
+                _init_pool()
+
+    if _supabase_pool:
+        try:
+            conn = _supabase_pool.getconn()
+            if conn.closed:
+                conn = _supabase_pool.getconn()
+            conn.autocommit = True
+            return PooledConnectionWrapper(conn, _supabase_pool)
+        except Exception as _pool_err:
+            logger.warning(f"Connection pool checkout error, falling back to direct connection: {_pool_err}")
+
+    try:
         import psycopg2
-        conn = psycopg2.connect(db_url, connect_timeout=6)
+        conn = psycopg2.connect(db_url, connect_timeout=2)
         conn.autocommit = True
         return conn
     except Exception as _e:
-        logger.warning(f"Supabase connection warning: {_e}")
+        logger.warning(f"Supabase direct connection warning: {_e}")
         return None
 
 

@@ -32,7 +32,7 @@ export const getAuthSession = () => ({ token: authToken, user: currentUser });
 
 // In-Memory Client Request Cache for Sub-Millisecond Tab Transitions
 const clientCache = new Map();
-const DEFAULT_TTL_MS = 45 * 1000; // 45 seconds
+const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes default TTL to minimize server requests
 
 export const clearClientCache = () => {
   clientCache.clear();
@@ -213,7 +213,7 @@ export const api = {
     if (filters.ida && filters.ida !== 'all') params.set('ida', filters.ida);
     const qs = params.toString() ? `?${params.toString()}` : '';
 
-    const data = await cachedFetch(`${API_BASE}/api/kpis${qs}`, { headers: getHeaders() }, 15000);
+    const data = await cachedFetch(`${API_BASE}/api/kpis${qs}`, { headers: getHeaders() }, 180000);
     // Transform into standard format for UI
     return {
       total_works: data.total_works !== undefined ? data.total_works : 0,
@@ -240,18 +240,32 @@ export const api = {
     if (limit) params.set('limit', String(limit));
 
     const qs = params.toString() ? `?${params.toString()}` : '';
-    return cachedFetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() }, 30000);
+    return cachedFetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() }, 600000);
   },
 
   // MP Constituency Analytical Drilldown
   async getMpDetails(mpName) {
     if (!mpName) throw new Error('MP name is required');
-    return cachedFetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() }, 30000);
+    return cachedFetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() }, 600000);
   },
 
   // Macro Time-Series & March Rush Spending Forecaster
   async getTrends() {
-    return cachedFetch(`${API_BASE}/api/trends`, { headers: getHeaders() }, 45000);
+    return cachedFetch(`${API_BASE}/api/trends`, { headers: getHeaders() }, 600000);
+  },
+
+  // Background Non-Blocking Prefetch for Instant Tab Navigation
+  prefetchCoreViews() {
+    try {
+      Promise.allSettled([
+        cachedFetch(`${API_BASE}/api/kpis`, { headers: getHeaders() }, 180000),
+        cachedFetch(`${API_BASE}/api/map/states`, { headers: getHeaders() }, 600000),
+        cachedFetch(`${API_BASE}/api/trends`, { headers: getHeaders() }, 600000),
+        cachedFetch(`${API_BASE}/api/filters`, { headers: getHeaders() }, 600000),
+      ]).catch(() => {});
+    } catch {
+      // Ignore background errors
+    }
   },
 
   // Immutable Tamper-Evident Audit Ledger

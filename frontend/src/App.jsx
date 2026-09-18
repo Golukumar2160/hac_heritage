@@ -1,30 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Sidebar from './components/Sidebar';
 import LandingPage from './components/LandingPage';
 import ExecutiveKpis from './components/ExecutiveKpis';
 import QuickStatsCharts from './components/QuickStatsCharts';
 import LiveAlertFeed from './components/LiveAlertFeed';
-import CaseFileModal from './components/CaseFileModal';
-import VendorNetworkView from './components/VendorNetworkView';
-import GeoRiskMapView from './components/GeoRiskMapView';
-import AuditLedgerView from './components/AuditLedgerView';
-import SecretaryBriefingModal from './components/SecretaryBriefingModal';
-import VisualForensicsLab from './components/VisualForensicsLab';
-import LiveBatchAuditLab from './components/LiveBatchAuditLab';
-import ModelValidationView from './components/ModelValidationView';
-import EarlyWarningRadar from './components/EarlyWarningRadar';
-import BenfordView from './components/BenfordView';
-import QuotaComplianceView from './components/QuotaComplianceView';
-import MpProfileModal from './components/MpProfileModal';
 import AuthModal from './components/auth/AuthModal';
 import { api } from './services/api';
 import AshokaChakra from './components/AshokaChakra';
-import { 
-  CitizenDashboard, 
-  CitizenAnomalyFeed, 
-  CitizenCaseModal, 
-  CitizenPlaqueView 
-} from './citizen';
+
+// Lazy-Loaded Heavy Dashboard Views for Sub-Second Initial Bundle
+const CaseFileModal = lazy(() => import('./components/CaseFileModal'));
+const VendorNetworkView = lazy(() => import('./components/VendorNetworkView'));
+const GeoRiskMapView = lazy(() => import('./components/GeoRiskMapView'));
+const AuditLedgerView = lazy(() => import('./components/AuditLedgerView'));
+const SecretaryBriefingModal = lazy(() => import('./components/SecretaryBriefingModal'));
+const VisualForensicsLab = lazy(() => import('./components/VisualForensicsLab'));
+const LiveBatchAuditLab = lazy(() => import('./components/LiveBatchAuditLab'));
+const ModelValidationView = lazy(() => import('./components/ModelValidationView'));
+const EarlyWarningRadar = lazy(() => import('./components/EarlyWarningRadar'));
+const BenfordView = lazy(() => import('./components/BenfordView'));
+const QuotaComplianceView = lazy(() => import('./components/QuotaComplianceView'));
+const MpProfileModal = lazy(() => import('./components/MpProfileModal'));
+
+// Lazy-Loaded Citizen Portal Views
+const CitizenDashboard = lazy(() => import('./citizen').then(m => ({ default: m.CitizenDashboard })));
+const CitizenAnomalyFeed = lazy(() => import('./citizen').then(m => ({ default: m.CitizenAnomalyFeed })));
+const CitizenCaseModal = lazy(() => import('./citizen').then(m => ({ default: m.CitizenCaseModal })));
+const CitizenPlaqueView = lazy(() => import('./citizen').then(m => ({ default: m.CitizenPlaqueView })));
+
+const ViewLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-[350px] space-y-4">
+    <div className="w-10 h-10 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+    <span className="text-xs font-mono text-slate-400 tracking-wider uppercase">Loading Sovereign Analytics...</span>
+  </div>
+);
 import { 
   ShieldAlert, 
   Sparkles, 
@@ -137,7 +146,7 @@ export default function App() {
       }
     };
     checkPing();
-    const interval = setInterval(checkPing, 15000);
+    const interval = setInterval(checkPing, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -168,7 +177,8 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       loadKpis();
-      const interval = setInterval(loadKpis, 30000);
+      api.prefetchCoreViews();
+      const interval = setInterval(loadKpis, 300000);
       return () => clearInterval(interval);
     }
   }, [currentUser]);
@@ -185,6 +195,7 @@ export default function App() {
       setActiveTab('overview');
     }
     loadKpis();
+    api.prefetchCoreViews();
     showToast(`Welcome, ${user.name} (${(user.role || 'Official').toUpperCase()})`);
   };
 
@@ -428,6 +439,7 @@ export default function App() {
             </div>
           )}
 
+          <Suspense fallback={<ViewLoader />}>
           {/* CITIZEN VIEWS */}
           {isCitizen && (activeTab === 'citizen_overview' || activeTab === 'overview') && (
             <CitizenDashboard
@@ -628,9 +640,11 @@ export default function App() {
               onSelectWork={setSelectedWorkId} 
             />
           )}
+          </Suspense>
 
         </main>
 
+        <Suspense fallback={null}>
         {/* Forensic Case File Modal (Deep-Dive Drawer) */}
         {selectedWorkId && (
           isCitizen ? (
@@ -684,6 +698,7 @@ export default function App() {
             }}
           />
         )}
+        </Suspense>
 
         {/* Platform Footer */}
         <footer className="mt-auto py-6 text-xs text-slate-400" style={{ borderTop: '1px solid rgba(139,92,246,0.15)', background: 'linear-gradient(180deg, rgba(8,12,24,0.7) 0%, rgba(4,8,16,0.95) 100%)' }}>
