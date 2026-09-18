@@ -34,3 +34,6 @@ scratch/*.svg
 !data/processed/fraud_flags.csv
 scripts/check_ci.py
 
+# MLflow tracking artifacts & local runs
+mlruns/
+mlartifacts/

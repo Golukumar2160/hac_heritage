@@ -60,6 +60,7 @@ from backend.routers.auth import router as auth_router
 from backend.routers.works import router as works_router
 from backend.routers.geo import router as geo_router
 from backend.routers.audit import router as audit_router
+from backend.routers.mlflow_router import router as mlflow_router
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,7 @@ app.include_router(auth_router)
 app.include_router(works_router)
 app.include_router(geo_router)
 app.include_router(audit_router)
+app.include_router(mlflow_router)
 
 # ── Benford's Law Forensic Module ──────────────────────────────────────────────
 try:

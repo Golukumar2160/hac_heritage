@@ -80,10 +80,15 @@ def run_sunday_sync(mode: str = None):
     model_joblib = os.path.join(ROOT_DIR, "models", "isolation_forest.joblib")
 
     if mode == "retrain":
-        print("\n[STEP 2/3] [GLOBAL RETRAIN] Running full 5-model re-clustering & re-fit...")
+        print("\n[STEP 2/3] [GLOBAL RETRAIN] Running MLflow automated 30-day retraining...")
         clean_script = os.path.join(ROOT_DIR, "pipelines", "clean_data.py")
+        mlflow_train_script = os.path.join(ROOT_DIR, "pipelines", "train_mlflow.py")
         if os.path.exists(clean_script):
             subprocess.run([sys.executable, clean_script], cwd=ROOT_DIR)
+        if os.path.exists(mlflow_train_script):
+            res_ml = subprocess.run([sys.executable, mlflow_train_script], cwd=ROOT_DIR)
+            if res_ml.returncode == 0:
+                print("  [OK] MLflow 30-day retraining cycle complete and logged.")
         if os.path.exists(fraud_models_script):
             subprocess.run([sys.executable, fraud_models_script], cwd=ROOT_DIR)
             print("  [OK] Retrained Isolation Forest & vendor NLP embeddings.")

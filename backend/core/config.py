@@ -99,6 +99,12 @@ class Settings:
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     NETWORK_TIMEOUT_SECONDS: float = 2.0
 
+    # MLOps & MLflow Tracking
+    MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///" + os.path.join(DATA_PATH, "mlflow.db").replace("\\", "/"))
+    MLFLOW_EXPERIMENT_NAME: str = "BHARAT_DRISHTI_MPLADS_VIGILANCE"
+    MLFLOW_ARTIFACT_LOCATION: str = os.path.join(ROOT_DIR, "mlruns")
+    RETRAIN_CYCLE_DAYS: int = 30
+
     # CORS Allowed Origins
     _env_origins = os.getenv("ALLOWED_ORIGINS", "")
     ALLOWED_ORIGINS: List[str] = (
