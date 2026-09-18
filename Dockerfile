@@ -55,6 +55,7 @@ COPY models /app/models
 COPY pipelines /app/pipelines
 COPY scraper /app/scraper
 COPY data /app/data
+COPY images /app/images
 COPY tests /app/tests
 
 # Set directory permissions for non-root user

@@ -8,12 +8,15 @@ import {
   AlertTriangle,
   RefreshCw,
   Lock,
-  Search
+  Search,
+  ShieldAlert,
+  Eye
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function AuditLedgerView({ onSelectWork }) {
   const [logs, setLogs] = useState([]);
+  const [flaggedDas, setFlaggedDas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
@@ -31,6 +34,16 @@ export default function AuditLedgerView({ onSelectWork }) {
       setLogs([]);
     } finally {
       setLoading(false);
+    }
+
+    // Load CVC District Authority Surveillance (Restricted to Ministry View)
+    const user = api.getCurrentUser();
+    if (user?.role === 'ministry') {
+      api.getFlaggedDas()
+        .then(res => setFlaggedDas(Array.isArray(res) ? res : []))
+        .catch(() => setFlaggedDas([]));
+    } else {
+      setFlaggedDas([]);
     }
   };
 
@@ -117,6 +130,47 @@ export default function AuditLedgerView({ onSelectWork }) {
           <span>Refresh Ledger</span>
         </button>
       </div>
+
+      {/* CVC District Authority Surveillance Monitor (Ministry Role Scoped) */}
+      {api.getCurrentUser()?.role === 'ministry' && (
+        flaggedDas.length > 0 ? (
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-sm text-rose-200">
+                <ShieldAlert className="w-5 h-5 text-rose-400 animate-pulse" />
+                <span>CVC Surveillance Alert: {flaggedDas.length} District Authorities Flagged for High Dismissal Volume</span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                &gt;= 10 Dismissals / 30 Days
+              </span>
+            </div>
+            <p className="text-xs text-rose-300/80">
+              The following district administrators have dismissed 10 or more CRITICAL vigilance alerts (risk score &gt;= 80) within 30 days without escalation to central authorities.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+              {flaggedDas.map((da, idx) => (
+                <div key={idx} className="p-3 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-semibold text-white font-mono">{da.user_id}</div>
+                    <div className="text-[11px] text-rose-400 font-mono">{da.dismissal_count} Critical Dismissals</div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    FLAGGED
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-emerald-400" />
+              <span>CVC District Authority Surveillance Monitor: All 714 District Authorities within statutory dismissal threshold (&lt; 10 dismissals / 30d).</span>
+            </div>
+            <span className="font-mono text-emerald-400 font-semibold text-[11px]">Surveillance Normal</span>
+          </div>
+        )
+      )}
 
       {/* Filter Ribbon */}
       <div className="glass-panel p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between border border-slate-800">

@@ -21,6 +21,7 @@ from datetime import datetime
 from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+import joblib
 
 # ---------------------------------------------------------------------
 # PATHS
@@ -210,20 +211,19 @@ def model1_isolation_forest(san: pd.DataFrame, exp: pd.DataFrame, alloc: pd.Data
     mp_totals = df.groupby("mp_name")["sanction_amount"].transform("sum")
     df["mp_fund_share"] = df["sanction_amount"] / mp_totals.replace(0, np.nan)
 
+    # Harmonized Canonical 4 Features for Model 1 (Isolation Forest)
+    df["fund_disbursed"] = df["total_spent"].fillna(0)
+    safe_sanction = np.maximum(df["sanction_amount"].fillna(0), 1.0)
+    df["cost_overrun_ratio"] = np.maximum(0.0, (df["fund_disbursed"] - df["sanction_amount"].fillna(0)) / safe_sanction)
+
     features = [
         "cost_overrun_ratio",
-        "days_to_first_payment",
         "spend_progress_gap",
-        # days_since_sanction intentionally excluded -- it also drives Model 4 and
-        # including it here would double-count timeline delay in the ensemble score
-        "mp_fund_share",
-        "payment_count",
+        "fund_disbursed",
+        "sanction_amount"
     ]
 
     X = df[features].copy()
-    # Double fillna: first pass uses column median; second pass catches columns
-    # that are entirely NaN (median of all-NaN = NaN, fillna does nothing)
-    # such as days_to_first_payment when no payments have been recorded at all.
     X = X.fillna(X.median()).fillna(0)
 
     iso = IsolationForest(
@@ -233,6 +233,14 @@ def model1_isolation_forest(san: pd.DataFrame, exp: pd.DataFrame, alloc: pd.Data
         n_jobs=-1
     )
     iso.fit(X)
+
+    # Persist harmonized Model 1 joblib artifact
+    try:
+        model_out_dir = os.path.join(ROOT_DIR, "models")
+        os.makedirs(model_out_dir, exist_ok=True)
+        joblib.dump(iso, os.path.join(model_out_dir, "isolation_forest.joblib"))
+    except Exception:
+        pass
 
     raw_scores = iso.decision_function(X)
     df["anomaly_score"] = normalise_0_100(pd.Series(-raw_scores)).values
@@ -957,6 +965,50 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
         probs
     ).round(3)
 
+    # Persist serialized completion risk model for live backend inference
+    try:
+        model_out_dir = os.path.join(ROOT_DIR, "models")
+        os.makedirs(model_out_dir, exist_ok=True)
+        completion_model_path = os.path.join(model_out_dir, "completion_model.joblib")
+        joblib.dump({
+            "scaler": scaler,
+            "model": clf,
+            "features": features
+        }, completion_model_path)
+        print(f"  [OK] Serialized completion risk model to {completion_model_path}")
+    except Exception as e:
+        print(f"  [!] Note: Failed to serialize completion model: {e}")
+
+    # Register Model 5 in MLflow Model Registry
+    try:
+        import mlflow
+        import mlflow.sklearn
+        from backend.core.config import settings
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+        mlflow.set_experiment(settings.MLFLOW_EXPERIMENT_NAME)
+        with mlflow.start_run(run_name=f"completion_risk_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
+            mlflow.log_params({
+                "model_type": "LogisticRegression",
+                "features": ",".join(features),
+                "class_weight": "balanced"
+            })
+            mlflow.log_metrics({
+                "terminal_cases_trained": len(train_df),
+                "avg_predicted_completion_pct": round(float(df['completion_probability'].mean() * 100), 2)
+            })
+            mlflow.set_tags({
+                "model_name": "MPLADS_Completion_Risk_Predictor",
+                "stage": "Production"
+            })
+            mlflow.sklearn.log_model(
+                sk_model=clf,
+                artifact_path="completion_risk_model",
+                registered_model_name="MPLADS_Completion_Risk_Predictor"
+            )
+        print("  [OK] Registered MPLADS_Completion_Risk_Predictor in MLflow Model Registry.")
+    except Exception as mlf_err:
+        print(f"  [*] MLflow completion model registry note: {mlf_err}")
+
     # Drop temporary column
     df = df.drop(columns=['terminal_outcome'])
 
@@ -967,6 +1019,17 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
     print(f"  - Pre-execution / other avg : {df[~df['work_status'].isin(['Work Completed', 'Work partially Completed'])]['completion_probability'].mean()*100:.1f}%")
 
     return df
+
+
+def train_and_register_completion_risk_model(flags_df=None):
+    """Helper to independently train and register the Completion Risk Model (Model 5/6) into MLflow."""
+    if flags_df is None:
+        if os.path.exists(OUT_FILE):
+            flags_df = pd.read_csv(OUT_FILE, low_memory=False)
+        else:
+            san, exp, com, alloc = load_data()
+            flags_df = san.copy()
+    return model6_completion_prediction(flags_df)
 
 
 # ---------------------------------------------------------------------
@@ -1070,7 +1133,7 @@ def main():
 
     write_summary(flags, m2[0])   # m2[0] = pair DataFrame
     print(f"\n  fraud_summary.txt saved")
-    print(f"\n  Next step: run  app.py  to launch the dashboard")
+    print(f"\n  Next step: run start.bat (or python -m uvicorn backend.main:app --port 8000) to launch the platform")
 
 
 if __name__ == "__main__":

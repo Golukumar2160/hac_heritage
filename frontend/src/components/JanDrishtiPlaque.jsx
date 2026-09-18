@@ -76,14 +76,14 @@ export default function JanDrishtiPlaque({ work, onClose }) {
   const cleanWorkId = String(workObj?.work_id || workObj?.id || workId || '135269').trim();
   const displayWorkId = cleanWorkId.startsWith('WS/') ? cleanWorkId : `WS/MP18250/2024-2025/${cleanWorkId}`;
   
-  // Real working portal verification URL using active origin & local network
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const networkOrigin = isLocalhost ? `http://192.168.101.234:${window.location.port || '3232'}` : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3232');
-  const localOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3232';
+  // Dynamic portal verification URL using active origin or configured public URL
+  const portalOrigin = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_PORTAL_PUBLIC_URL)
+    ? import.meta.env.VITE_PORTAL_PUBLIC_URL
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3232');
 
-  // Mobile-scannable URL (accessible on phone over Wi-Fi) and direct browser URL
-  const verifyPortalUrl = `${networkOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
-  const directVerifyUrl = `${localOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
+  // Mobile-scannable URL and direct browser URL
+  const verifyPortalUrl = `${portalOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
+  const directVerifyUrl = `${portalOrigin}/?verify=${encodeURIComponent(cleanWorkId)}`;
 
   const offlineSealString = `MPLADS CITIZEN TRANSPARENCY — GOVT OF INDIA
 Work ID: ${displayWorkId}

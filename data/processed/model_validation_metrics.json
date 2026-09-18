@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-09-13T07:05:46.255149",
+    "generated_at": "2026-09-18T22:36:27.023210",
     "platform": "Bharat-Drishti AI Forensic Vigilance (MoSPI PS-26102)",
     "total_works_monitored": 98649
   },
@@ -99,9 +99,9 @@
     "test_split_ratio": "80% Train / 20% Unseen Test",
     "test_isolation_forest_auc": 0.5406,
     "test_ensemble_risk_auc": 0.8731,
-    "test_precision_at_top_10_pct": 27.47,
-    "test_top10_true_positives": 542,
-    "test_top10_false_positives": 1431,
+    "test_precision_at_top_10_pct": 27.61,
+    "test_top10_true_positives": 551,
+    "test_top10_false_positives": 1445,
     "conclusion": "The full ensemble achieves AUC-ROC of 0.8731 on completely unseen test data, proving robust generalization without overfitting."
   },
   "approach_3_benford_cross_validation": {

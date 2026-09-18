@@ -10,6 +10,8 @@ Encapsulates:
 """
 
 import hashlib
+import hmac
+import secrets
 import jwt
 import re
 import logging
@@ -30,39 +32,83 @@ PASSWORD_SALT = settings.PASSWORD_SALT
 security = HTTPBearer(auto_error=False)
 
 
-def hash_password(password: str) -> str:
-    """Salted SHA-256 password hash."""
-    return hashlib.sha256((PASSWORD_SALT + password).encode()).hexdigest()
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    """
+    PBKDF2-HMAC-SHA256 password hashing (100,000 rounds) with per-user salt.
+    Format: pbkdf2_sha256$100000$<salt_hex>$<hash_hex>
+    """
+    if salt is None:
+        salt = secrets.token_hex(16)
+    iterations = 100_000
+    derived = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        iterations,
+    ).hex()
+    return f"pbkdf2_sha256${iterations}${salt}${derived}"
 
 
-# ── Demo User Accounts (Pre-salted) ───────────────────────────────────────────
+def verify_password(plain_password: str, stored_hash: Optional[str]) -> bool:
+    """
+    Verify password against stored hash with constant-time comparison.
+    Supports:
+      1. Modern PBKDF2-HMAC-SHA256 (format: pbkdf2_sha256$iterations$salt$derived)
+      2. Backward-compatible legacy single-round SHA-256 (PASSWORD_SALT + password)
+    """
+    if not stored_hash or not plain_password:
+        return False
+
+    if stored_hash.startswith("pbkdf2_sha256$"):
+        parts = stored_hash.split("$")
+        if len(parts) == 4:
+            try:
+                iterations = int(parts[1])
+                salt = parts[2]
+                target_hash = parts[3]
+                derived = hashlib.pbkdf2_hmac(
+                    "sha256",
+                    plain_password.encode("utf-8"),
+                    salt.encode("utf-8"),
+                    iterations,
+                ).hex()
+                return hmac.compare_digest(derived, target_hash)
+            except Exception:
+                return False
+
+    # Fallback to legacy single-round SHA-256 for backward compatibility with existing databases
+    legacy_hash = hashlib.sha256((PASSWORD_SALT + plain_password).encode()).hexdigest()
+    return hmac.compare_digest(legacy_hash, stored_hash)
+
+
+# ── Demo User Accounts (Pre-salted & Environment-configurable) ───────────────
 DEMO_USERS = {
     "ministry_admin": {
-        "password_hash": hash_password("Ministry@2026"),
+        "password_hash": hash_password(settings.DEMO_MINISTRY_PASSWORD),
         "role": "ministry",
         "name": "MoSPI Ministry Official",
     },
     "state_nodal_up": {
-        "password_hash": hash_password("StateUP@2026"),
+        "password_hash": hash_password(settings.DEMO_STATE_PASSWORD),
         "role": "state",
         "state": "Uttar Pradesh",
         "name": "State Nodal Authority — UP",
     },
     "district_pilibhit": {
-        "password_hash": hash_password("District@2026"),
+        "password_hash": hash_password(settings.DEMO_DISTRICT_PASSWORD),
         "role": "district",
         "state": "Uttar Pradesh",
         "ida": "PILIBHIT",
         "name": "District Authority — Pilibhit",
     },
     "mp_javed": {
-        "password_hash": hash_password("MP@2026"),
+        "password_hash": hash_password(settings.DEMO_MP_PASSWORD),
         "role": "mp",
         "mp_name": "Shri Javed Ali Khan",
         "name": "Shri Javed Ali Khan (MP)",
     },
     "citizen_pilibhit": {
-        "password_hash": hash_password("Citizen@2026"),
+        "password_hash": hash_password(settings.DEMO_CITIZEN_PASSWORD),
         "role": "citizen",
         "state": "Uttar Pradesh",
         "ida": "PILIBHIT",
@@ -74,7 +120,7 @@ INITIAL_OFFICIALS = [
     {
         "username": "ministry_admin",
         "email": "ministry.admin@mospi.gov.in",
-        "password_hash": hash_password("Ministry@2026"),
+        "password_hash": hash_password(settings.DEMO_MINISTRY_PASSWORD),
         "role": "ministry",
         "name": "MoSPI Ministry Official",
         "designation": "Central Vigilance & National Oversight",
@@ -86,7 +132,7 @@ INITIAL_OFFICIALS = [
     {
         "username": "state_nodal_up",
         "email": "nodal.up@planning.up.gov.in",
-        "password_hash": hash_password("StateUP@2026"),
+        "password_hash": hash_password(settings.DEMO_STATE_PASSWORD),
         "role": "state",
         "name": "State Nodal Authority — UP",
         "designation": "Principal Secretary (Planning)",
@@ -98,7 +144,7 @@ INITIAL_OFFICIALS = [
     {
         "username": "district_pilibhit",
         "email": "dm.pilibhit@nic.in",
-        "password_hash": hash_password("District@2026"),
+        "password_hash": hash_password(settings.DEMO_DISTRICT_PASSWORD),
         "role": "district",
         "name": "District Authority — Pilibhit",
         "designation": "District Magistrate & Collector",
@@ -110,7 +156,7 @@ INITIAL_OFFICIALS = [
     {
         "username": "mp_javed",
         "email": "javed.ali@sansad.nic.in",
-        "password_hash": hash_password("MP@2026"),
+        "password_hash": hash_password(settings.DEMO_MP_PASSWORD),
         "role": "mp",
         "name": "Shri Javed Ali Khan (MP)",
         "designation": "Member of Parliament (Rajya Sabha)",
@@ -122,7 +168,7 @@ INITIAL_OFFICIALS = [
     {
         "username": "citizen_pilibhit",
         "email": "rajesh.verma@citizen.gov.in",
-        "password_hash": hash_password("Citizen@2026"),
+        "password_hash": hash_password(settings.DEMO_CITIZEN_PASSWORD),
         "role": "citizen",
         "name": "Shri Rajesh Verma",
         "designation": "Jan-Drishti Public Watchdog",
@@ -505,7 +551,7 @@ def apply_role_scope(
     Enforce role-based access control (RBAC) safely while permitting dynamic 
     state and district/IDA drill-downs for sovereign citizens and ministry oversight.
     """
-    if not user:
+    if not user or not isinstance(user, dict):
         res = df
         if requested_state:
             res = res[

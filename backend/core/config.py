@@ -77,11 +77,35 @@ class Settings:
     if not os.path.exists(VENV_PYTHON):
         VENV_PYTHON = sys.executable
 
-    # Security & Hashing
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi")
+    # Environment Mode
+    ENV: str = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+    IS_PRODUCTION: bool = ENV in ("production", "prod")
+
+    # Security & Hashing (with statutory production guard)
+    _FALLBACK_SECRET: str = "mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi"
+    _FALLBACK_SALT: str = "mplads_secure_salt_2026"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", _FALLBACK_SECRET)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_HOURS: int = 12
-    PASSWORD_SALT: str = os.getenv("PASSWORD_SALT", "mplads_secure_salt_2026")
+    PASSWORD_SALT: str = os.getenv("PASSWORD_SALT", _FALLBACK_SALT)
+
+    def validate_security(self):
+        """Statutory verification of cryptographic secrets."""
+        if self.IS_PRODUCTION and (self.SECRET_KEY == self._FALLBACK_SECRET or not self.SECRET_KEY):
+            import logging
+            logging.getLogger("uvicorn.error").warning(
+                "[STATUTORY SECURITY WARNING] Default fallback SECRET_KEY is active in production environment! "
+                "Ensure a cryptographically random SECRET_KEY is configured in .env."
+            )
+            if os.getenv("STRICT_SECURITY", "false").lower() == "true":
+                raise RuntimeError("Default SECRET_KEY prohibited in strict production mode.")
+
+    # Configurable Demo Account Credentials
+    DEMO_MINISTRY_PASSWORD: str = os.getenv("DEMO_MINISTRY_PASSWORD", "Ministry@2026")
+    DEMO_STATE_PASSWORD: str = os.getenv("DEMO_STATE_PASSWORD", "StateUP@2026")
+    DEMO_DISTRICT_PASSWORD: str = os.getenv("DEMO_DISTRICT_PASSWORD", "District@2026")
+    DEMO_MP_PASSWORD: str = os.getenv("DEMO_MP_PASSWORD", "MP@2026")
+    DEMO_CITIZEN_PASSWORD: str = os.getenv("DEMO_CITIZEN_PASSWORD", "Citizen@2026")
 
     # Cloud Database & Supabase Credentials
     DATABASE_URL: str = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DB_URL") or ""
@@ -130,3 +154,4 @@ class Settings:
 
 # Singleton instance
 settings = Settings()
+settings.validate_security()

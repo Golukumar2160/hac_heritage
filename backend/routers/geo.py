@@ -12,7 +12,7 @@ Endpoints:
 import os
 from typing import Optional
 import pandas as pd
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from backend.core.config import settings
 from backend.core.data_cache import get_cached_flags
@@ -93,7 +93,10 @@ def get_district_map_data(
 
 
 @router.get("/api/map/gps-points", tags=["Geospatial"])
-def get_map_gps_points(user: Optional[dict] = Depends(get_current_user_optional)):
+def get_map_gps_points(
+    limit: Optional[int] = Query(None, description="Maximum number of GPS points to return"),
+    user: Optional[dict] = Depends(get_current_user_optional),
+):
     """
     Ground-truthed physical GPS points extracted via Vision AI OCR & camera watermarks
     from completion proof documents. Uses 100% real CSV and model data.
@@ -107,6 +110,14 @@ def get_map_gps_points(user: Optional[dict] = Depends(get_current_user_optional)
             gps_df["latitude"].notna()
             & (pd.to_numeric(gps_df["latitude"], errors="coerce") > 0)
         ].copy()
+
+        # Enforce statutory RBAC scoping (BUG-006)
+        valid = apply_role_scope(valid, user)
+
+        # Enforce server-side limit for network and rendering efficiency (BUG-010)
+        if limit is not None and limit > 0:
+            valid = valid.head(limit)
+
         flags_df = get_cached_flags()
         flags_map = flags_df.set_index(flags_df["work_id"].astype(str))
 

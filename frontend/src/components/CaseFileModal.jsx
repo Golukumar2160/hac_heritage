@@ -213,6 +213,19 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
               <span className="sm:hidden">QR Plaque</span>
             </button>
 
+            <a
+              href={api.getWorkPdfUrl(workId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={`MoSPI_Statutory_Audit_${workId}.pdf`}
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40 transition-all cursor-pointer"
+              title="Download CVC/Court-Admissible MoSPI Statutory Audit PDF Dossier"
+            >
+              <FileText className="w-4 h-4 text-sky-400" />
+              <span className="hidden sm:inline">Export PDF Dossier</span>
+              <span className="sm:hidden">PDF</span>
+            </a>
+
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"

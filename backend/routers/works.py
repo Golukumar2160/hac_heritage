@@ -45,7 +45,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request, Response
 from fastapi.responses import StreamingResponse, FileResponse
 
 from backend.core.config import settings
-from backend.core.database import get_db, get_supabase_conn
+from backend.core.database import get_db, get_supabase_conn, audit_chain_lock
 from backend.core.data_cache import get_cached_flags
 from backend.core.security import (
     get_current_user_optional,
@@ -251,6 +251,25 @@ def get_flags(
 
 
 # ── Logistic Regression Completion Prediction Helper ──────────────────────────
+_COMPLETION_MODEL = None
+_COMPLETION_MODEL_CHECKED = False
+
+
+def _get_completion_model():
+    global _COMPLETION_MODEL, _COMPLETION_MODEL_CHECKED
+    if not _COMPLETION_MODEL_CHECKED:
+        _COMPLETION_MODEL_CHECKED = True
+        model_path = os.path.join(settings.ROOT_PATH, "models", "completion_model.joblib")
+        if os.path.exists(model_path):
+            try:
+                import joblib
+                _COMPLETION_MODEL = joblib.load(model_path)
+                logger.info("Loaded serialized completion risk model from models/completion_model.joblib")
+            except Exception as e:
+                logger.warning(f"Could not load completion model: {e}")
+    return _COMPLETION_MODEL
+
+
 def _compute_work_completion(work_id: str) -> dict:
     df = get_cached_flags()
     work_id_clean = urllib.parse.unquote(work_id.strip())
@@ -264,7 +283,39 @@ def _compute_work_completion(work_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Work '{work_id}' not found.")
 
     row = match.iloc[0]
-    prob = float(row.get("completion_probability", 0.5))
+    prob_val = row.get("completion_probability")
+    if pd.notna(prob_val) and float(prob_val) > 0:
+        prob = float(prob_val)
+    else:
+        # Fallback to evaluating serialized Logistic Regression model dynamically
+        model_obj = _get_completion_model()
+        if model_obj and isinstance(model_obj, dict) and "model" in model_obj:
+            try:
+                clf = model_obj["model"]
+                scaler = model_obj["scaler"]
+                feats = model_obj["features"]
+                sanction = max(1.0, float(row.get("sanction_amount", 1.0)))
+                spent = float(row.get("total_spent", 0.0))
+                days = max(1, int(row.get("days_since_sanction", 1)))
+                feat_dict = {
+                    'log_amount': np.log1p(sanction),
+                    'spend_ratio': min(2.0, spent / sanction),
+                    'spend_pace': spent / max(1.0, float(days)),
+                    'days_norm': min(5.0, days / 365.0),
+                    'anomaly_score': float(row.get("anomaly_score", 0.0)),
+                    'compliance_score': float(row.get("compliance_score", 0.0)),
+                    'vendor_conc': float(row.get("work_vendor_concentration", row.get("work_vendor_score", 0.0)))
+                }
+                sample_feat = pd.DataFrame([feat_dict])[feats]
+                scaled_feat = scaler.transform(sample_feat)
+                prob = float(clf.predict_proba(scaled_feat)[0, 1])
+                if "complet" in str(row.get("work_status", "")).lower() and "partially" not in str(row.get("work_status", "")).lower():
+                    prob = max(prob, 0.95)
+            except Exception:
+                prob = 0.5
+        else:
+            prob = 0.5
+
     status_cat = (
         "HIGH_LIKELIHOOD"
         if prob >= 0.70
@@ -918,45 +969,62 @@ def submit_citizen_feedback(work_id: str, req: CitizenFeedbackRequest):
         clean_id = clean_id[:-17].strip()
     now_iso = datetime.now().isoformat()
 
-    conn = get_db()
-    try:
-        c = conn.cursor()
-        c.execute(
-            """
-            INSERT INTO citizen_reports (work_id, report_type, description, citizen_name, citizen_contact, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """,
-            (
-                clean_id,
-                req.report_type,
-                req.description or f"Citizen vigilance report submitted: {req.report_type}",
-                req.citizen_name or "Anonymous Citizen",
-                req.citizen_contact or "",
-                now_iso,
-            ),
-        )
-        report_id = c.lastrowid
+    with audit_chain_lock:
+        conn = get_db()
+        try:
+            c = conn.cursor()
+            c.execute(
+                """
+                INSERT INTO citizen_reports (work_id, report_type, description, citizen_name, citizen_contact, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    clean_id,
+                    req.report_type,
+                    req.description or f"Citizen vigilance report submitted: {req.report_type}",
+                    req.citizen_name or "Anonymous Citizen",
+                    req.citizen_contact or "",
+                    now_iso,
+                ),
+            )
+            report_id = c.lastrowid
 
-        c.execute(
-            """
-            INSERT INTO dismissals (work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                clean_id,
-                now_iso,
-                f"citizen_reporter_{report_id}",
-                "citizen_vigilance",
-                "CITIZEN_FLAGGED",
-                f"Jan-Drishti Public Plaque Report: {req.report_type.upper()}. {req.description or 'Discrepancy reported at site.'}",
-                90.0,
-                hashlib.sha256(f"{clean_id}:{report_id}:{now_iso}".encode()).hexdigest(),
-                "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026",
-            ),
-        )
-        conn.commit()
-    finally:
-        conn.close()
+            # Maintain sequential cryptographic hash chain continuity
+            prev_hash = "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026"
+            c.execute("SELECT sha256_seal FROM dismissals WHERE sha256_seal IS NOT NULL ORDER BY id DESC LIMIT 1;")
+            row = c.fetchone()
+            if row and row[0]:
+                prev_hash = row[0]
+
+            user_id = f"citizen_reporter_{report_id}"
+            user_role = "citizen_vigilance"
+            action = "CITIZEN_FLAGGED"
+            justification = f"Jan-Drishti Public Plaque Report: {req.report_type.upper()}. {req.description or 'Discrepancy reported at site.'}"
+            risk_score = 90.0
+
+            payload = f"{prev_hash}|{now_iso}|{clean_id}|{user_id}|{user_role}|{action}|{justification}|{risk_score:.2f}"
+            sha256_seal = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+            c.execute(
+                """
+                INSERT INTO dismissals (work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    clean_id,
+                    now_iso,
+                    user_id,
+                    user_role,
+                    action,
+                    justification,
+                    risk_score,
+                    sha256_seal,
+                    prev_hash,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
     return {
         "status": "success",
@@ -1019,19 +1087,25 @@ def get_early_warning_works(
 ):
     """Early Warning Engine — Predictive Abandonment Risk (PS-26102 Requirement)."""
     df = get_cached_flags()
+    clean_state = state.strip().lower() if isinstance(state, str) and state.strip() else None
+    if clean_state == "all":
+        clean_state = None
+    df = apply_role_scope(df, user, requested_state=clean_state)
+
+    eff_threshold = float(getattr(threshold, "default", threshold))
+    eff_limit = int(getattr(limit, "default", limit))
 
     mask = (
-        (df["completion_probability"] < threshold)
+        (df["completion_probability"] < eff_threshold)
         & (df["completion_probability"] > 0)
         & (~df["work_status"].str.contains("Completed", case=False, na=False))
     )
     at_risk = df[mask].copy()
 
-    if state:
-        state_clean = state.strip().lower()
-        at_risk = at_risk[at_risk["state"].str.lower().str.contains(state_clean, na=False)]
+    if clean_state:
+        at_risk = at_risk[at_risk["state"].str.lower().str.contains(clean_state, na=False)]
 
-    at_risk = at_risk.sort_values("completion_probability", ascending=True).head(limit)
+    at_risk = at_risk.sort_values("completion_probability", ascending=True).head(eff_limit)
 
     def severity(prob: float) -> str:
         if prob < 0.20:
@@ -1195,16 +1269,12 @@ def get_sc_st_compliance_data() -> dict:
     if df.empty:
         return {}
 
-    sc_pattern = re.compile(
-        r"\b(SC|Scheduled\s+Caste|Harijan|Dalit|Valmiki|Jatav)\b", re.IGNORECASE
-    )
-    st_pattern = re.compile(
-        r"\b(ST|Scheduled\s+Tribe|Adivasi|Tribal|Vanvasi|Gond|Santhal|Bhil)\b", re.IGNORECASE
-    )
+    sc_regex = r"\b(?:SC|Scheduled\s+Caste|Harijan|Dalit|Valmiki|Jatav)\b"
+    st_regex = r"\b(?:ST|Scheduled\s+Tribe|Adivasi|Tribal|Vanvasi|Gond|Santhal|Bhil)\b"
 
     combined_desc = (df["work_category"].fillna("") + " " + df["work_description"].fillna("")).astype(str)
-    is_sc = combined_desc.apply(lambda x: bool(sc_pattern.search(x)))
-    is_st = combined_desc.apply(lambda x: bool(st_pattern.search(x)))
+    is_sc = combined_desc.str.contains(sc_regex, case=False, regex=True).fillna(False)
+    is_st = combined_desc.str.contains(st_regex, case=False, regex=True).fillna(False)
 
     total_sanctioned = float(df["sanction_amount"].sum())
     total_sc_amt = float(df[is_sc]["sanction_amount"].sum())
@@ -1213,28 +1283,37 @@ def get_sc_st_compliance_data() -> dict:
     nat_sc_pct = round((total_sc_amt / total_sanctioned * 100), 2) if total_sanctioned > 0 else 0.0
     nat_st_pct = round((total_st_amt / total_sanctioned * 100), 2) if total_sanctioned > 0 else 0.0
 
-    mp_records = []
-    grouped = df[df["mp_name"] != ""].groupby("mp_name")
+    df_calc = df[df["mp_name"].fillna("") != ""].copy()
+    df_calc["_sc_sanction"] = np.where(is_sc.loc[df_calc.index], df_calc["sanction_amount"], 0.0)
+    df_calc["_st_sanction"] = np.where(is_st.loc[df_calc.index], df_calc["sanction_amount"], 0.0)
+    df_calc["_sc_count"] = is_sc.loc[df_calc.index].astype(int)
+    df_calc["_st_count"] = is_st.loc[df_calc.index].astype(int)
 
-    total_mps_audited = 0
+    grouped = df_calc.groupby("mp_name").agg({
+        "sanction_amount": ["sum", "count"],
+        "_sc_sanction": "sum",
+        "_st_sanction": "sum",
+        "_sc_count": "sum",
+        "_st_count": "sum",
+        "state": "first",
+        "constituency": "first",
+    })
+
+    mp_records = []
+    total_mps_audited = len(grouped)
     compliant_mps = 0
     violating_sc = 0
     violating_st = 0
 
-    for mp_name, group in grouped:
-        total_mps_audited += 1
-        mp_total = float(group["sanction_amount"].sum())
+    for mp_name, row in grouped.iterrows():
+        mp_total = float(row[("sanction_amount", "sum")])
         if mp_total <= 0:
             continue
-
-        grp_desc = (group["work_category"].fillna("") + " " + group["work_description"].fillna("")).astype(str)
-        grp_is_sc = grp_desc.apply(lambda x: bool(sc_pattern.search(x)))
-        grp_is_st = grp_desc.apply(lambda x: bool(st_pattern.search(x)))
-
-        sc_amt = float(group[grp_is_sc]["sanction_amount"].sum())
-        st_amt = float(group[grp_is_st]["sanction_amount"].sum())
-        sc_cnt = int(grp_is_sc.sum())
-        st_cnt = int(grp_is_st.sum())
+        total_works = int(row[("sanction_amount", "count")])
+        sc_amt = float(row[("_sc_sanction", "sum")])
+        st_amt = float(row[("_st_sanction", "sum")])
+        sc_cnt = int(row[("_sc_count", "sum")])
+        st_cnt = int(row[("_st_count", "sum")])
 
         sc_pct = round((sc_amt / mp_total * 100), 2)
         st_pct = round((st_amt / mp_total * 100), 2)
@@ -1256,18 +1335,14 @@ def get_sc_st_compliance_data() -> dict:
         else:
             status = "DEFICIT_ST"
 
-        state_val = str(group["state"].iloc[0]) if "state" in group.columns and len(group) > 0 else ""
-        constituency_val = (
-            str(group["constituency"].iloc[0])
-            if "constituency" in group.columns and len(group) > 0
-            else ""
-        )
+        state_val = str(row[("state", "first")]) if ("state", "first") in row else ""
+        constituency_val = str(row[("constituency", "first")]) if ("constituency", "first") in row else ""
 
         mp_records.append({
-            "mp_name": mp_name,
+            "mp_name": str(mp_name),
             "state": state_val,
             "constituency": constituency_val,
-            "total_works": len(group),
+            "total_works": total_works,
             "total_sanction_amount": round(mp_total, 2),
             "sc_works_count": sc_cnt,
             "sc_sanction_amount": round(sc_amt, 2),
@@ -1324,19 +1399,24 @@ def get_statutory_quotas(
     if not data:
         raise HTTPException(status_code=503, detail="Quota compliance data not yet available.")
 
+    clean_state = state if (isinstance(state, str) and state.strip().lower() != "all") else None
+    clean_mp = mp_name if (isinstance(mp_name, str) and mp_name.strip().lower() != "all") else None
+    is_violators_only = bool(violators_only) if isinstance(violators_only, bool) else False
+    eff_limit = limit if isinstance(limit, int) else 100
+
     records = data.get("mp_allocations", [])
-    if state:
-        records = [r for r in records if state.lower() in r["state"].lower()]
-    if mp_name:
-        records = [r for r in records if mp_name.lower() in r["mp_name"].lower()]
-    if violators_only:
+    if clean_state:
+        records = [r for r in records if clean_state.lower() in r["state"].lower()]
+    if clean_mp:
+        records = [r for r in records if clean_mp.lower() in r["mp_name"].lower()]
+    if is_violators_only:
         records = [r for r in records if not (r["sc_compliant"] and r["st_compliant"])]
 
     return {
         "statutory_thresholds": data["statutory_thresholds"],
         "national_summary": data["national_summary"],
         "total_filtered": len(records),
-        "mp_allocations": records[:limit],
+        "mp_allocations": records[:eff_limit],
     }
 
 
@@ -1615,8 +1695,9 @@ def get_constituency_unspent_forecast(
     """Constituency Unspent Balance Forecaster (Problem Statement 26102 Requirement)."""
     df = get_cached_flags()
     df = apply_role_scope(df, user)
+    eff_limit = int(getattr(limit, "default", limit))
 
-    if state:
+    if state and isinstance(state, str) and state.strip().lower() != "all":
         df = df[df["state"].astype(str).str.contains(state.strip(), case=False, na=False, regex=False)]
 
     valid_mps = df[df["mp_name"] != ""].copy()
@@ -1728,7 +1809,7 @@ def get_constituency_unspent_forecast(
         })
 
     results.sort(key=lambda x: x["projected_unspent_at_tenure_end_cr"], reverse=True)
-    top_results = results[:limit]
+    top_results = results[:eff_limit]
 
     crit_count = sum(1 for r in results if r["lapse_risk_status"] == "CRITICAL_LAPSE_RISK")
     mod_count = sum(1 for r in results if r["lapse_risk_status"] == "MODERATE_RISK")

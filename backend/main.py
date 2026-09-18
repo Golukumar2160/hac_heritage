@@ -32,6 +32,7 @@ from backend.core.database import (
 )
 from backend.core.security import (
     hash_password,
+    verify_password,
     create_token,
     decode_token,
     get_current_user_optional,
@@ -244,6 +245,13 @@ def get_pipeline_status():
 VALIDATION_FILE = os.path.join(ROOT_DIR, "data", "processed", "model_validation_metrics.json")
 _validation_cache: Optional[dict] = None
 _validation_mtime: Optional[float] = None
+_validation_lock = threading.Lock()
+validation_state = {
+    "is_running": False,
+    "status": "idle",
+    "error": None,
+    "last_completed": None
+}
 
 
 def get_cached_validation():
@@ -276,6 +284,18 @@ def get_model_validation():
     return get_cached_validation()
 
 
+@app.get("/api/model-validation/status", tags=["Model Validation"])
+def get_model_validation_status():
+    """Return real-time execution status of the model validation suite."""
+    with _validation_lock:
+        state = dict(validation_state)
+        return {
+            "status": "success",
+            "is_running": state.get("is_running", False),
+            "validation_state": state
+        }
+
+
 @app.post("/api/model-validation/run", tags=["Model Validation"])
 def run_model_validation(background_tasks: BackgroundTasks, user=Depends(decode_token)):
     """Trigger non-blocking recalculation of the model validation suite."""
@@ -284,12 +304,34 @@ def run_model_validation(background_tasks: BackgroundTasks, user=Depends(decode_
             status_code=403, detail="Only Ministry or State officials can re-run model validation."
         )
 
+    with _validation_lock:
+        if validation_state["is_running"]:
+            return {
+                "status": "running",
+                "message": "Model validation engine is already executing in background.",
+                "validation_state": dict(validation_state)
+            }
+        validation_state["is_running"] = True
+        validation_state["status"] = "running"
+        validation_state["error"] = None
+
     def _run_val():
         global _validation_cache, _validation_mtime
-        val_py = os.path.join(ROOT_DIR, "pipelines", "validate.py")
-        subprocess.run([VENV_PY, val_py, "--export"], cwd=ROOT_DIR)
-        _validation_cache = None
-        _validation_mtime = None
+        try:
+            val_py = os.path.join(ROOT_DIR, "pipelines", "validate.py")
+            subprocess.run([VENV_PY, val_py, "--export"], cwd=ROOT_DIR)
+            with _validation_lock:
+                _validation_cache = None
+                _validation_mtime = None
+                validation_state["is_running"] = False
+                validation_state["status"] = "completed"
+                validation_state["last_completed"] = datetime.now().isoformat()
+        except Exception as e:
+            with _validation_lock:
+                validation_state["is_running"] = False
+                validation_state["status"] = "failed"
+                validation_state["error"] = str(e)
+            logger.error(f"Validation execution failed: {e}")
 
     background_tasks.add_task(_run_val)
     return {
@@ -309,7 +351,16 @@ def health():
     except Exception:
         pass
     db_ok = os.path.exists(DB_FILE)
-    users = list_official_users()
+    # Fast local SQLite count to eliminate remote cloud DB latency on high-frequency health pings
+    reg_count = 0
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM official_users;")
+        row = c.fetchone()
+        reg_count = row[0] if row else 0
+    except Exception:
+        pass
     return {
         "status": "ok" if flags_ready else "degraded",
         "fraud_flags_loaded": flags_ready,
@@ -319,7 +370,7 @@ def health():
         "pipeline_running": pipeline_state.get("is_running", False),
         "forensics_running": False,
         "supabase_connected": is_supabase_alive(),
-        "registered_officials": len(users),
+        "registered_officials": reg_count,
         "version": settings.API_VERSION,
         "timestamp": datetime.now().isoformat(),
     }

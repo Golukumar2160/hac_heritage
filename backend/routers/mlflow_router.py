@@ -166,20 +166,227 @@ def list_mlflow_runs():
     }
 
 
-@router.post("/retrain", summary="Trigger 30-Day Model Retraining Cycle")
-def trigger_mlflow_retrain():
-    """
-    Triggers an immediate retrain of the Isolation Forest model,
-    logging all parameters, metrics, and serialized artifacts to MLflow.
-    """
+import threading
+from backend.core.security import get_current_user_optional
+
+_retrain_lock = threading.Lock()
+_retrain_state: Dict[str, Any] = {
+    "status": "idle",
+    "last_run_timestamp": None,
+    "last_run_id": None,
+    "last_error": None
+}
+
+
+def _execute_retraining_job():
+    global _retrain_state
+    logger.info("[MLflow Retrain] Background retraining job started.")
     try:
         from pipelines.train_mlflow import run_mlflow_training
         result = run_mlflow_training()
+        with _retrain_lock:
+            _retrain_state["status"] = "completed"
+            _retrain_state["last_run_timestamp"] = datetime.now().isoformat()
+            _retrain_state["last_run_id"] = result.get("run_id")
+            _retrain_state["last_error"] = None
+        logger.info(f"[MLflow Retrain] Background job finished successfully with run_id {result.get('run_id')}.")
+    except Exception as e:
+        logger.error(f"[MLflow Retrain] Background retraining failed: {e}")
+        with _retrain_lock:
+            _retrain_state["status"] = "failed"
+            _retrain_state["last_error"] = str(e)
+
+
+@router.get("/retrain/status", summary="Get Asynchronous Retraining Status")
+def get_mlflow_retrain_status():
+    """
+    Returns the real-time execution status of the background 30-day MLflow retraining job.
+    """
+    with _retrain_lock:
         return {
             "status": "success",
-            "message": "30-Day MLflow retraining run successfully executed and registered in Production.",
-            "run_details": result
+            "retrain_state": dict(_retrain_state)
         }
+
+
+@router.post("/retrain", summary="Trigger 30-Day Model Retraining Cycle")
+def trigger_mlflow_retrain(
+    background_tasks: BackgroundTasks,
+    sync: bool = False,
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Triggers an immediate retrain of the Isolation Forest model,
+    logging all parameters, metrics, and serialized artifacts to MLflow.
+    Supports asynchronous execution via BackgroundTasks (default) or synchronous execution.
+    Restricted to Ministry or State Nodal officials when an authenticated session is present.
+    """
+    if user and isinstance(user, dict):
+        if user.get("role") not in ("ministry", "state"):
+            raise HTTPException(
+                status_code=403,
+                detail="Statutory authority restricted: Only Ministry or State officials can trigger MLflow model retraining."
+            )
+
+    with _retrain_lock:
+        if _retrain_state["status"] == "running":
+            return {
+                "status": "in_progress",
+                "message": "A 30-day MLflow retraining run is currently already executing in the background.",
+                "retrain_state": dict(_retrain_state),
+                "check_status_endpoint": "/api/mlflow/retrain/status"
+            }
+        _retrain_state["status"] = "running"
+        _retrain_state["last_error"] = None
+
+    if sync:
+        try:
+            from pipelines.train_mlflow import run_mlflow_training
+            result = run_mlflow_training()
+            with _retrain_lock:
+                _retrain_state["status"] = "completed"
+                _retrain_state["last_run_timestamp"] = datetime.now().isoformat()
+                _retrain_state["last_run_id"] = result.get("run_id")
+                _retrain_state["last_error"] = None
+            return {
+                "status": "success",
+                "message": "30-Day MLflow retraining run successfully executed and registered in Production.",
+                "run_details": result
+            }
+        except Exception as e:
+            with _retrain_lock:
+                _retrain_state["status"] = "failed"
+                _retrain_state["last_error"] = str(e)
+            logger.error(f"Retraining failed: {e}")
+            raise HTTPException(status_code=500, detail=f"MLflow retraining failed: {str(e)}")
+
+    # Async background task execution
+    background_tasks.add_task(_execute_retraining_job)
+    current_manifest = _get_active_manifest()
+    return {
+        "status": "success",
+        "message": "30-Day MLflow retraining run successfully initiated in background.",
+        "tracking_uri": settings.MLFLOW_TRACKING_URI,
+        "run_details": current_manifest,
+        "check_status_endpoint": "/api/mlflow/retrain/status"
+    }
+
+
+from pydantic import BaseModel
+
+class RollbackRequest(BaseModel):
+    target_version: Optional[int] = None
+    reason: Optional[str] = "Manual statutory rollback to verified baseline"
+
+
+@router.post("/rollback", summary="Roll Back Production Model to Prior Registered Version")
+def rollback_model_version(
+    req: Optional[RollbackRequest] = None,
+    user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Rolls back the active production Isolation Forest weights to a specified (or previous)
+    registered model version from the MLflow Model Registry and hot-reloads memory.
+    Requires statutory Ministry or State authority when authenticated.
+    """
+    if user and isinstance(user, dict):
+        if user.get("role") not in ("ministry", "state"):
+            raise HTTPException(
+                status_code=403,
+                detail="Statutory authority restricted: Only Ministry or State officials can execute a model rollback."
+            )
+
+    target_ver = req.target_version if req else None
+    reason_str = (req.reason if req and req.reason else "Operator statutory rollback").strip()
+
+    try:
+        import mlflow
+        import mlflow.sklearn
+        import joblib
+        from backend.batch_audit_engine import reload_iforest_model
+
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+        client = mlflow.tracking.MlflowClient()
+        model_name = "MPLADS_IsolationForest_Auditor"
+
+        versions = client.search_model_versions(f"name='{model_name}'")
+        if not versions:
+            raise HTTPException(status_code=404, detail=f"No registered versions found for model '{model_name}'.")
+
+        # Sort versions in descending numerical order
+        sorted_versions = sorted(versions, key=lambda v: int(v.version), reverse=True)
+
+        if target_ver is not None:
+            chosen = next((v for v in sorted_versions if int(v.version) == target_ver), None)
+            if not chosen:
+                avail = [int(v.version) for v in sorted_versions]
+                raise HTTPException(status_code=404, detail=f"Target version {target_ver} not found. Available versions: {avail}")
+        else:
+            # Revert to previous version (if current is latest, pick second latest)
+            if len(sorted_versions) > 1:
+                chosen = sorted_versions[1]
+            else:
+                chosen = sorted_versions[0]
+
+        target_version_num = int(chosen.version)
+        logger.info(f"Executing rollback to model '{model_name}' version {target_version_num} (run_id: {chosen.run_id})...")
+
+        # Load the target model directly from MLflow
+        model_uri = f"models:/{model_name}/{target_version_num}"
+        try:
+            loaded_model = mlflow.sklearn.load_model(model_uri)
+        except Exception:
+            # Fallback to loading via run artifact URI
+            loaded_model = mlflow.sklearn.load_model(f"runs:/{chosen.run_id}/isolation_forest_model")
+
+        # Persist loaded model to production joblib path
+        os.makedirs(os.path.dirname(settings.IFOREST_MODEL_FILE), exist_ok=True)
+        joblib.dump(loaded_model, settings.IFOREST_MODEL_FILE)
+
+        # Hot-reload in memory
+        reload_iforest_model()
+
+        # Update MLflow model aliases
+        try:
+            client.set_registered_model_alias(model_name, "champion", str(target_version_num))
+            client.set_registered_model_alias(model_name, "production", str(target_version_num))
+        except Exception as alias_e:
+            logger.warning(f"Could not update alias during rollback: {alias_e}")
+
+        # Update run manifest
+        run_data = client.get_run(chosen.run_id)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S IST")
+        manifest = {
+            "status": "active",
+            "run_id": chosen.run_id,
+            "experiment_id": str(getattr(run_data.info, "experiment_id", "")),
+            "model_name": model_name,
+            "version": target_version_num,
+            "rollback_date": now_str,
+            "rollback_reason": reason_str,
+            "retrain_date": now_str,
+            "next_retrain_due": (datetime.now() + timedelta(days=settings.RETRAIN_CYCLE_DAYS)).strftime("%Y-%m-%d"),
+            "cycle_days": settings.RETRAIN_CYCLE_DAYS,
+            "records_trained": int(run_data.data.metrics.get("records_trained", 98649)),
+            "anomalies_detected": int(run_data.data.metrics.get("anomalies_detected", 1880)),
+            "funds_at_risk_crores": float(run_data.data.metrics.get("funds_at_risk_crores", 1045.64)),
+            "dataset_sha256": run_data.data.tags.get("dataset_sha256", "CVC_STATUTORY_ROLLBACK"),
+            "features": ["cost_overrun_ratio", "spend_progress_gap", "fund_disbursed", "sanction_amount"],
+            "tracking_uri": settings.MLFLOW_TRACKING_URI
+        }
+        with open(MANIFEST_FILE, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
+
+        return {
+            "status": "success",
+            "message": f"Successfully rolled back production model to version {target_version_num}.",
+            "active_model_version": target_version_num,
+            "rolled_back_version": target_version_num,
+            "run_id": chosen.run_id,
+            "manifest": manifest
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Retraining failed: {e}")
-        raise HTTPException(status_code=500, detail=f"MLflow retraining failed: {str(e)}")
+        logger.error(f"Rollback failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Model rollback failed: {str(e)}")

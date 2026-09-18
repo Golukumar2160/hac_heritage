@@ -9,12 +9,16 @@ Dual-ledger persistence engine:
 
 import os
 import time
+import threading
 import sqlite3
 import logging
 from typing import Optional
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Centralized mutex for sequential SHA-256 cryptographic audit hash chaining
+audit_chain_lock = threading.Lock()
 
 DB_FILE = settings.SQLITE_DB_FILE
 SUPABASE_DB_URL = settings.DATABASE_URL

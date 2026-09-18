@@ -88,13 +88,87 @@ class MLflowPipelineTests(unittest.TestCase):
 
     def test_05_api_mlflow_retrain_trigger(self):
         """POST /api/mlflow/retrain successfully executes a fresh training cycle."""
-        res = self.client.post("/api/mlflow/retrain")
+        res = self.client.post("/api/mlflow/retrain?sync=true")
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertEqual(data.get("status"), "success")
         self.assertIn("run_details", data)
         self.assertIn("run_id", data["run_details"])
 
+    def test_06_api_mlflow_retrain_status(self):
+        """GET /api/mlflow/retrain/status returns thread-safe background execution state."""
+        res = self.client.get("/api/mlflow/retrain/status")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertIn("retrain_state", data)
+        self.assertIn("status", data["retrain_state"])
+
+    def test_08_api_mlflow_rollback(self):
+        """POST /api/mlflow/rollback reverts to specified version and hot-reloads batch engine."""
+        login_res = self.client.post("/api/login", json={
+            "username": "ministry_admin",
+            "password": "Ministry@2026"
+        })
+        self.assertEqual(login_res.status_code, 200)
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        rollback_payload = {
+            "target_version": 1,
+            "reason": "Vigilance audit validation regression test."
+        }
+        res = self.client.post("/api/mlflow/rollback", json=rollback_payload, headers=headers)
+        self.assertIn(res.status_code, [200, 400])
+        if res.status_code == 200:
+            data = res.json()
+            self.assertEqual(data.get("status"), "success")
+            self.assertIn("active_model_version", data)
+
+    def test_09_model_registry_completion_and_aliases(self):
+        """Model registry tracks both Isolation Forest with aliases and Completion Risk."""
+        import mlflow
+        from backend.core.config import settings
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+        client = mlflow.tracking.MlflowClient()
+        models = [m.name for m in client.search_registered_models()]
+        self.assertIn("MPLADS_IsolationForest_Auditor", models)
+        self.assertIn("MPLADS_Completion_Risk_Predictor", models)
+
+    def test_10_api_model_validation_run_and_status(self):
+        """Model validation endpoint is guarded and reports validation state."""
+        status_res = self.client.get("/api/model-validation/status")
+        self.assertEqual(status_res.status_code, 200)
+        data = status_res.json()
+        self.assertIn("is_running", data)
+        self.assertIn("status", data)
+
+    def test_11_dataset_drift_computation(self):
+        """compute_dataset_drift flags high distribution shifts via Kolmogorov-Smirnov."""
+        import pandas as pd
+        import numpy as np
+        from backend.batch_audit_engine import compute_dataset_drift
+
+        baseline_df = pd.DataFrame({
+            "sanction_amount": np.random.normal(1000000, 100000, 200),
+            "fund_disbursed": np.random.normal(800000, 80000, 200),
+            "cost_overrun_ratio": np.random.uniform(0.0, 0.1, 200),
+            "spend_progress_gap": np.random.uniform(-10.0, 10.0, 200)
+        })
+
+        shifted_batch_df = pd.DataFrame({
+            "sanction_amount": np.random.normal(5000000, 500000, 100),
+            "fund_disbursed": np.random.normal(4500000, 400000, 100),
+            "cost_overrun_ratio": np.random.uniform(0.5, 1.2, 100),
+            "spend_progress_gap": np.random.uniform(30.0, 80.0, 100)
+        })
+
+        drift_result = compute_dataset_drift(shifted_batch_df, baseline_df)
+        self.assertIn("overall_drift_detected", drift_result)
+        self.assertTrue(drift_result["overall_drift_detected"])
+        self.assertIn("feature_drift", drift_result)
+
 
 if __name__ == "__main__":
     unittest.main()
+

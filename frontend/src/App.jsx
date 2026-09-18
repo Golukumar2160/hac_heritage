@@ -13,6 +13,9 @@ import VisualForensicsLab from './components/VisualForensicsLab';
 import LiveBatchAuditLab from './components/LiveBatchAuditLab';
 import ModelValidationView from './components/ModelValidationView';
 import EarlyWarningRadar from './components/EarlyWarningRadar';
+import BenfordView from './components/BenfordView';
+import QuotaComplianceView from './components/QuotaComplianceView';
+import MpProfileModal from './components/MpProfileModal';
 import AuthModal from './components/auth/AuthModal';
 import { api } from './services/api';
 import AshokaChakra from './components/AshokaChakra';
@@ -57,12 +60,38 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [selectedWorkId, setSelectedWorkId] = useState(null);
+  const [selectedMpName, setSelectedMpName] = useState(null);
   const [showSecretaryBriefing, setShowSecretaryBriefing] = useState(false);
   const [kpis, setKpis] = useState(null);
   const [initialTier, setInitialTier] = useState('all');
   const [toastMessage, setToastMessage] = useState(null);
+  const [pipelineRunning, setPipelineRunning] = useState(false);
   const [ping, setPing] = useState(40);
   const [isOnline, setIsOnline] = useState(true);
+
+  const handleTriggerPipeline = async () => {
+    try {
+      setPipelineRunning(true);
+      const res = await api.triggerPipeline();
+      showToast(res.message || 'ML pipeline started in background thread.');
+      setTimeout(async () => {
+        try {
+          const st = await api.getPipelineStatus();
+          setPipelineRunning(st.is_running);
+          if (!st.is_running) {
+            showToast('ML batch audit pipeline completed successfully.');
+            loadKpis();
+          }
+        } catch {
+          setPipelineRunning(false);
+        }
+      }, 4000);
+    } catch (err) {
+      console.error('Pipeline run error:', err);
+      showToast(`Pipeline trigger failed: ${err.message}`);
+      setPipelineRunning(false);
+    }
+  };
 
   // Global District & State Scoping for Citizen & Official telemetry
   const [selectedDistrict, setSelectedDistrict] = useState(() => currentUser?.ida || 'PILIBHIT(DISTRICT MAGISTRAE PILIBHIT_IDA)');
@@ -339,6 +368,28 @@ export default function App() {
               <span className="font-mono text-xs font-bold hidden sm:inline">UPLOAD CSV AUDIT</span>
             </button>
 
+            {/* Trigger Background ML Pipeline (Official Roles) */}
+            {!isCitizen && (
+              <button
+                onClick={handleTriggerPipeline}
+                disabled={pipelineRunning}
+                className="flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 group disabled:opacity-50"
+                style={{
+                  background: pipelineRunning 
+                    ? 'rgba(99,102,241,0.25)' 
+                    : (theme === 'light' ? '#f8fafc' : 'rgba(99,102,241,0.15)'),
+                  border: '1px solid rgba(99,102,241,0.35)',
+                  color: theme === 'light' ? '#4f46e5' : '#a5b4fc'
+                }}
+                title="Trigger Non-Blocking Background ML Batch Pipeline"
+              >
+                <Zap className={`w-3.5 h-3.5 ${pipelineRunning ? 'animate-spin text-amber-400' : 'text-indigo-400'}`} />
+                <span className="font-mono text-xs font-bold hidden sm:inline">
+                  {pipelineRunning ? 'RUNNING ML...' : 'RUN ML PIPELINE'}
+                </span>
+              </button>
+            )}
+
             {/* Dark / Light Mode Switch */}
             <button
               onClick={toggleTheme}
@@ -533,6 +584,19 @@ export default function App() {
             <ModelValidationView onSelectWork={setSelectedWorkId} />
           )}
 
+          {/* OFFICIAL TAB: BENFORD'S LAW FORENSICS */}
+          {!isCitizen && activeTab === 'benford' && (
+            <BenfordView onSelectWork={setSelectedWorkId} />
+          )}
+
+          {/* OFFICIAL TAB: MOSPI CLAUSE 3.2 SC/ST QUOTA MONITOR */}
+          {!isCitizen && activeTab === 'quotas' && (
+            <QuotaComplianceView 
+              onSelectWork={setSelectedWorkId} 
+              onSelectMp={setSelectedMpName}
+            />
+          )}
+
           {/* VISUAL & MEDIA FORENSICS LAB (COMBINED PHASH, TAMPER ELA & OCR) */}
           {(activeTab === 'visual_forensics' || activeTab === 'phash' || activeTab === 'ocr') && (
             <VisualForensicsLab onSelectWork={setSelectedWorkId} />
@@ -606,6 +670,18 @@ export default function App() {
         {!isCitizen && showSecretaryBriefing && (
           <SecretaryBriefingModal
             onClose={() => setShowSecretaryBriefing(false)}
+          />
+        )}
+
+        {/* MP Parliamentary Profile & Analytical Drilldown Modal */}
+        {selectedMpName && (
+          <MpProfileModal
+            mpName={selectedMpName}
+            onClose={() => setSelectedMpName(null)}
+            onSelectWork={(workId) => {
+              setSelectedMpName(null);
+              setSelectedWorkId(workId);
+            }}
           />
         )}
 

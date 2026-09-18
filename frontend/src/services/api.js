@@ -5,18 +5,25 @@
 
 export const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-let authToken = localStorage.getItem('bharat_drishti_token') || '';
-let currentUser = JSON.parse(localStorage.getItem('bharat_drishti_user') || 'null');
+let authToken = typeof localStorage !== 'undefined' ? (localStorage.getItem('bharat_drishti_token') || '') : '';
+let currentUser = null;
+try {
+  currentUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('bharat_drishti_user') || 'null') : null;
+} catch {
+  currentUser = null;
+}
 
 export const setAuthSession = (token, user) => {
   authToken = token || '';
   currentUser = user || null;
-  if (token) {
-    localStorage.setItem('bharat_drishti_token', token);
-    localStorage.setItem('bharat_drishti_user', JSON.stringify(user));
-  } else {
-    localStorage.removeItem('bharat_drishti_token');
-    localStorage.removeItem('bharat_drishti_user');
+  if (typeof localStorage !== 'undefined') {
+    if (token) {
+      localStorage.setItem('bharat_drishti_token', token);
+      localStorage.setItem('bharat_drishti_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('bharat_drishti_token');
+      localStorage.removeItem('bharat_drishti_user');
+    }
   }
 };
 
@@ -196,6 +203,44 @@ export const api = {
     };
   },
 
+  // Statutory SC/ST Quota Compliance (MoSPI Clause 3.2)
+  async getQuotaCompliance({ state, mp_name, violators_only, limit = 100 } = {}) {
+    const params = new URLSearchParams();
+    if (state && state !== 'all') params.set('state', state);
+    if (mp_name && mp_name !== 'all') params.set('mp_name', mp_name);
+    if (violators_only) params.set('violators_only', 'true');
+    if (limit) params.set('limit', String(limit));
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() });
+    return await handleResponse(res);
+  },
+
+  // MP Constituency Analytical Drilldown
+  async getMpDetails(mpName) {
+    if (!mpName) throw new Error('MP name is required');
+    const res = await fetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() });
+    return await handleResponse(res);
+  },
+
+  // Macro Time-Series & March Rush Spending Forecaster
+  async getTrends() {
+    const res = await fetch(`${API_BASE}/api/trends`, { headers: getHeaders() });
+    return await handleResponse(res);
+  },
+
+  // Immutable Tamper-Evident Audit Ledger
+  async getAuditLog() {
+    const res = await fetch(`${API_BASE}/api/audit`, { headers: getHeaders() });
+    return await handleResponse(res);
+  },
+
+  // District Authority Surveillance (Rogue DA Auto-Flagging - Master Plan Part 8)
+  async getFlaggedDas() {
+    const res = await fetch(`${API_BASE}/api/audit/da-flagged`, { headers: getHeaders() });
+    return await handleResponse(res);
+  },
+
   // Live Alert Feed & Flagged Schemes
   async getFlags({ page = 1, pageSize = 50, risk_label, state, district, ida, category, search, vendor_flag, trigger } = {}) {
     const params = new URLSearchParams();
@@ -305,6 +350,10 @@ export const api = {
     return `${API_BASE}/api/export/work-pdf/${encodeURIComponent(workId)}`;
   },
 
+  getWorkPdfExportUrl(workId) {
+    return this.getWorkPdfUrl(workId);
+  },
+
   downloadWorkPdf(workId) {
     const url = this.getWorkPdfUrl(workId);
     const link = document.createElement('a');
@@ -374,8 +423,9 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getMapGpsPoints() {
-    const res = await fetch(`${API_BASE}/api/map/gps-points`, { headers: getHeaders() });
+  async getMapGpsPoints(limit) {
+    const query = limit ? `?limit=${encodeURIComponent(limit)}` : '';
+    const res = await fetch(`${API_BASE}/api/map/gps-points${query}`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -475,6 +525,54 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
     });
+    return handleResponse(res);
+  },
+
+  // MLflow MLOps & 30-Day Model Retraining Lifecycle
+  async getMlflowStatus() {
+    const res = await fetch(`${API_BASE}/api/mlflow/status`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getMlflowRuns() {
+    const res = await fetch(`${API_BASE}/api/mlflow/runs`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async triggerMlflowRetrain() {
+    const res = await fetch(`${API_BASE}/api/mlflow/retrain`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async rollbackModelVersion(targetVersion, reason) {
+    const res = await fetch(`${API_BASE}/api/mlflow/rollback`, {
+      method: 'POST',
+      headers: {
+        ...getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        target_version: targetVersion ? parseInt(targetVersion, 10) : undefined,
+        reason: reason || 'Statutory CVC model version rollback',
+      }),
+    });
+    return handleResponse(res);
+  },
+
+  // Batch Background ML Pipeline
+  async triggerPipeline() {
+    const res = await fetch(`${API_BASE}/api/run-pipeline`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async getPipelineStatus() {
+    const res = await fetch(`${API_BASE}/api/pipeline-status`, { headers: getHeaders() });
     return handleResponse(res);
   },
 

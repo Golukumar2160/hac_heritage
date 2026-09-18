@@ -16,11 +16,13 @@ import os
 import re
 import csv
 import json
+import threading
 import joblib
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from scipy.stats import ks_2samp
 
 try:
     from backend.core.config import settings
@@ -30,13 +32,30 @@ except Exception:
     ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     MODEL_PATH = os.path.join(ROOT_DIR, "models", "isolation_forest.joblib")
 
-# Try loading trained Isolation Forest
+import logging
+logger = logging.getLogger(__name__)
+
+# Thread-safe lock for dynamic model reloading
+_model_lock = threading.Lock()
 _IFOREST_MODEL = None
-try:
-    if os.path.exists(MODEL_PATH):
-        _IFOREST_MODEL = joblib.load(MODEL_PATH)
-except Exception as e:
-    print("Warning: Could not load trained isolation_forest.joblib:", e)
+
+
+def reload_iforest_model() -> bool:
+    """Dynamically reload the serialized Isolation Forest weights into memory."""
+    global _IFOREST_MODEL
+    with _model_lock:
+        try:
+            if os.path.exists(MODEL_PATH):
+                _IFOREST_MODEL = joblib.load(MODEL_PATH)
+                logger.info(f"Isolation Forest model reloaded successfully from {MODEL_PATH}")
+                return True
+        except Exception as e:
+            logger.warning(f"Warning loading trained isolation_forest.joblib: {e}")
+    return False
+
+
+# Initial boot load
+reload_iforest_model()
 
 
 GOVT_VENDOR_PATTERNS = (
@@ -194,11 +213,16 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
         }
 
     # 1. Model 1: Isolation Forest (Financial Anomaly Detection)
-    clean_df["cost_overrun"] = (clean_df["fund_disbursed"] - clean_df["sanction_amount"]) / clean_df["sanction_amount"].clip(lower=1.0)
+    safe_sanction = clean_df["sanction_amount"].clip(lower=1.0)
+    clean_df["cost_overrun_ratio"] = (clean_df["fund_disbursed"] - clean_df["sanction_amount"]).clip(lower=0.0) / safe_sanction
+    clean_df["cost_overrun"] = clean_df["cost_overrun_ratio"]
     
     def _calc_progress_gap(row):
-        status = str(row["work_status"]).lower()
         spent_ratio = row["fund_disbursed"] / max(row["sanction_amount"], 1.0)
+        prog = row.get("progress_pct")
+        if pd.notna(prog) and float(prog) > 0:
+            return max(0.0, spent_ratio - (float(prog) / 100.0))
+        status = str(row.get("work_status", "")).lower()
         expected_ratio = 1.0 if "complete" in status else (0.4 if "progress" in status else 0.1)
         return max(0.0, spent_ratio - expected_ratio)
 
@@ -209,13 +233,20 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
 
     if _IFOREST_MODEL is not None:
         try:
-            X = clean_df[["cost_overrun", "spend_progress_gap", "fund_disbursed", "sanction_amount"]].fillna(0)
+            X = clean_df[["cost_overrun_ratio", "spend_progress_gap", "fund_disbursed", "sanction_amount"]].fillna(0)
             dec = _IFOREST_MODEL.decision_function(X)
             # Higher score = more anomalous
             if_score = np.clip(50.0 - (dec * 120.0), 10.0, 95.0)
             clean_df["m1_score"] = np.maximum(gap_signal, if_score).round(1)
         except Exception:
-            clean_df["m1_score"] = gap_signal.round(1)
+            try:
+                # Resilient fallback for legacy models trained with "cost_overrun" column name
+                X_leg = clean_df[["cost_overrun", "spend_progress_gap", "fund_disbursed", "sanction_amount"]].fillna(0)
+                dec = _IFOREST_MODEL.decision_function(X_leg)
+                if_score = np.clip(50.0 - (dec * 120.0), 10.0, 95.0)
+                clean_df["m1_score"] = np.maximum(gap_signal, if_score).round(1)
+            except Exception:
+                clean_df["m1_score"] = gap_signal.round(1)
     else:
         clean_df["m1_score"] = gap_signal.round(1)
 
@@ -508,11 +539,56 @@ def run_batch_audit(df: pd.DataFrame) -> Dict[str, Any]:
         "flagged_funds_at_risk": float(clean_df[clean_df["severity"].isin(["CRITICAL", "HIGH"])]["fund_disbursed"].sum())
     }
 
+    drift_report = compute_dataset_drift(clean_df)
+
     return {
         "success": True,
         "results": results,
         "models_summary": models_summary,
-        "kpis": kpis
+        "kpis": kpis,
+        "dataset_drift": drift_report
+    }
+
+
+def compute_dataset_drift(batch_df: pd.DataFrame, baseline_df: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
+    """
+    Computes two-sample Kolmogorov-Smirnov (KS) test between uploaded batch expenditure 
+    and baseline historical distribution to detect statistical concept/data drift.
+    """
+    if baseline_df is None or baseline_df.empty:
+        try:
+            from backend.core.data_cache import get_cached_flags
+            baseline_df = get_cached_flags()
+        except Exception:
+            baseline_df = None
+
+    if baseline_df is None or "fund_disbursed" not in batch_df.columns:
+        return {"drift_detected": False, "p_value": 1.0, "ks_statistic": 0.0, "method": "KS_TEST_INSUFFICIENT_DATA"}
+
+    batch_vals = pd.to_numeric(batch_df["fund_disbursed"], errors="coerce").dropna().values
+    base_col = "total_spent" if "total_spent" in baseline_df.columns else "fund_disbursed"
+    base_vals = pd.to_numeric(baseline_df[base_col], errors="coerce").dropna().values if base_col in baseline_df.columns else np.array([])
+
+    if len(batch_vals) < 5 or len(base_vals) < 5:
+        return {"drift_detected": False, "p_value": 1.0, "ks_statistic": 0.0, "method": "SAMPLE_TOO_SMALL"}
+
+    ks_stat, p_val = ks_2samp(batch_vals, base_vals)
+    drift_flag = bool(p_val < 0.05)
+    # Drift flagged if p-value < 0.05 (statistically significant shift in spending distribution)
+    return {
+        "overall_drift_detected": drift_flag,
+        "drift_detected": drift_flag,
+        "p_value": round(float(p_val), 4),
+        "ks_statistic": round(float(ks_stat), 4),
+        "requires_retraining": bool(p_val < 0.01),
+        "method": "Two-Sample Kolmogorov-Smirnov",
+        "feature_drift": {
+            "fund_disbursed": {
+                "ks_statistic": round(float(ks_stat), 4),
+                "p_value": round(float(p_val), 4),
+                "drift_detected": drift_flag
+            }
+        }
     }
 
 

@@ -20,6 +20,7 @@ from backend.core.database import get_supabase_conn
 from backend.core.data_cache import get_cached_flags
 from backend.core.security import (
     hash_password,
+    verify_password,
     find_user_by_identifier,
     create_official_user,
     list_official_users,
@@ -131,7 +132,7 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid username or credentials")
 
     expected_hash = user.get("password_hash")
-    if hash_password(req.password) != expected_hash:
+    if not verify_password(req.password, expected_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     extra_claims = {

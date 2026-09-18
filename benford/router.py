@@ -14,9 +14,12 @@ Plugs directly into backend/main.py to serve:
 
 import os
 import json
+import logging
+import threading
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Query, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import HTMLResponse
+from backend.core.security import decode_token
 from .core import BenfordAnalyzer, BenfordTestResult
 from .procurement_audit import ProcurementAuditEngine
 from .visualizer import BenfordVisualizer
@@ -27,8 +30,10 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 SUMMARY_JSON_PATH = os.path.join(THIS_DIR, "benford_summary.json")
 REPORT_HTML_PATH = os.path.join(THIS_DIR, "benford_report.html")
 
-# In-memory cache
+# In-memory cache & concurrency lock for recomputation
 _CACHED_SUMMARY: Optional[Dict[str, Any]] = None
+_recompute_lock = threading.Lock()
+_is_recomputing = False
 
 
 def get_cached_summary() -> Dict[str, Any]:
@@ -241,15 +246,43 @@ def get_plotly_chart_data(
 
 
 @router.post("/recompute", summary="Recompute Benford Summary Cache")
-def recompute_benford_cache(background_tasks: BackgroundTasks):
+def recompute_benford_cache(
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(decode_token)
+):
     """
     Triggers asynchronous full recalculation of Benford statistics across all raw CSV records.
+    Restricted to Ministry and State Nodal Authority officials.
+    Guarded with a mutex lock to prevent concurrent DoS.
     """
+    if user.get("role") not in ("ministry", "state"):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Only Ministry or State Nodal Authority officials can trigger Benford recomputation."
+        )
+
+    global _is_recomputing
+    with _recompute_lock:
+        if _is_recomputing:
+            raise HTTPException(
+                status_code=409,
+                detail="Benford cache recomputation is already in progress."
+            )
+        _is_recomputing = True
+
     from .run_analysis import run_full_benford_audit
 
     def _task():
-        global _CACHED_SUMMARY
-        _CACHED_SUMMARY = run_full_benford_audit()
+        global _CACHED_SUMMARY, _is_recomputing
+        try:
+            summary = run_full_benford_audit()
+            if summary:
+                _CACHED_SUMMARY = summary
+        except Exception as e:
+            logging.getLogger("benford").error(f"Error during Benford cache recomputation: {e}")
+        finally:
+            with _recompute_lock:
+                _is_recomputing = False
 
     background_tasks.add_task(_task)
     return {

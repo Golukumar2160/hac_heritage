@@ -22,6 +22,8 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: PASSWORD_SALT
         value: mplads_secure_salt_2026
+      - key: MLFLOW_TRACKING_URI
+        sync: false

@@ -35,7 +35,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks, 
 from fastapi.responses import StreamingResponse
 
 from backend.core.config import settings
-from backend.core.database import get_db, get_supabase_conn
+from backend.core.database import get_db, get_supabase_conn, audit_chain_lock as _audit_chain_lock
 from backend.core.data_cache import get_cached_flags
 from backend.core.security import (
     decode_token,
@@ -44,9 +44,6 @@ from backend.core.security import (
 )
 
 router = APIRouter()
-
-# ── Immutable Anti-Tampering Audit Log (SHA-256 Cryptographic Hash Chain) ──
-_audit_chain_lock = threading.Lock()
 
 
 class DismissalRequest(BaseModel):
@@ -301,8 +298,8 @@ def get_flagged_das(user=Depends(decode_token)):
     if df.empty:
         return []
 
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    cutoff = datetime.now() - timedelta(days=30)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
     recent = df[df["timestamp"] > cutoff]
 
     counts = recent.groupby("user_id").size().reset_index(name="dismissal_count")
@@ -642,7 +639,7 @@ def export_alerts_csv(
     if risk_label:
         labels = [l.strip().upper() for l in risk_label.split(",")]
         df = df[df["risk_label"].isin(labels)]
-    if state:
+    if state and isinstance(state, str) and state.strip().lower() != "all":
         df = df[df["state"].astype(str).str.contains(state.strip(), case=False, na=False, regex=False)]
     if category:
         df = df[

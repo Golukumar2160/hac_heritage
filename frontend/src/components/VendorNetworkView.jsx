@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Building2, 
   Users, 
@@ -8,23 +8,30 @@ import {
   ExternalLink,
   ShieldAlert,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Network,
+  Share2,
+  Layers
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function VendorNetworkView({ onSelectWork }) {
   const [vendors, setVendors] = useState([]);
+  const [networkData, setNetworkData] = useState({ nodes: [], links: [] });
+  const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'table'
   const [loading, setLoading] = useState(true);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [vendorProfile, setVendorProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [hoveredNode, setHoveredNode] = useState(null);
   const [search, setSearch] = useState('');
 
   const handleSelectVendor = (vendorName) => {
     if (!vendorName) return;
-    setSelectedVendor(vendorName);
+    const cleanName = vendorName.replace(/^vendor_/, '').trim();
+    setSelectedVendor(cleanName);
     setLoadingProfile(true);
-    api.getVendorProfile(vendorName)
+    api.getVendorProfile(cleanName)
       .then((data) => setVendorProfile(data))
       .catch((err) => console.error('Error fetching vendor profile:', err))
       .finally(() => setLoadingProfile(false));
@@ -32,20 +39,67 @@ export default function VendorNetworkView({ onSelectWork }) {
 
   useEffect(() => {
     setLoading(true);
-    api.getVendorLeaderboard(60)
-      .then((data) => {
-        setVendors(Array.isArray(data) ? data : []);
-        if (Array.isArray(data) && data.length > 0) {
-          handleSelectVendor(data[0].work_top_vendor);
+    Promise.all([
+      api.getVendorLeaderboard(60),
+      api.getVendorNetwork(35)
+    ])
+      .then(([lbData, netData]) => {
+        setVendors(Array.isArray(lbData) ? lbData : []);
+        if (Array.isArray(lbData) && lbData.length > 0) {
+          handleSelectVendor(lbData[0].work_top_vendor);
+        }
+        if (netData && Array.isArray(netData.nodes)) {
+          setNetworkData(netData);
         }
       })
-      .catch((err) => console.error('Error fetching vendors:', err))
+      .catch((err) => console.error('Error fetching vendors / cartel network:', err))
       .finally(() => setLoading(false));
   }, []);
 
   const filteredVendors = vendors.filter((v) =>
     (v.work_top_vendor || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const graphLayout = useMemo(() => {
+    const rawNodes = networkData?.nodes || [];
+    const rawLinks = networkData?.links || [];
+    if (!rawNodes.length) return { mpNodes: [], vendorNodes: [], links: [] };
+
+    const mps = rawNodes.filter(n => n.type === 'mp' || String(n.id).startsWith('mp_'));
+    const vList = rawNodes.filter(n => n.type === 'vendor' || String(n.id).startsWith('vendor_'));
+
+    const width = 960;
+    const height = 580;
+
+    const positionedMps = mps.map((n, i) => ({
+      ...n,
+      x: 180,
+      y: 45 + (i * (height - 90)) / Math.max(mps.length - 1, 1),
+    }));
+
+    const positionedVendors = vList.map((n, i) => ({
+      ...n,
+      x: 780,
+      y: 40 + (i * (height - 80)) / Math.max(vList.length - 1, 1),
+    }));
+
+    const nodePosMap = new Map();
+    positionedMps.forEach(n => nodePosMap.set(n.id, n));
+    positionedVendors.forEach(n => nodePosMap.set(n.id, n));
+
+    const positionedLinks = rawLinks.map((l, i) => {
+      const s = nodePosMap.get(l.source);
+      const t = nodePosMap.get(l.target);
+      return {
+        ...l,
+        id: `link_${i}`,
+        sourceNode: s,
+        targetNode: t,
+      };
+    }).filter(l => l.sourceNode && l.targetNode);
+
+    return { mpNodes: positionedMps, vendorNodes: positionedVendors, links: positionedLinks };
+  }, [networkData]);
 
   return (
     <div className="space-y-6">
@@ -69,13 +123,190 @@ export default function VendorNetworkView({ onSelectWork }) {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm">
-            <span className="text-slate-400">Total Tracked Contractors: </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setViewMode('graph')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'graph'
+                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Network className="w-3.5 h-3.5" />
+              <span>Bipartite Cartel Graph</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Rankings &amp; Dossiers</span>
+            </button>
+          </div>
+
+          <div className="hidden sm:block px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm">
+            <span className="text-slate-400">Total Tracked: </span>
             <span className="text-white font-mono font-extrabold">{vendors.length}</span>
           </div>
         </div>
       </div>
+
+      {/* BIPARTITE CARTEL & SYNDICATE NETWORK GRAPH */}
+      {viewMode === 'graph' && (
+        <div className="glass-panel p-6 rounded-2xl border border-violet-500/25 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
+                <Network className="w-5 h-5 text-violet-400" />
+                Bipartite MP-to-Contractor Collusion &amp; Concentration Graph
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Lines indicate public fund disbursements. Thicker links denote high capital concentration. Click a contractor node to inspect forensic intelligence.
+              </p>
+            </div>
+            
+            {/* Graph Legend */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-sky-500 border border-sky-300" />
+                <span className="text-slate-300">Constituency MP</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-violet-500 border border-violet-300" />
+                <span className="text-slate-300">Contractor Firm</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-rose-500 border border-rose-300 animate-pulse" />
+                <span className="text-rose-300 font-bold">Monopoly Alert</span>
+              </div>
+            </div>
+          </div>
+
+          {/* SVG Canvas */}
+          <div className="relative overflow-x-auto rounded-xl bg-slate-950/80 border border-slate-800/80 p-2 min-h-[480px]">
+            {loading ? (
+              <div className="py-36 text-center space-y-3">
+                <div className="inline-block w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <div className="text-sm text-slate-400 font-mono">Synthesizing bipartite cartel network topology...</div>
+              </div>
+            ) : graphLayout.links.length === 0 ? (
+              <div className="py-36 text-center text-sm text-slate-400 font-mono">
+                No bipartite cartel linkages detected for selected threshold.
+              </div>
+            ) : (
+              <svg viewBox="0 0 960 580" className="w-full h-auto min-w-[720px] select-none">
+                <defs>
+                  <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.6" />
+                  </linearGradient>
+                  <linearGradient id="edgeGradActive" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.95" />
+                  </linearGradient>
+                </defs>
+
+                {/* Draw connecting edges */}
+                {graphLayout.links.map((link) => {
+                  const s = link.sourceNode;
+                  const t = link.targetNode;
+                  const isHovered = hoveredNode === s.id || hoveredNode === t.id;
+                  const pathD = `M ${s.x} ${s.y} C ${(s.x + t.x) / 2} ${s.y}, ${(s.x + t.x) / 2} ${t.y}, ${t.x} ${t.y}`;
+                  return (
+                    <path
+                      key={link.id}
+                      d={pathD}
+                      fill="none"
+                      stroke={isHovered ? "url(#edgeGradActive)" : "url(#edgeGrad)"}
+                      strokeWidth={isHovered ? 2.5 : Math.min(Math.max((link.weight || 1) * 0.8, 1), 3)}
+                      strokeDasharray={isHovered ? "none" : "3,3"}
+                      className="transition-all duration-200"
+                    />
+                  );
+                })}
+
+                {/* Draw MP Nodes */}
+                {graphLayout.mpNodes.map((node) => {
+                  const isHovered = hoveredNode === node.id;
+                  return (
+                    <g
+                      key={node.id}
+                      transform={`translate(${node.x}, ${node.y})`}
+                      onMouseEnter={() => setHoveredNode(node.id)}
+                      onMouseLeave={() => setHoveredNode(null)}
+                      className="cursor-pointer"
+                    >
+                      <circle
+                        r={isHovered ? 13 : 9}
+                        fill="#0284c7"
+                        stroke="#38bdf8"
+                        strokeWidth={isHovered ? 3 : 1.5}
+                        className="transition-all"
+                      />
+                      <text
+                        x={-16}
+                        y={4}
+                        textAnchor="end"
+                        fontSize="11"
+                        fontWeight={isHovered ? "bold" : "normal"}
+                        fill={isHovered ? "#38bdf8" : "#cbd5e1"}
+                        className="font-mono select-none"
+                      >
+                        {node.label.length > 22 ? node.label.slice(0, 20) + '…' : node.label}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Draw Vendor Nodes */}
+                {graphLayout.vendorNodes.map((node) => {
+                  const isHovered = hoveredNode === node.id;
+                  const isSelected = selectedVendor === node.label;
+                  const isMonopoly = node.monopoly;
+                  const fillColor = isMonopoly ? "#dc2626" : node.risk > 70 ? "#d97706" : "#7c3aed";
+                  const strokeColor = isMonopoly ? "#f87171" : node.risk > 70 ? "#fbbf24" : "#c084fc";
+
+                  return (
+                    <g
+                      key={node.id}
+                      transform={`translate(${node.x}, ${node.y})`}
+                      onClick={() => handleSelectVendor(node.label)}
+                      onMouseEnter={() => setHoveredNode(node.id)}
+                      onMouseLeave={() => setHoveredNode(null)}
+                      className="cursor-pointer"
+                    >
+                      <circle
+                        r={isSelected ? 16 : isHovered ? 13 : 10}
+                        fill={fillColor}
+                        stroke={strokeColor}
+                        strokeWidth={isSelected || isHovered ? 3 : 1.5}
+                        className="transition-all"
+                      />
+                      <text
+                        x={18}
+                        y={4}
+                        textAnchor="start"
+                        fontSize="11"
+                        fontWeight={isSelected || isHovered ? "bold" : "normal"}
+                        fill={isSelected ? "#c084fc" : isHovered ? "#ffffff" : "#cbd5e1"}
+                        className="font-mono select-none"
+                      >
+                        {node.label.length > 24 ? node.label.slice(0, 22) + '…' : node.label}
+                        {node.val ? ` (₹${(node.val / 10000000).toFixed(1)}Cr)` : ''}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         

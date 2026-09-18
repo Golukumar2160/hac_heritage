@@ -24,7 +24,8 @@ import {
 import { api } from '../services/api';
 import { 
   SVG_MAP_CONFIG, 
-  INDIA_STATE_PATHS
+  INDIA_STATE_PATHS,
+  projectGeoPoint
 } from '../data/indiaMapData';
 
 export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }) {
@@ -33,6 +34,9 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
   const [districts, setDistricts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [gpsPoints, setGpsPoints] = useState([]);
+  const [showGpsPins, setShowGpsPins] = useState(true);
+  const [selectedGpsPoint, setSelectedGpsPoint] = useState(null);
   
   // Interactive Controls
   const [activeMetric, setActiveMetric] = useState('risk'); // 'risk' | 'critical' | 'funds' | 'monopoly'
@@ -116,6 +120,15 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
         setLoading(false);
       });
   }, [activeRole]);
+
+  // Load Ground-Truthed GPS Pins (Vision AI & Certificate OCR Extraction)
+  useEffect(() => {
+    api.getMapGpsPoints(150)
+      .then((data) => {
+        if (Array.isArray(data)) setGpsPoints(data);
+      })
+      .catch((err) => console.error('Error loading GPS points:', err));
+  }, []);
 
   // Create state lookup dictionary by db_name
   const stateDataMap = useMemo(() => {
@@ -404,6 +417,20 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
+
+              {/* GPS Ground Pin Toggle */}
+              <button
+                onClick={() => setShowGpsPins(!showGpsPins)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                  showGpsPins
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                }`}
+                title="Toggle Vision AI & OCR verified physical GPS project coordinates"
+              >
+                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{showGpsPins ? `GPS Pins (${gpsPoints.length})` : 'Show Pins'}</span>
+              </button>
             </div>
 
           </div>
@@ -497,6 +524,48 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                   );
                 })}
               </g>
+
+              {/* 3. Physical GPS Ground-Truth Pin Overlay (Vision AI & OCR Verified Coordinates) */}
+              {showGpsPins && (
+                <g className="gps-points-layer">
+                  {gpsPoints.map((pt, idx) => {
+                    const lat = parseFloat(pt.latitude);
+                    const lon = parseFloat(pt.longitude);
+                    if (isNaN(lat) || isNaN(lon)) return null;
+                    const [px, py] = projectGeoPoint(lat, lon);
+                    const isCrit = (pt.risk_score || 0) >= 80 || pt.risk_tier === 'CRITICAL';
+                    const isSelected = selectedGpsPoint?.work_id === pt.work_id;
+                    const color = isCrit ? '#f43f5e' : '#10b981';
+
+                    return (
+                      <g
+                        key={`gps-${idx}-${pt.work_id}`}
+                        transform={`translate(${px}, ${py})`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGpsPoint(pt);
+                          if (onSelectWork && pt.work_id) onSelectWork(pt.work_id);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {/* Ping animation for high-risk physical locations */}
+                        {isCrit && (
+                          <circle r="7" fill="none" stroke={color} strokeWidth="1.2" opacity="0.7">
+                            <animate attributeName="r" values="3;12" dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                          </circle>
+                        )}
+                        <circle
+                          r={isSelected ? 5.5 : 3.5}
+                          fill={color}
+                          stroke="#ffffff"
+                          strokeWidth={isSelected ? 1.5 : 0.75}
+                        />
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
 
             </svg>
 

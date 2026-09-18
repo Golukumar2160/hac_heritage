@@ -14,7 +14,9 @@ import {
   X,
   Clock,
   QrCode,
-  UploadCloud
+  UploadCloud,
+  Scale,
+  Award
 } from 'lucide-react';
 import emblemLogo from '../assets/logo_dark.jpg';
 
@@ -112,6 +114,16 @@ export default function Sidebar({
       id: 'validation',
       label: 'Model Accuracy & ROC',
       icon: CheckCircle,
+    },
+    {
+      id: 'benford',
+      label: "Benford's Law Forensics",
+      icon: Scale,
+    },
+    {
+      id: 'quotas',
+      label: 'Clause 3.2 Quota Monitor',
+      icon: Award,
     },
   ];
 
