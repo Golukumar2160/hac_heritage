@@ -32,15 +32,20 @@ jobs:
         env:
           PASSWORD_SALT: mplads_secure_salt_2026
           SECRET_KEY: mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi
+          SUPABASE_URL: https://gpjfxbvuzfshaxwkcnsx.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_2bbfRrygZubqwsXUKBxYkw_AmA9qVyg
         run: |
           python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 &
-          python -c "import time, urllib.request; [time.sleep(1) for _ in range(30) if not (lambda: urllib.request.urlopen('http://127.0.0.1:8000/api/health').getcode() == 200)()]"
+          python scripts/wait_for_server.py
 
       - name: Stage 1 - Run Unit Tests (test_api.py)
         run: |
           python -m unittest tests/test_api.py
 
       - name: Stage 2 - Run Citizen RBAC Security Tests (test_citizen_rbac.py)
+        env:
+          PASSWORD_SALT: mplads_secure_salt_2026
+          SECRET_KEY: mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi
         run: |
           python -m unittest tests/test_citizen_rbac.py
 
@@ -49,6 +54,11 @@ jobs:
           python tests/test_batch_audit.py
 
       - name: Stage 4 - Run System Smoke Test (smoke_test.py)
+        env:
+          PASSWORD_SALT: mplads_secure_salt_2026
+          SECRET_KEY: mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi
+          SUPABASE_URL: https://gpjfxbvuzfshaxwkcnsx.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_2bbfRrygZubqwsXUKBxYkw_AmA9qVyg
         run: |
           python tests/smoke_test.py
 
