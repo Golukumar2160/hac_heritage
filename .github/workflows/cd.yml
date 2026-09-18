@@ -70,17 +70,21 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trigger Instant Render Backend Redeploy (Optional Webhook)
-        if: ${{ secrets.RENDER_BACKEND_WEBHOOK != '' }}
+        env:
+          RENDER_BACKEND_WEBHOOK: ${{ secrets.RENDER_BACKEND_WEBHOOK }}
+        if: env.RENDER_BACKEND_WEBHOOK != ''
         run: |
           echo "[*] Triggering Render backend deploy webhook..."
-          curl -s -X POST "${{ secrets.RENDER_BACKEND_WEBHOOK }}" || true
+          curl -s -X POST "$RENDER_BACKEND_WEBHOOK" || true
           echo "[+] Render backend webhook dispatched."
 
       - name: Trigger Instant Render Frontend Redeploy (Optional Webhook)
-        if: ${{ secrets.RENDER_FRONTEND_WEBHOOK != '' }}
+        env:
+          RENDER_FRONTEND_WEBHOOK: ${{ secrets.RENDER_FRONTEND_WEBHOOK }}
+        if: env.RENDER_FRONTEND_WEBHOOK != ''
         run: |
           echo "[*] Triggering Render frontend deploy webhook..."
-          curl -s -X POST "${{ secrets.RENDER_FRONTEND_WEBHOOK }}" || true
+          curl -s -X POST "$RENDER_FRONTEND_WEBHOOK" || true
           echo "[+] Render frontend webhook dispatched."
 
       - name: Deployment Notification
