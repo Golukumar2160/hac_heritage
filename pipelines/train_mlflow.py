@@ -259,8 +259,14 @@ def run_mlflow_training(
                 client.set_registered_model_alias("MPLADS_IsolationForest_Auditor", "champion", str(latest_v))
                 client.set_registered_model_alias("MPLADS_IsolationForest_Auditor", "production", str(latest_v))
                 print(f"[OK] Assigned @champion & @production aliases to model version {latest_v}.")
+
+            # Ensure Completion Risk Predictor is also registered in MLflow registry
+            existing_models = [m.name for m in client.search_registered_models()]
+            if "MPLADS_Completion_Risk_Predictor" not in existing_models:
+                client.create_registered_model("MPLADS_Completion_Risk_Predictor")
+                print("[OK] Registered MPLADS_Completion_Risk_Predictor in MLflow Model Registry.")
         except Exception as alias_err:
-            print(f"[*] MLflow alias assignment note: {alias_err}")
+            print(f"[*] MLflow alias/model assignment note: {alias_err}")
 
         # 5. Persist Production Joblib for immediate live backend inference
         joblib.dump(iso, MODEL_JOBLIB_PATH)

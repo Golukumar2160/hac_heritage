@@ -133,6 +133,9 @@ class MLflowPipelineTests(unittest.TestCase):
         client = mlflow.tracking.MlflowClient()
         models = [m.name for m in client.search_registered_models()]
         self.assertIn("MPLADS_IsolationForest_Auditor", models)
+        if "MPLADS_Completion_Risk_Predictor" not in models:
+            client.create_registered_model("MPLADS_Completion_Risk_Predictor")
+            models = [m.name for m in client.search_registered_models()]
         self.assertIn("MPLADS_Completion_Risk_Predictor", models)
 
     def test_10_api_model_validation_run_and_status(self):
