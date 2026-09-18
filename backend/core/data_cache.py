@@ -10,7 +10,7 @@ Provides:
 
 import os
 import threading
-from typing import Optional
+from typing import Optional, Any
 import pandas as pd
 from fastapi import HTTPException
 from backend.core.config import settings
@@ -19,13 +19,20 @@ _cache_lock = threading.Lock()
 _flags_cache: Optional[pd.DataFrame] = None
 _flags_mtime: Optional[float] = None
 
+# Allocation & MP entitlement cache
+_allocations_cache: Optional[dict] = None
+_allocations_mtime: Optional[float] = None
+
+# Computed aggregate response cache (keyed by query parameters / role scope)
+_aggregate_cache: dict = {}
+
 
 def get_cached_flags() -> pd.DataFrame:
     """
     Load fraud_flags.csv with thread-safe in-memory caching.
     Strictly separates numeric vs text columns to prevent type contamination.
     """
-    global _flags_cache, _flags_mtime
+    global _flags_cache, _flags_mtime, _aggregate_cache
     flags_file = settings.FLAGS_FILE
     if not os.path.exists(flags_file):
         raise HTTPException(
@@ -36,6 +43,8 @@ def get_cached_flags() -> pd.DataFrame:
     mtime = os.path.getmtime(flags_file)
     with _cache_lock:
         if _flags_cache is None or _flags_mtime != mtime:
+            # File on disk changed or first load: wipe any dependent aggregate caches
+            _aggregate_cache.clear()
             df = pd.read_csv(flags_file, encoding="utf-8-sig", low_memory=False)
 
             # 1. Clean & Cast Numeric Columns (Strict float/int, never empty string)
@@ -71,9 +80,61 @@ def get_cached_flags() -> pd.DataFrame:
         return _flags_cache
 
 
+def get_cached_allocations() -> dict:
+    """
+    Thread-safe in-memory cache for clean_allocated.csv MP entitlements.
+    Prevents repeated synchronous disk reads during high-frequency unspent forecasting.
+    """
+    global _allocations_cache, _allocations_mtime
+    alloc_csv = os.path.join(settings.DATA_PATH, "processed", "clean_allocated.csv")
+    if not os.path.exists(alloc_csv):
+        return {}
+
+    mtime = os.path.getmtime(alloc_csv)
+    with _cache_lock:
+        if _allocations_cache is None or _allocations_mtime != mtime:
+            alloc_map = {}
+            try:
+                alloc_df = pd.read_csv(alloc_csv, encoding="utf-8-sig")
+                for _, r in alloc_df.iterrows():
+                    name_clean = str(r.get("mp_name", "")).strip()
+                    if not name_clean:
+                        continue
+                    tb = pd.to_numeric(r.get("true_budget"), errors="coerce")
+                    const = str(r.get("constituency", "")).strip()
+                    elected = str(r.get("elected_nominated", "")).strip()
+                    r_state = str(r.get("state", "")).strip()
+                    if not const or const == "nan":
+                        const = f"{elected} — {r_state}" if elected and elected != "nan" else r_state
+                    alloc_map[name_clean.lower()] = {
+                        "true_budget": float(tb) if pd.notna(tb) and tb > 0 else 250_000_000.0,
+                        "constituency": const,
+                    }
+                _allocations_cache = alloc_map
+                _allocations_mtime = mtime
+            except Exception as e:
+                return {}
+        return _allocations_cache
+
+
+def get_computed_cache(key: str) -> Optional[Any]:
+    """Retrieve pre-computed aggregate response from memory."""
+    with _cache_lock:
+        return _aggregate_cache.get(key)
+
+
+def set_computed_cache(key: str, value: Any):
+    """Store pre-computed aggregate response in memory."""
+    with _cache_lock:
+        _aggregate_cache[key] = value
+
+
 def invalidate_flags_cache():
     """Explicitly reset in-memory cache to force reload on next request."""
-    global _flags_cache, _flags_mtime
+    global _flags_cache, _flags_mtime, _allocations_cache, _allocations_mtime, _aggregate_cache
     with _cache_lock:
         _flags_cache = None
         _flags_mtime = None
+        _allocations_cache = None
+        _allocations_mtime = None
+        _aggregate_cache.clear()

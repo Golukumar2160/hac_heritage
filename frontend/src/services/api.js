@@ -16,6 +16,7 @@ try {
 export const setAuthSession = (token, user) => {
   authToken = token || '';
   currentUser = user || null;
+  clearClientCache();
   if (typeof localStorage !== 'undefined') {
     if (token) {
       localStorage.setItem('bharat_drishti_token', token);
@@ -28,6 +29,34 @@ export const setAuthSession = (token, user) => {
 };
 
 export const getAuthSession = () => ({ token: authToken, user: currentUser });
+
+// In-Memory Client Request Cache for Sub-Millisecond Tab Transitions
+const clientCache = new Map();
+const DEFAULT_TTL_MS = 45 * 1000; // 45 seconds
+
+export const clearClientCache = () => {
+  clientCache.clear();
+};
+
+async function cachedFetch(url, options = {}, ttl = DEFAULT_TTL_MS) {
+  const method = (options.method || 'GET').toUpperCase();
+  if (method !== 'GET') {
+    return fetch(url, options).then(handleResponse);
+  }
+  const tokenSuffix = authToken ? `_${authToken.slice(-8)}` : '_anon';
+  const cacheKey = `${url}${tokenSuffix}`;
+  const now = Date.now();
+
+  const cached = clientCache.get(cacheKey);
+  if (cached && (now - cached.timestamp < ttl)) {
+    return JSON.parse(JSON.stringify(cached.data));
+  }
+
+  const res = await fetch(url, options);
+  const data = await handleResponse(res);
+  clientCache.set(cacheKey, { data, timestamp: now });
+  return data;
+}
 
 const getHeaders = (extraHeaders = {}) => {
   const headers = {
@@ -184,8 +213,7 @@ export const api = {
     if (filters.ida && filters.ida !== 'all') params.set('ida', filters.ida);
     const qs = params.toString() ? `?${params.toString()}` : '';
 
-    const res = await fetch(`${API_BASE}/api/kpis${qs}`, { headers: getHeaders() });
-    const data = await handleResponse(res);
+    const data = await cachedFetch(`${API_BASE}/api/kpis${qs}`, { headers: getHeaders() }, 15000);
     // Transform into standard format for UI
     return {
       total_works: data.total_works !== undefined ? data.total_works : 0,
@@ -212,21 +240,18 @@ export const api = {
     if (limit) params.set('limit', String(limit));
 
     const qs = params.toString() ? `?${params.toString()}` : '';
-    const res = await fetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() });
-    return await handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() }, 30000);
   },
 
   // MP Constituency Analytical Drilldown
   async getMpDetails(mpName) {
     if (!mpName) throw new Error('MP name is required');
-    const res = await fetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() });
-    return await handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() }, 30000);
   },
 
   // Macro Time-Series & March Rush Spending Forecaster
   async getTrends() {
-    const res = await fetch(`${API_BASE}/api/trends`, { headers: getHeaders() });
-    return await handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/trends`, { headers: getHeaders() }, 45000);
   },
 
   // Immutable Tamper-Evident Audit Ledger
@@ -255,8 +280,7 @@ export const api = {
     if (vendor_flag !== undefined && vendor_flag !== null) params.set('vendor_flag', String(vendor_flag));
     if (trigger && trigger !== 'all') params.set('trigger', trigger);
 
-    const res = await fetch(`${API_BASE}/api/flags?${params.toString()}`, { headers: getHeaders() });
-    const data = await handleResponse(res);
+    const data = await cachedFetch(`${API_BASE}/api/flags?${params.toString()}`, { headers: getHeaders() }, 15000);
     return {
       total: data.total_count !== undefined ? data.total_count : (data.total || 0),
       page: data.page || 1,
@@ -372,38 +396,32 @@ export const api = {
 
   // Benford's Law Forensic Intelligence
   async getBenfordSummary() {
-    const res = await fetch(`${API_BASE}/api/benford/summary`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/benford/summary`, { headers: getHeaders() }, 45000);
   },
 
   async getBenfordDistribution(digitType = 'first', dataset = 'sanctioned') {
     const dType = digitType.includes('second') ? 'second_digit' : 'first_digit';
     const dSet = dataset.includes('exp') ? 'expenditures' : 'sanctions';
-    const res = await fetch(`${API_BASE}/api/benford/distribution?digit_type=${dType}&dataset=${dSet}`, {
+    return cachedFetch(`${API_BASE}/api/benford/distribution?digit_type=${dType}&dataset=${dSet}`, {
       headers: getHeaders(),
-    });
-    return handleResponse(res);
+    }, 45000);
   },
 
   async getBenfordThresholdEvasion() {
-    const res = await fetch(`${API_BASE}/api/benford/thresholds`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/benford/thresholds`, { headers: getHeaders() }, 45000);
   },
 
   async getBenfordHighRiskWorks() {
-    const res = await fetch(`${API_BASE}/api/benford/transactions?limit=10`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/benford/transactions?limit=10`, { headers: getHeaders() }, 45000);
   },
 
   // Vendor Analytics & Collusion Rings
   async getVendorLeaderboard(limit = 50) {
-    const res = await fetch(`${API_BASE}/api/vendors/leaderboard?limit=${limit}`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/vendors/leaderboard?limit=${limit}`, { headers: getHeaders() }, 45000);
   },
 
   async getVendorNetwork(topN = 30) {
-    const res = await fetch(`${API_BASE}/api/vendors/network?top_n=${topN}`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/vendors/network?top_n=${topN}`, { headers: getHeaders() }, 45000);
   },
 
   async getVendorProfile(vendorName) {
@@ -413,8 +431,7 @@ export const api = {
 
   // Geospatial Map Points
   async getMapStates() {
-    const res = await fetch(`${API_BASE}/api/map/states`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/map/states`, { headers: getHeaders() }, 45000);
   },
 
   async getMapDistricts(state) {
@@ -431,8 +448,7 @@ export const api = {
 
   // Dropdown Metadata Filters
   async getFilterOptions() {
-    const res = await fetch(`${API_BASE}/api/filters`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/filters`, { headers: getHeaders() }, 60000);
   },
 
   // Immutable Audit Log
@@ -443,6 +459,7 @@ export const api = {
 
   // Dismiss / Escalate Flag (Strict 50 chars validation)
   async submitAuditAction(workId, action, justification, originalRiskScore = 85.0) {
+    clearClientCache();
     const rawScore = Number(originalRiskScore);
     const normalizedScore = isNaN(rawScore) ? 85.0 : (rawScore <= 1.0 ? rawScore * 100 : rawScore);
     const res = await fetch(`${API_BASE}/api/audit/dismiss`, {
@@ -463,22 +480,14 @@ export const api = {
     const params = new URLSearchParams();
     if (state) params.append('state', state);
     if (threshold !== undefined && threshold !== null) params.append('threshold', threshold);
-    const res = await fetch(`${API_BASE}/api/works/early-warning?${params.toString()}`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/works/early-warning?${params.toString()}`, { headers: getHeaders() }, 30000);
   },
 
   async getConstituencyForecast(state = null, limit = 100) {
     const params = new URLSearchParams();
     if (state) params.append('state', state);
     if (limit) params.append('limit', limit);
-    const res = await fetch(`${API_BASE}/api/constituency/unspent-forecast?${params.toString()}`, { headers: getHeaders() });
-    return handleResponse(res);
-  },
-
-  // Trends
-  async getTrends() {
-    const res = await fetch(`${API_BASE}/api/trends`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/constituency/unspent-forecast?${params.toString()}`, { headers: getHeaders() }, 30000);
   },
 
   // Image Forensics
@@ -507,6 +516,7 @@ export const api = {
   },
 
   async triggerImageForensics() {
+    clearClientCache();
     const res = await fetch(`${API_BASE}/api/image-forensics/run`, {
       method: 'POST',
       headers: getHeaders(),
@@ -516,11 +526,11 @@ export const api = {
 
   // Model Validation & Triangulation Metrics
   async getModelValidation() {
-    const res = await fetch(`${API_BASE}/api/model-validation`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/model-validation`, { headers: getHeaders() }, 30000);
   },
 
   async runModelValidation() {
+    clearClientCache();
     const res = await fetch(`${API_BASE}/api/model-validation/run`, {
       method: 'POST',
       headers: getHeaders(),
@@ -530,16 +540,15 @@ export const api = {
 
   // MLflow MLOps & 30-Day Model Retraining Lifecycle
   async getMlflowStatus() {
-    const res = await fetch(`${API_BASE}/api/mlflow/status`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/mlflow/status`, { headers: getHeaders() }, 15000);
   },
 
   async getMlflowRuns() {
-    const res = await fetch(`${API_BASE}/api/mlflow/runs`, { headers: getHeaders() });
-    return handleResponse(res);
+    return cachedFetch(`${API_BASE}/api/mlflow/runs`, { headers: getHeaders() }, 30000);
   },
 
   async triggerMlflowRetrain() {
+    clearClientCache();
     const res = await fetch(`${API_BASE}/api/mlflow/retrain`, {
       method: 'POST',
       headers: getHeaders(),
@@ -548,6 +557,7 @@ export const api = {
   },
 
   async rollbackModelVersion(targetVersion, reason) {
+    clearClientCache();
     const res = await fetch(`${API_BASE}/api/mlflow/rollback`, {
       method: 'POST',
       headers: {
@@ -564,6 +574,7 @@ export const api = {
 
   // Batch Background ML Pipeline
   async triggerPipeline() {
+    clearClientCache();
     const res = await fetch(`${API_BASE}/api/run-pipeline`, {
       method: 'POST',
       headers: getHeaders(),
@@ -578,6 +589,7 @@ export const api = {
 
   // Live Batch CSV Audit Lab
   async uploadAuditCsv(fileOrFiles) {
+    clearClientCache();
     const formData = new FormData();
     if (Array.isArray(fileOrFiles) || (fileOrFiles && typeof fileOrFiles.length === 'number' && typeof fileOrFiles.item === 'function')) {
       for (let i = 0; i < fileOrFiles.length; i++) {

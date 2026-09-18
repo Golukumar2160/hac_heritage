@@ -17,6 +17,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 # ── Production Core Services & Configuration ──────────────────────────────────
@@ -100,6 +101,7 @@ else:
         cors_kwargs["allow_origin_regex"] = cors_regex
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── Static File Mount for Scanned Images & PDFs ───────────────────────────────
 IMAGES_DIR = settings.IMAGES_PATH

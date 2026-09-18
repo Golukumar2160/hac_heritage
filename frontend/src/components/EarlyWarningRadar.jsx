@@ -33,10 +33,13 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
   const [selectedState, setSelectedState] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [availableStates, setAvailableStates] = useState([]);
+  const [radarSummary, setRadarSummary] = useState(null);
 
   // Constituency Forecaster State
   const [constituencyData, setConstituencyData] = useState([]);
   const [constituencyLoading, setConstituencyLoading] = useState(false);
+  const [constituencyError, setConstituencyError] = useState(null);
+  const [forecastSummary, setForecastSummary] = useState(null);
   const [lapseFilter, setLapseFilter] = useState('all'); // 'all' | 'HIGH' | 'MODERATE' | 'LOW'
 
   // Load States for filter dropdown
@@ -56,6 +59,9 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
     setError(null);
     try {
       const res = await api.getEarlyWarningWorks(selectedState || null, threshold);
+      if (res && res.summary) {
+        setRadarSummary(res.summary);
+      }
       if (res && Array.isArray(res.items)) {
         setEarlyWorks(res.items);
       } else if (Array.isArray(res)) {
@@ -74,8 +80,12 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
   // Fetch Constituency Balance Forecasts
   const fetchConstituencyForecasts = async () => {
     setConstituencyLoading(true);
+    setConstituencyError(null);
     try {
       const res = await api.getConstituencyForecast(selectedState || null, 100);
+      if (res && res.summary) {
+        setForecastSummary(res.summary);
+      }
       if (res && Array.isArray(res.forecasts)) {
         setConstituencyData(res.forecasts);
       } else {
@@ -83,6 +93,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
       }
     } catch (err) {
       console.error('Failed to fetch constituency forecasts:', err);
+      setConstituencyError(err.message || 'Failed to load constituency forecasts.');
     } finally {
       setConstituencyLoading(false);
     }
@@ -119,14 +130,32 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
     return pc.includes(term) || mp.includes(term) || st.includes(term);
   });
 
-  // Metrics calculations
-  const totalFundsAtRiskCr = earlyWorks.reduce((acc, curr) => acc + (Number(curr.sanction_amount || curr.sanctioned_amount || 0) / 10000000), 0);
-  const avgCompletionProb = earlyWorks.length > 0 
-    ? (earlyWorks.reduce((acc, curr) => acc + (Number(curr.completion_probability || 0)), 0) / earlyWorks.length) * 100 
-    : 0;
+  // Metrics calculations (prioritizing full-scope pre-aggregated summary from backend)
+  const totalFundsAtRiskCr = radarSummary?.total_funds_at_risk_cr !== undefined
+    ? Number(radarSummary.total_funds_at_risk_cr)
+    : earlyWorks.reduce((acc, curr) => acc + (Number(curr.sanction_amount || curr.sanctioned_amount || 0) / 10000000), 0);
 
-  const totalUnspentIdleCr = constituencyData.reduce((acc, curr) => acc + (Number(curr.current_balance_cr || 0)), 0);
-  const highLapseRiskCount = constituencyData.filter((c) => c.lapse_risk === 'HIGH').length;
+  const avgCompletionProb = radarSummary?.avg_completion_probability !== undefined
+    ? (Number(radarSummary.avg_completion_probability) * 100)
+    : (earlyWorks.length > 0 
+      ? (earlyWorks.reduce((acc, curr) => acc + (Number(curr.completion_probability || 0)), 0) / earlyWorks.length) * 100 
+      : 0);
+
+  const totalAtRiskWorksCount = radarSummary?.total_at_risk_works !== undefined
+    ? Number(radarSummary.total_at_risk_works)
+    : earlyWorks.length;
+
+  const totalUnspentIdleCr = forecastSummary?.total_projected_idle_funds_cr !== undefined
+    ? Number(forecastSummary.total_projected_idle_funds_cr)
+    : constituencyData.reduce((acc, curr) => acc + (Number(curr.current_balance_cr || 0)), 0);
+
+  const highLapseRiskCount = forecastSummary?.critical_lapse_risk_count !== undefined
+    ? Number(forecastSummary.critical_lapse_risk_count)
+    : constituencyData.filter((c) => c.lapse_risk === 'HIGH').length;
+
+  const totalConstituenciesAnalyzed = forecastSummary?.total_mps_analyzed !== undefined
+    ? Number(forecastSummary.total_mps_analyzed)
+    : constituencyData.length;
 
   return (
     <div className="space-y-6">
@@ -190,9 +219,13 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
               <div>
                 <div className="text-[10px] uppercase font-bold text-slate-400">At-Risk Works Flagged</div>
                 <div className="text-2xl font-black text-rose-400 font-mono mt-0.5">
-                  {earlyWorks.length.toLocaleString('en-IN')}
+                  {totalAtRiskWorksCount.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-500">Threshold: Prob &lt; {(threshold * 100).toFixed(0)}%</div>
+                <div className="text-[10px] text-slate-500">
+                  {totalAtRiskWorksCount > earlyWorks.length
+                    ? `Top ${earlyWorks.length} prioritized • Prob < ${(threshold * 100).toFixed(0)}%`
+                    : `Threshold: Prob < ${(threshold * 100).toFixed(0)}%`}
+                </div>
               </div>
               <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
                 <AlertTriangle className="w-5 h-5" />
@@ -305,6 +338,21 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
               <div className="py-20 text-center space-y-3">
                 <div className="inline-block w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
                 <div className="text-xs text-slate-400 font-mono">Running Model 6 predictive completion inference...</div>
+              </div>
+            ) : error ? (
+              <div className="py-16 text-center text-slate-400 text-xs space-y-3">
+                <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto" />
+                <div className="font-semibold text-rose-300">{error}</div>
+                <p className="text-slate-500 max-w-md mx-auto">
+                  Unable to connect to early-warning inference engine. Please retry or check network connection.
+                </p>
+                <button
+                  onClick={fetchEarlyWarningWorks}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs inline-flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry Early-Warning Query</span>
+                </button>
               </div>
             ) : filteredWorks.length === 0 ? (
               <div className="py-16 text-center text-slate-400 text-xs space-y-2">
@@ -437,7 +485,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                 <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
                   ₹{totalUnspentIdleCr.toFixed(2)} Cr
                 </div>
-                <div className="text-[10px] text-slate-500">Across {constituencyData.length} Constituencies</div>
+                <div className="text-[10px] text-slate-500">Across {totalConstituenciesAnalyzed} MPs / Constituencies</div>
               </div>
               <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <Landmark className="w-5 h-5" />
@@ -551,6 +599,18 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
               <div className="py-20 text-center space-y-3">
                 <div className="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
                 <div className="text-xs text-slate-400 font-mono">Computing unspent balance exhaustion trajectories...</div>
+              </div>
+            ) : constituencyError ? (
+              <div className="py-16 text-center text-slate-400 text-xs space-y-3">
+                <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+                <div className="font-semibold text-amber-300">{constituencyError}</div>
+                <button
+                  onClick={fetchConstituencyForecasts}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-xs inline-flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry Forecasting</span>
+                </button>
               </div>
             ) : filteredConstituencies.length === 0 ? (
               <div className="py-16 text-center text-slate-400 text-xs">

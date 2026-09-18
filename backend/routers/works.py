@@ -46,7 +46,12 @@ from fastapi.responses import StreamingResponse, FileResponse
 
 from backend.core.config import settings
 from backend.core.database import get_db, get_supabase_conn, audit_chain_lock
-from backend.core.data_cache import get_cached_flags
+from backend.core.data_cache import (
+    get_cached_flags,
+    get_cached_allocations,
+    get_computed_cache,
+    set_computed_cache,
+)
 from backend.core.security import (
     get_current_user_optional,
     decode_token,
@@ -1082,18 +1087,28 @@ def predict_work_completion_query(
 def get_early_warning_works(
     state: Optional[str] = Query(None, description="Filter by state"),
     threshold: float = Query(0.40, description="Completion probability upper bound (default 0.40)"),
-    limit: int = Query(500, description="Max works to return"),
+    limit: int = Query(100, description="Max works to return (default 100)"),
     user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """Early Warning Engine — Predictive Abandonment Risk (PS-26102 Requirement)."""
-    df = get_cached_flags()
     clean_state = state.strip().lower() if isinstance(state, str) and state.strip() else None
     if clean_state == "all":
         clean_state = None
-    df = apply_role_scope(df, user, requested_state=clean_state)
 
     eff_threshold = float(getattr(threshold, "default", threshold))
     eff_limit = int(getattr(limit, "default", limit))
+    role = user.get("role", "anon") if user else "anon"
+    u_state = str(user.get("state", "")).strip() if user else ""
+    u_ida = str(user.get("ida", "")).strip() if user else ""
+    u_mp = str(user.get("mp_name", "")).strip() if user else ""
+    cache_key = f"early_warning_{clean_state}_{eff_threshold}_{eff_limit}_{role}_{u_state}_{u_ida}_{u_mp}"
+
+    cached = get_computed_cache(cache_key)
+    if cached is not None:
+        return cached
+
+    df = get_cached_flags()
+    df = apply_role_scope(df, user, requested_state=clean_state)
 
     mask = (
         (df["completion_probability"] < eff_threshold)
@@ -1105,21 +1120,31 @@ def get_early_warning_works(
     if clean_state:
         at_risk = at_risk[at_risk["state"].str.lower().str.contains(clean_state, na=False)]
 
-    at_risk = at_risk.sort_values("completion_probability", ascending=True).head(eff_limit)
+    # 1. Compute Full-Scope Summary Metrics across 100% of matching works
+    total_at_risk_works = len(at_risk)
+    all_probs = at_risk["completion_probability"].values
+    all_sanc = at_risk["sanction_amount"].values
+    critical_count = int((all_probs < 0.20).sum())
+    high_count = total_at_risk_works - critical_count
+    total_funds_at_risk = float(all_sanc.sum())
+    avg_prob = float(all_probs.mean()) if total_at_risk_works > 0 else 0.0
+
+    # 2. Slice top most-critical works for fast wire transmission
+    at_risk_sorted = at_risk.sort_values("completion_probability", ascending=True).head(eff_limit)
 
     def severity(prob: float) -> str:
         if prob < 0.20:
             return "CRITICAL_RISK"
         return "HIGH_RISK"
 
+    statutory_duration = 365
     results = []
-    for _, row in at_risk.iterrows():
+    for _, row in at_risk_sorted.iterrows():
         prob = float(row.get("completion_probability", 0.0))
         sanction = float(row.get("sanction_amount", 0.0))
         spent = float(row.get("total_spent", 0.0))
         days = int(row.get("days_since_sanction", 0))
 
-        statutory_duration = 365
         projected_delay = (
             max(0, days - statutory_duration)
             if days > statutory_duration
@@ -1158,25 +1183,22 @@ def get_early_warning_works(
             "m4_reason": str(row.get("m4_reason", "")),
         })
 
-    critical_count = sum(1 for r in results if r["abandonment_severity"] == "CRITICAL_RISK")
-    high_count = len(results) - critical_count
-    total_funds_at_risk = sum(r["sanction_amount"] for r in results)
-    avg_prob = (sum(r["completion_probability"] for r in results) / len(results)) if results else 0.0
-
-    return {
+    response_data = {
         "summary": {
-            "total_at_risk_works": len(results),
+            "total_at_risk_works": total_at_risk_works,
             "critical_risk_works": critical_count,
             "high_risk_works": high_count,
             "total_funds_at_risk": round(total_funds_at_risk, 2),
             "total_funds_at_risk_cr": round(total_funds_at_risk / 10_000_000, 2),
             "avg_completion_probability": round(avg_prob, 3),
-            "threshold_used": threshold,
+            "threshold_used": eff_threshold,
             "state_filter": state or "all",
         },
         "works": results,
         "items": results,
     }
+    set_computed_cache(cache_key, response_data)
+    return response_data
 
 
 # ── Export Official Statutory Audit PDF Dossier ───────────────────────────────
@@ -1693,6 +1715,12 @@ def get_constituency_unspent_forecast(
     user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """Constituency Unspent Balance Forecaster (Problem Statement 26102 Requirement)."""
+    user_scope = f"{user.get('role', 'anon')}_{user.get('state', '')}_{user.get('district', '')}_{user.get('mp_name', '')}" if user else "anon"
+    cache_key = f"constituency_unspent_forecast_{state}_{limit}_{user_scope}"
+    cached = get_computed_cache(cache_key)
+    if cached is not None:
+        return cached
+
     df = get_cached_flags()
     df = apply_role_scope(df, user)
     eff_limit = int(getattr(limit, "default", limit))
@@ -1702,7 +1730,9 @@ def get_constituency_unspent_forecast(
 
     valid_mps = df[df["mp_name"] != ""].copy()
     if valid_mps.empty:
-        return {"summary": {}, "constituencies": []}
+        empty_res = {"summary": {}, "constituencies": [], "forecasts": []}
+        set_computed_cache(cache_key, empty_res)
+        return empty_res
 
     grouped = (
         valid_mps.groupby(["mp_name", "state"])
@@ -1717,27 +1747,7 @@ def get_constituency_unspent_forecast(
         .reset_index()
     )
 
-    alloc_map = {}
-    alloc_csv = os.path.join(settings.DATA_PATH, "processed", "clean_allocated.csv")
-    if os.path.exists(alloc_csv):
-        try:
-            alloc_df = pd.read_csv(alloc_csv, encoding="utf-8-sig")
-            for _, r in alloc_df.iterrows():
-                name_clean = str(r.get("mp_name", "")).strip()
-                if not name_clean:
-                    continue
-                tb = pd.to_numeric(r.get("true_budget"), errors="coerce")
-                const = str(r.get("constituency", "")).strip()
-                elected = str(r.get("elected_nominated", "")).strip()
-                r_state = str(r.get("state", "")).strip()
-                if not const or const == "nan":
-                    const = f"{elected} — {r_state}" if elected and elected != "nan" else r_state
-                alloc_map[name_clean.lower()] = {
-                    "true_budget": float(tb) if pd.notna(tb) and tb > 0 else 250_000_000.0,
-                    "constituency": const,
-                }
-        except Exception:
-            pass
+    alloc_map = get_cached_allocations()
 
     results = []
     for _, row in grouped.iterrows():
@@ -1815,7 +1825,7 @@ def get_constituency_unspent_forecast(
     mod_count = sum(1 for r in results if r["lapse_risk_status"] == "MODERATE_RISK")
     total_unspent_cr = sum(r["projected_unspent_at_tenure_end_cr"] for r in results)
 
-    return {
+    response_payload = {
         "summary": {
             "total_mps_analyzed": len(results),
             "critical_lapse_risk_count": crit_count,
@@ -1826,12 +1836,20 @@ def get_constituency_unspent_forecast(
         "constituencies": top_results,
         "forecasts": top_results,
     }
+    set_computed_cache(cache_key, response_payload)
+    return response_payload
 
 
 # ── Trend Analysis & Time-Series Expenditure Forecasting ───────────────────────
 @router.get("/api/trends", tags=["Analytics"])
 def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)):
     """Time-series & predictive expenditure forecasting as required by PS 26102."""
+    user_scope = f"{user.get('role', 'anon')}_{user.get('state', '')}_{user.get('district', '')}_{user.get('mp_name', '')}" if user else "anon"
+    cache_key = f"trend_analysis_{user_scope}"
+    cached = get_computed_cache(cache_key)
+    if cached is not None:
+        return cached
+
     df = get_cached_flags()
     df = apply_role_scope(df, user)
 
@@ -1981,7 +1999,7 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
         )
 
     hist_slice = monthly_trends[-36:]
-    return {
+    trend_payload = {
         "monthly_trends": hist_slice,
         "forecast_trends": forecast_trends,
         "combined_trends": hist_slice[-18:] + forecast_trends,
@@ -1991,3 +2009,5 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
         "forecast": forecast_trends,
         "monthly": hist_slice,
     }
+    set_computed_cache(cache_key, trend_payload)
+    return trend_payload

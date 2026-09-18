@@ -473,25 +473,25 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
                   const stateData = stateDataMap[dbName];
                   const hasCritical = stateData && Number(stateData.critical_count || 0) > 1500;
 
-                  const inScope = activeRole === 'ministry' || !!stateDataMap[dbName];
+                  const inScope = activeRole === 'ministry' || (stateData && stateData.in_scope !== false);
 
                   return (
                     <path
                       key={item.id}
                       d={item.path}
-                      fill={inScope ? fillColor : '#0f172a'}
-                      fillOpacity={!inScope ? 0.2 : isSelected ? 0.95 : isHovered ? 0.85 : 0.65}
-                      stroke={isSelected ? '#06b6d4' : isHovered ? '#ffffff' : !inScope ? '#1e293b' : '#334155'}
-                      strokeWidth={isSelected ? 3 : isHovered ? 2 : inScope ? 1 : 0.5}
+                      fill={fillColor}
+                      fillOpacity={isSelected ? 0.95 : isHovered ? 0.85 : inScope ? 0.70 : 0.40}
+                      stroke={isSelected ? '#06b6d4' : isHovered ? '#38bdf8' : inScope ? '#64748b' : '#334155'}
+                      strokeWidth={isSelected ? 3 : isHovered ? 2 : inScope ? 1.2 : 0.6}
                       strokeLinejoin="round"
                       fillRule="evenodd"
                       filter={isSelected ? 'url(#glow-cyan)' : hasCritical ? 'url(#glow-rose)' : undefined}
                       className="cursor-pointer transition-all duration-150"
-                      onClick={() => inScope && handleSelectState(dbName)}
-                      onMouseEnter={() => inScope && setHoveredState(stateData || { state: dbName, total_works: 0 })}
+                      onClick={() => handleSelectState(dbName)}
+                      onMouseEnter={() => setHoveredState(stateData || { state: dbName, total_works: 0, outOfScope: !inScope })}
                       onMouseLeave={() => setHoveredState(null)}
                     >
-                      <title>{item.name} ({dbName})</title>
+                      <title>{item.name} ({dbName}){!inScope ? ' — [National Baseline]' : ''}</title>
                     </path>
                   );
                 })}
