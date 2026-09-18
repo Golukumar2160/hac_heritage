@@ -120,6 +120,9 @@ def build_work_context(work_id: str) -> dict:
         # Try matching sub-id or numeric id if applicable
         match = df[df["work_id"].str.endswith(f"/{clean_id}")]
     if match.empty:
+        # Substring fallback identical to backend/main.py for short work IDs
+        match = df[df["work_id"].astype(str).str.contains(clean_id, case=False, na=False, regex=False)]
+    if match.empty:
         raise ValueError(f"Work ID '{clean_id}' not found in audit dataset.")
 
     row = match.iloc[0]

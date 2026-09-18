@@ -29,7 +29,8 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  Trash2
+  Trash2,
+  Landmark
 } from 'lucide-react';
 import { api } from '../services/api';
 

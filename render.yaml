@@ -24,4 +24,4 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: PASSWORD_SALT
-        value: mospi-mplads-vigilance-salt-2026
+        value: mplads_secure_salt_2026

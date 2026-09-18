@@ -6,7 +6,7 @@
 .DESCRIPTION
     Launches all 3 application services with a single command:
       1. FastAPI Backend Server (Uvicorn on http://127.0.0.1:8000)
-      2. Vite Frontend Web App (http://localhost:3131)
+      2. Vite Frontend Web App (http://localhost:3232)
       3. Forensic Audit Pipeline Worker (run_audit_pipeline.py --watch)
 
     Features:
@@ -151,7 +151,8 @@ function Free-Port {
 }
 
 Free-Port 8000 "FastAPI Backend"
-Free-Port 3131 "Vite Frontend"
+Free-Port 3232 "Vite Frontend"
+Free-Port 3131 "Vite Frontend (Old)"
 Free-Port 5173 "Vite Frontend (Legacy)"
 
 # ── 3. Launch Services ────────────────────────────────────────────────────────
@@ -181,12 +182,12 @@ if ($Mode -eq "Windows") {
     Write-Success "Spawned Backend Window (FastAPI / Uvicorn on :8000)"
 
     # 2. Frontend
-    Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", "Set-Location '$ScriptDir\frontend'; `$host.UI.RawUI.WindowTitle='[2/3] BHARAT-DRISHTI :: Frontend (Port 3131)'; npm run dev"
-    Write-Success "Spawned Frontend Window (Vite Dev Server on :3131)"
+    Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", "Set-Location '$ScriptDir\frontend'; `$host.UI.RawUI.WindowTitle='[2/3] BHARAT-DRISHTI :: Frontend (Port 3232)'; npm run dev"
+    Write-Success "Spawned Frontend Window (Vite Dev Server on :3232)"
 
     # 3. Pipeline Worker
     if (-not $NoWorker) {
-        Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", "Set-Location '$ScriptDir'; `$host.UI.RawUI.WindowTitle='[3/3] BHARAT-DRISHTI :: Forensic Audit Worker'; & '$PythonExe' run_audit_pipeline.py --watch"
+        Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", "Set-Location '$ScriptDir'; `$host.UI.RawUI.WindowTitle='[3/3] BHARAT-DRISHTI :: Forensic Audit Worker'; & '$PythonExe' pipelines/run_audit_pipeline.py --watch"
         Write-Success "Spawned Forensic Worker Window (Watching images/)"
     }
 
@@ -201,7 +202,7 @@ if ($Mode -eq "Windows") {
         -PassThru
     Write-Success "Backend process started (PID: $($backendProc.Id))"
 
-    Write-Info "Starting Frontend Vite Server on http://localhost:3131..."
+    Write-Info "Starting Frontend Vite Server on http://localhost:3232..."
     $frontendProc = Start-Process -FilePath "cmd.exe" `
         -ArgumentList "/c npm run dev" `
         -WorkingDirectory (Join-Path $ScriptDir "frontend") `
@@ -212,9 +213,9 @@ if ($Mode -eq "Windows") {
 
     $workerProc = $null
     if (-not $NoWorker) {
-        Write-Info "Starting Forensic Audit Watcher Daemon (run_audit_pipeline.py)..."
+        Write-Info "Starting Forensic Audit Watcher Daemon (pipelines/run_audit_pipeline.py)..."
         $workerProc = Start-Process -FilePath $PythonExe `
-            -ArgumentList "run_audit_pipeline.py --watch" `
+            -ArgumentList "pipelines/run_audit_pipeline.py --watch" `
             -WorkingDirectory $ScriptDir `
             -RedirectStandardOutput $PipelineOutLog `
             -RedirectStandardError $PipelineErrLog `
@@ -258,7 +259,7 @@ while ($Retry -lt $MaxRetries -and (-not ($BackendHealthy -and $FrontendHealthy)
     # Check Frontend
     if (-not $FrontendHealthy) {
         try {
-            $respFront = Invoke-WebRequest -Uri "http://localhost:3131" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+            $respFront = Invoke-WebRequest -Uri "http://localhost:3232" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
             if ($respFront.StatusCode -eq 200) {
                 $FrontendHealthy = $true
             }
@@ -275,7 +276,7 @@ if ($BackendHealthy) {
 }
 
 if ($FrontendHealthy) {
-    Write-Success "Frontend UI is LIVE and Healthy:  http://localhost:3131"
+    Write-Success "Frontend UI is LIVE and Healthy:  http://localhost:3232"
 } else {
     Write-Warn "Frontend UI took longer than expected to initialize. Check logs/frontend.err.log"
 }
@@ -283,11 +284,11 @@ if ($FrontendHealthy) {
 # ── 5. Auto-Launch Browser ────────────────────────────────────────────────────
 if (-not $NoBrowser) {
     Write-Header "5. Launching Web Dashboard"
-    Write-Success "Opening http://localhost:3131/ in default web browser..."
+    Write-Success "Opening http://localhost:3232/ in default web browser..."
     try {
-        Start-Process "http://localhost:3131/"
+        Start-Process "http://localhost:3232/"
     } catch {
-        Write-Warn "Could not launch browser automatically. Please open http://localhost:3131 manually."
+        Write-Warn "Could not launch browser automatically. Please open http://localhost:3232 manually."
     }
 }
 
@@ -300,7 +301,7 @@ Write-Host "    SERVICE                        STATUS     URL / ACCESS          
 Write-Host "  ------------------------------------------------------------------------------" -ForegroundColor Green
 Write-Host "    FastAPI Backend API            [ONLINE]   http://127.0.0.1:8000             " -ForegroundColor Green
 Write-Host "    FastAPI Swagger Docs           [ONLINE]   http://127.0.0.1:8000/docs        " -ForegroundColor Green
-Write-Host "    React / Vite Web UI            [ONLINE]   http://localhost:3131             " -ForegroundColor Green
+Write-Host "    React / Vite Web UI            [ONLINE]   http://localhost:3232             " -ForegroundColor Green
 Write-Host "    Forensic Audit Pipeline        [ACTIVE]   Watching images/downloaded_pdfs/  " -ForegroundColor Green
 Write-Host "  ==============================================================================" -ForegroundColor Green
 Write-Host ""

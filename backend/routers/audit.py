@@ -27,7 +27,7 @@ import time
 import hashlib
 import threading
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -103,7 +103,7 @@ def log_audit_action(req: DismissalRequest, user=Depends(decode_token)):
             detail="Justification must contain at least 50 non-whitespace characters as required by MPLADS audit regulations.",
         )
 
-    ts = datetime.utcnow().isoformat()
+    ts = datetime.now(timezone.utc).isoformat()
     work_id_clean = req.work_id.strip()
     user_id = user.get("sub", "auditor")
     user_role = user.get("role", "user")

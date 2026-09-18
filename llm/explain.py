@@ -73,7 +73,7 @@ class GeminiExplainer:
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         
         self.client = None
         if _GENAI_AVAILABLE and self.api_key:
@@ -95,10 +95,10 @@ class GeminiExplainer:
             return self.client.models.generate_content(model=model_to_use, **kwargs)
         except Exception as e:
             err_str = str(e)
-            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-flash-latest":
-                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-flash-latest'.")
-                self.model = "gemini-flash-latest"
-                return self.client.models.generate_content(model="gemini-flash-latest", **kwargs)
+            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-2.0-flash":
+                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-2.0-flash'.")
+                self.model = "gemini-2.0-flash"
+                return self.client.models.generate_content(model="gemini-2.0-flash", **kwargs)
             raise e
 
     def _call_generate_content_stream(self, **kwargs):
@@ -108,10 +108,10 @@ class GeminiExplainer:
             return self.client.models.generate_content_stream(model=model_to_use, **kwargs)
         except Exception as e:
             err_str = str(e)
-            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-flash-latest":
-                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-flash-latest'.")
-                self.model = "gemini-flash-latest"
-                return self.client.models.generate_content_stream(model="gemini-flash-latest", **kwargs)
+            if ("404" in err_str or "NOT_FOUND" in err_str or "no longer available" in err_str) and model_to_use != "gemini-2.0-flash":
+                print(f"[!] Configured Gemini model '{model_to_use}' unavailable ({e}). Automatically switching to 'gemini-2.0-flash'.")
+                self.model = "gemini-2.0-flash"
+                return self.client.models.generate_content_stream(model="gemini-2.0-flash", **kwargs)
             raise e
 
     # ── 1. Work-Level Explanation ─────────────────────────────────────────────

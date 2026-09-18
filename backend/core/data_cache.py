@@ -61,9 +61,9 @@ def get_cached_flags() -> pd.DataFrame:
                     df[col] = df[col].astype(str).str.lower().isin(["true", "1"])
 
             # 3. Clean Object/String Columns (Strict string, fillna with "")
-            obj_cols = df.select_dtypes(include=["object"]).columns
-            for col in obj_cols:
-                df[col] = df[col].fillna("").astype(str)
+            for col in df.columns:
+                if col not in numeric_cols and col not in bool_cols:
+                    df[col] = df[col].fillna("").astype(str)
 
             _flags_cache = df
             _flags_mtime = mtime

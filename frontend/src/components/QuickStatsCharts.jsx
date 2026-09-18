@@ -9,13 +9,11 @@ import {
 import { ShieldAlert, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 function QuickStatsCharts({ kpis }) {
-  if (!kpis) return null;
-
-  const critical_count = kpis.critical_count ?? 15731;
-  const high_count = kpis.high_count ?? 6053;
-  const medium_count = kpis.medium_count ?? 14867;
-  const low_count = kpis.low_count ?? 61998;
-  const total_works = kpis.total_works || (critical_count + high_count + medium_count + low_count) || 98649;
+  const critical_count = kpis?.critical_count ?? 15731;
+  const high_count = kpis?.high_count ?? 6053;
+  const medium_count = kpis?.medium_count ?? 14867;
+  const low_count = kpis?.low_count ?? 61998;
+  const total_works = kpis?.total_works || (critical_count + high_count + medium_count + low_count) || 98649;
 
   const pieData = useMemo(() => [
     { 
@@ -51,6 +49,8 @@ function QuickStatsCharts({ kpis }) {
       tag: 'Statutorily compliant'
     },
   ], [critical_count, high_count, medium_count, low_count]);
+
+  if (!kpis) return null;
 
   const CustomPieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {

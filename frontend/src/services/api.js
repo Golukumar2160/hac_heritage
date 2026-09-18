@@ -213,9 +213,9 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/flags?${params.toString()}`, { headers: getHeaders() });
     const data = await handleResponse(res);
     return {
-      total: data.total || 0,
+      total: data.total_count !== undefined ? data.total_count : (data.total || 0),
       page: data.page || 1,
-      totalPages: data.total_pages || 1,
+      totalPages: data.total_pages !== undefined ? data.total_pages : (data.totalPages || 1),
       flags: (data.items || []).map((item) => ({
         ...item,
         work_title: item.work_description || item.work_title || `Work #${item.work_id}`,

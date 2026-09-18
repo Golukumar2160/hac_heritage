@@ -2,9 +2,11 @@ venv/
 __pycache__/
 *.log
 .DS_Store
+copy/
+*.db
+*.sqlite
+*.sqlite3
 /fraud_summary.txt
-/audit_log.db
-/mplads_audit.db
 .env
 *.env
 .env.*
@@ -30,6 +32,4 @@ scratch/*.geojson
 scratch/*.svg
 
 !data/processed/fraud_flags.csv
-
-.github/
 

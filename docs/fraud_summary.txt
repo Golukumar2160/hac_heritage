@@ -1,0 +1,160 @@
+======================================================================
+  MPLADS FRAUD DETECTION -- SUMMARY REPORT
+  Generated: 2026-09-13 03:31:57
+======================================================================
+
+  Total works analysed     : 98,649
+  CRITICAL risk (top 1%)   : 15,731
+  HIGH risk    (top 10%)   : 6,025
+  MEDIUM risk  (top 30%)   : 14,831
+  LOW risk     (rest)      : 62,062
+  Premature Tranche 2 (Cl. 4.3): 3,544
+  Stalled Execution (>1y)     : 38,822
+  GFR Split Tendering (Gaming): 8,943
+  Avg completion probability  : 38.0%
+  High probability (>=70%)    : 30,524 works
+  At-risk completion (<40%)   : 59,996 works
+
+  Total sanctioned amount  : Rs.58,805,580,838
+  Amount at medium+ risk   : Rs.26,849,122,292
+
+======================================================================
+  TOP 10 HIGHEST RISK WORKS
+======================================================================
+
+  #1  Risk: 96.1/100  [CRITICAL]
+       Work ID   : WS/MP18250/2024-2025/135269
+       MP        : Sk Nurul Islam  [LS]
+       State     : West Bengal
+       Amount    : Rs.2,800,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 100% spent vs 40% complete | [Vendor] Vendor 'JOY MAA TARA ENTERPRISE' received 68.9% of MP spend | [Compliance] Clause 4.3 violation: Tranc
+
+  #2  Risk: 95.7/100  [CRITICAL]
+       Work ID   : WS/MP18230/2025-2026/161482
+       MP        : R.K. Chaudhary  [LS]
+       State     : Uttar Pradesh
+       Amount    : Rs.5,714,566
+       Status    : Vendor Identification
+       Reason    : [Finance] 98% spent vs 40% complete | [Vendor] Vendor 'SHREE HARIOM INFOTECH' received 89.6% of MP spend | [Compliance] Clause 4.3 violation: Tranche 
+
+  #3  Risk: 95.4/100  [CRITICAL]
+       Work ID   : WS/MP18250/2024-2025/142044
+       MP        : Sk Nurul Islam  [LS]
+       State     : West Bengal
+       Amount    : Rs.2,425,500
+       Status    : Vendor Identification
+       Reason    : [Finance] 100% spent vs 40% complete | [Vendor] Vendor 'JOY MAA TARA ENTERPRISE' received 68.9% of MP spend | [Compliance] Clause 4.3 violation: Tranc
+
+  #4  Risk: 94.9/100  [CRITICAL]
+       Work ID   : WS/MP18250/2024-2025/142045
+       MP        : Sk Nurul Islam  [LS]
+       State     : West Bengal
+       Amount    : Rs.1,732,500
+       Status    : Vendor Identification
+       Reason    : [Finance] 99% spent vs 40% complete | [Vendor] Vendor 'JOY MAA TARA ENTERPRISE' received 68.9% of MP spend | [Compliance] Clause 4.3 violation: Tranch
+
+  #5  Risk: 94.5/100  [CRITICAL]
+       Work ID   : WS/MP18299/2024-2025/171164
+       MP        : Smt. Sagarika Ghose  [RS]
+       State     : West Bengal
+       Amount    : Rs.49,000,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 97% spent vs 40% complete; this work = 50.3% of MP annual budget | [Compliance] Clause 4.3 violation: Tranche 2 released <=7 days of Tranche
+
+  #6  Risk: 94.2/100  [CRITICAL]
+       Work ID   : WS/MP217/2024-2025/171179
+       MP        : Shri Mohammed Nadimul Haque  [RS]
+       State     : West Bengal
+       Amount    : Rs.44,848,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 97% spent vs 40% complete; this work = 81.2% of MP annual budget | [Compliance] Clause 4.3 violation: Tranche 2 released <=7 days of Tranche
+
+  #7  Risk: 94.2/100  [CRITICAL]
+       Work ID   : WS/MP893/2024-2025/171163
+       MP        : Shri Samirul Islam  [RS]
+       State     : West Bengal
+       Amount    : Rs.72,500,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 98% spent vs 40% complete; this work = 85.3% of MP annual budget | [Compliance] Clause 4.3 violation: Tranche 2 released <=7 days of Tranche
+
+  #8  Risk: 93.4/100  [CRITICAL]
+       Work ID   : WS/MP220/2024-2025/171199
+       MP        : Shri Derek O' Brien  [RS]
+       State     : West Bengal
+       Amount    : Rs.73,500,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 96% spent vs 40% complete; this work = 99.0% of MP annual budget | [Compliance] Clause 4.3 violation: Tranche 2 released <=7 days of Tranche
+
+  #9  Risk: 93.4/100  [CRITICAL]
+       Work ID   : WS/MP18201/2024-2025/141045
+       MP        : Neeraj Maurya  [LS]
+       State     : Uttar Pradesh
+       Amount    : Rs.46,470,400
+       Status    : Physical Inspection
+       Reason    : [Finance] this work = 47.5% of MP annual budget | [Vendor] Vendor 'SHRI GURU KRIPA NARSINGH ASSOCIATES' received 60.6% of MP spend | [Compliance] Clau
+
+  #10  Risk: 93.4/100  [CRITICAL]
+       Work ID   : WS/MP218/2024-2025/171165
+       MP        : Ms. Dola Sen  [RS]
+       State     : West Bengal
+       Amount    : Rs.67,500,000
+       Status    : Vendor Identification
+       Reason    : [Finance] 97% spent vs 40% complete; this work = 70.5% of MP annual budget | [Compliance] Clause 4.3 violation: Tranche 2 released <=7 days of Tranche
+
+======================================================================
+  TOP 10 VENDOR MONOPOLY FLAGS (Post Alias Resolution)
+======================================================================
+
+  MP          : Smt Sandhya Ray
+  Vendor      : M P STATE AGRO INDUSTRIES  DEVELOPEMENT CORPORATION LTD
+  Aliases     : M P STATE AGRO INDUSTRIES DEV CORP LTD | MP STATE AGRO INDUSTRIES DEV CORP LTD
+  Contracts   : 97   |  Spend: Rs.25,218,035
+  Share       : 100.0% of MP's total expenditure
+
+  MP          : Shri Jyotirmay Singh Mahato
+  Vendor      : ATANU PATRA
+  Contracts   : 31   |  Spend: Rs.11,711,831
+  Share       : 100.0% of MP's total expenditure
+
+  MP          : Adv Adoor Prakash
+  Vendor      : ALLUMINA ELECTRONICS
+  Contracts   : 113   |  Spend: Rs.27,682,302
+  Share       : 96.7% of MP's total expenditure
+
+  MP          : Mr Gopal Jee Thakur
+  Vendor      : BIOLUNAR ENERGY SOLUTION
+  Contracts   : 145   |  Spend: Rs.71,818,500
+  Share       : 94.8% of MP's total expenditure
+
+  MP          : Murlidhar Mohol
+  Vendor      : SHRI GAJANAN MAJOOR VA BANDHKAM SAHKARI SANSTHA MARYADIT MHALSAKORE
+  Aliases     : ASHOK MAJUR SAHAKARI SANSTHA LTD | BALAJI MAJUR SAHKARI SANSTHA MARYADIT | MUDHAIDEVI MAJUR SAHKARI SANSTHA MARYADIT | SHRIRAM MAJUR SAHKARI SANSTHA MARYADIT | SUVIDHA MAJUR SAHKARI SANSTHA MARYADIT
+  Contracts   : 18   |  Spend: Rs.17,946,278
+  Share       : 94.7% of MP's total expenditure
+
+  MP          : Pankaj Chowdhary
+  Vendor      : MS RAMESH CHANDRA PATEL
+  Contracts   : 42   |  Spend: Rs.90,325,342
+  Share       : 94.4% of MP's total expenditure
+
+  MP          : Swami Sachchidanandhari Sakshi ji Maharaj
+  Vendor      : DHARMENDRA SINGH THEKEDAR
+  Aliases     : JITENDRA KUMAR SINGH | RAJESH KUMAR PAL
+  Contracts   : 52   |  Spend: Rs.64,413,377
+  Share       : 94.1% of MP's total expenditure
+
+  MP          : Kartick Chandra Paul
+  Vendor      : B PAUL AND CO
+  Contracts   : 101   |  Spend: Rs.26,230,070
+  Share       : 93.2% of MP's total expenditure
+
+  MP          : Mohite Patil Dhairyasheel Rajsinh
+  Vendor      : ABHIJEET AGENCIES SOLAPUR
+  Contracts   : 38   |  Spend: Rs.8,182,616
+  Share       : 92.7% of MP's total expenditure
+
+  MP          : Ruchi Vira
+  Vendor      : NATIONAL INFRATECH
+  Contracts   : 261   |  Spend: Rs.48,219,360
+  Share       : 92.4% of MP's total expenditure

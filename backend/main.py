@@ -26,6 +26,7 @@ from backend.core.database import (
     get_supabase_conn,
     init_db,
     is_supabase_alive,
+    replay_local_dismissals_to_supabase,
     DB_FILE,
     SUPABASE_DB_URL,
 )
@@ -129,6 +130,10 @@ except Exception as _e:
 # Ensure database tables and initial users are seeded
 init_db()
 init_supabase_users_table()
+try:
+    replay_local_dismissals_to_supabase()
+except Exception as _sync_err:
+    logger.warning(f"[*] Offline audit replay check deferred: {_sync_err}")
 
 # ── Non-Blocking Background Pipeline Execution (Persisted in SQLite) ───────────
 _pipeline_lock = threading.Lock()
@@ -280,7 +285,7 @@ def run_model_validation(background_tasks: BackgroundTasks, user=Depends(decode_
     def _run_val():
         global _validation_cache, _validation_mtime
         val_py = os.path.join(ROOT_DIR, "pipelines", "validate.py")
-        subprocess.run([sys.executable, val_py, "--export"], cwd=ROOT_DIR)
+        subprocess.run([VENV_PY, val_py, "--export"], cwd=ROOT_DIR)
         _validation_cache = None
         _validation_mtime = None
 

@@ -158,3 +158,79 @@ def is_supabase_alive() -> bool:
     _last_supabase_check["connected"] = False
     _last_supabase_check["checked_at"] = now
     return False
+
+
+def replay_local_dismissals_to_supabase() -> int:
+    """
+    Replay offline/unsynchronized SQLite dismissal records to Supabase PostgreSQL audit_ledger.
+    Ensures that temporary cloud connectivity drops or container restarts never lose local audit trails.
+    Returns the number of replayed records.
+    """
+    pg = get_supabase_conn()
+    if not pg:
+        return 0
+
+    replayed = 0
+    try:
+        # 1. Fetch all local SQLite dismissals
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            SELECT work_id, timestamp, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash 
+            FROM dismissals 
+            ORDER BY id ASC
+        """)
+        local_rows = c.fetchall()
+        conn.close()
+
+        if not local_rows:
+            return 0
+
+        # 2. Fetch existing sha256_seals from Supabase audit_ledger
+        with pg.cursor() as cur:
+            cur.execute("SELECT sha256_seal FROM audit_ledger WHERE sha256_seal IS NOT NULL;")
+            existing_seals = {r[0] for r in cur.fetchall() if r[0]}
+
+            # 3. Identify and insert missing rows
+            for row in local_rows:
+                seal = row["sha256_seal"]
+                if seal and seal in existing_seals:
+                    continue
+
+                cur.execute(
+                    """
+                    INSERT INTO audit_ledger 
+                    (work_id, user_id, role, action, justification, original_risk_score, sha256_seal, previous_hash, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """,
+                    (
+                        row["work_id"],
+                        row["user_id"],
+                        row["role"] or "user",
+                        row["action"],
+                        row["justification"],
+                        row["original_risk_score"],
+                        seal or "LOCAL_OFFLINE_SYNC",
+                        row["previous_hash"] or "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026",
+                        row["timestamp"],
+                    )
+                )
+                if seal:
+                    existing_seals.add(seal)
+                replayed += 1
+
+        if replayed > 0:
+            logger.info(f"[*] Replayed {replayed} offline SQLite dismissal records to Supabase PostgreSQL audit_ledger.")
+    except Exception as e:
+        logger.warning(f"[!] Warning replaying SQLite dismissals to Supabase: {e}")
+        try:
+            pg.rollback()
+        except Exception:
+            pass
+    finally:
+        try:
+            pg.close()
+        except Exception:
+            pass
+
+    return replayed

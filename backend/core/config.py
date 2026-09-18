@@ -81,7 +81,7 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "mplads_bharat_drishti_jwt_prod_key_2026_sih_mospi")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_HOURS: int = 12
-    PASSWORD_SALT: str = "mplads_secure_salt_2026"
+    PASSWORD_SALT: str = os.getenv("PASSWORD_SALT", "mplads_secure_salt_2026")
 
     # Cloud Database & Supabase Credentials
     DATABASE_URL: str = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DB_URL") or ""

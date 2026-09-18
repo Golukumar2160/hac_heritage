@@ -99,7 +99,7 @@ def get_map_gps_points(user: Optional[dict] = Depends(get_current_user_optional)
     from completion proof documents. Uses 100% real CSV and model data.
     """
     gps_path = os.path.join(settings.DATA_PATH, "processed", "works_with_gps_and_vendors.csv")
-    if not os.path.exists(gps_path):
+    if not os.path.exists(gps_path) or os.path.getsize(gps_path) < 20:
         return []
     try:
         gps_df = pd.read_csv(gps_path)

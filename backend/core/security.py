@@ -13,7 +13,7 @@ import hashlib
 import jwt
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import pandas as pd
 from fastapi import HTTPException, Depends
@@ -136,7 +136,7 @@ INITIAL_OFFICIALS = [
 
 def init_supabase_users_table():
     """Ensure official_users table exists in Supabase PostgreSQL and seed default officials."""
-    now_str = datetime.utcnow().isoformat()
+    now_str = datetime.now(timezone.utc).isoformat()
     # 1. Local SQLite Seeding
     try:
         conn = get_db()
@@ -329,7 +329,7 @@ def find_user_by_identifier(identifier: str) -> Optional[dict]:
 
 def create_official_user(user_data: dict) -> dict:
     """Insert a new official user into Supabase and local SQLite."""
-    now_str = datetime.utcnow().isoformat()
+    now_str = datetime.now(timezone.utc).isoformat()
     # 1. Supabase PostgreSQL
     pg = get_supabase_conn()
     if pg:
@@ -463,7 +463,7 @@ def create_token(username: str, role: str, extra: dict = None) -> str:
     payload = {
         "sub": username,
         "role": role,
-        "exp": datetime.utcnow() + timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS),
         **extra,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

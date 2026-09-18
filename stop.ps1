@@ -33,7 +33,8 @@ function Kill-Port-Process {
 
 # 1. Kill by port
 Kill-Port-Process 8000 "FastAPI Backend"
-Kill-Port-Process 3131 "Vite Frontend"
+Kill-Port-Process 3232 "Vite Frontend"
+Kill-Port-Process 3131 "Vite Frontend (Old Port)"
 Kill-Port-Process 5173 "Vite Frontend (Legacy Port)"
 
 # 2. Kill python uvicorn / audit pipeline if still active
