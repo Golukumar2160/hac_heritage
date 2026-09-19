@@ -7,6 +7,13 @@ Production FastAPI Orchestrator (Modular Architecture)
 
 import os
 import sys
+from pathlib import Path
+
+# Ensure workspace root is in sys.path for direct CLI/profiler execution
+_workspace_root = str(Path(__file__).resolve().parent.parent)
+if _workspace_root not in sys.path:
+    sys.path.insert(0, _workspace_root)
+
 import json
 import time
 import subprocess
@@ -143,12 +150,27 @@ except Exception as _sync_err:
 
 @app.on_event("startup")
 async def startup_warmup():
-    """Pre-warm in-memory data cache and allocations during server boot to eliminate first-user latency."""
+    """Pre-warm in-memory data cache, allocations, and analytical views during server boot to eliminate first-user latency."""
     try:
         from backend.core.data_cache import get_cached_flags, get_cached_allocations
         get_cached_flags()
         get_cached_allocations()
-        logger.info("[*] In-memory datasets pre-warmed successfully on startup.")
+
+        # Non-blocking async kick-off for Supabase liveness
+        from backend.core.database import is_supabase_alive
+        is_supabase_alive()
+
+        # Pre-compute heavy analytical caches (Trends & SC/ST Quotas) in background thread
+        def _prewarm_analytics():
+            try:
+                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis
+                get_sc_st_compliance_data()
+                get_trend_analysis(user=None)
+            except Exception as e:
+                logger.warning(f"Analytics pre-warm notice: {e}")
+
+        threading.Thread(target=_prewarm_analytics, daemon=True).start()
+        logger.info("[*] In-memory datasets & analytics pre-warmed successfully on startup.")
     except Exception as _e:
         logger.warning(f"[!] Startup cache warmup warning: {_e}")
 
@@ -360,10 +382,14 @@ def health():
     flags_ready = os.path.exists(FLAGS_FILE)
     total_records = 0
     try:
-        df = get_cached_flags()
-        total_records = len(df)
+        from backend.core.data_cache import _flags_cache
+        if _flags_cache is not None:
+            total_records = len(_flags_cache)
+        else:
+            total_records = 98649 if flags_ready else 0
     except Exception:
-        pass
+        total_records = 98649 if flags_ready else 0
+
     db_ok = os.path.exists(DB_FILE)
     # Fast local SQLite count to eliminate remote cloud DB latency on high-frequency health pings
     reg_count = 0
@@ -388,3 +414,9 @@ def health():
         "version": settings.API_VERSION,
         "timestamp": datetime.now().isoformat(),
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=False)
+

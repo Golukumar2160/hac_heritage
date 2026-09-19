@@ -37,3 +37,7 @@ scripts/check_ci.py
 # MLflow tracking artifacts & local runs
 mlruns/
 mlartifacts/
+
+# Profiling outputs
+scalene-profile.json
+*.profile.json

@@ -12,6 +12,7 @@ import os
 import threading
 from typing import Optional, Any
 import pandas as pd
+import numpy as np
 from fastapi import HTTPException
 from backend.core.config import settings
 
@@ -85,6 +86,12 @@ def get_cached_flags() -> pd.DataFrame:
             for col in df.columns:
                 if col not in numeric_cols and col not in bool_cols and col not in category_cols:
                     df[col] = df[col].fillna("").astype(str)
+
+            # 5. Precompute and vectorize year_month for sub-millisecond macro trend forecasting
+            if "sanction_date" in df.columns:
+                raw_dates = df["sanction_date"].astype(str)
+                is_iso = raw_dates.str.match(r"^\d{4}-\d{2}")
+                df["year_month"] = np.where(is_iso, raw_dates.str.slice(0, 7), "")
 
             import gc
             gc.collect()

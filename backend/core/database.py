@@ -194,50 +194,67 @@ def init_db():
     conn.close()
 
 
-# Cached Supabase liveness telemetry
-_last_supabase_check = {"connected": False, "checked_at": 0.0}
+# Cached Supabase liveness telemetry (non-blocking)
+_last_supabase_check = {
+    "connected": bool(settings.SUPABASE_URL and settings.SUPABASE_ANON_KEY),
+    "checked_at": 0.0,
+    "is_checking": False,
+}
+_supabase_check_lock = threading.Lock()
+
+
+def _refresh_supabase_liveness():
+    """Background worker to check Supabase connectivity without blocking HTTP routes."""
+    with _supabase_check_lock:
+        if _last_supabase_check["is_checking"]:
+            return
+        _last_supabase_check["is_checking"] = True
+
+    now = time.time()
+    alive = False
+    try:
+        # 1. Test PostgreSQL connection
+        pg = get_supabase_conn()
+        if pg:
+            try:
+                cur = pg.cursor()
+                cur.execute("SELECT 1;")
+                alive = True
+            except Exception:
+                pass
+            finally:
+                try:
+                    pg.close()
+                except Exception:
+                    pass
+
+        # 2. Test Supabase Python client SDK fallback
+        if not alive:
+            url = settings.SUPABASE_URL
+            key = settings.SUPABASE_ANON_KEY
+            if url and key:
+                try:
+                    from supabase import create_client
+                    sp = create_client(url, key)
+                    sp.table("audit_ledger").select("log_id").limit(1).execute()
+                    alive = True
+                except Exception:
+                    pass
+    finally:
+        with _supabase_check_lock:
+            _last_supabase_check["connected"] = alive
+            _last_supabase_check["checked_at"] = now
+            _last_supabase_check["is_checking"] = False
 
 
 def is_supabase_alive() -> bool:
-    """Check connectivity to Supabase PostgreSQL or Python client SDK."""
+    """Non-blocking check of Supabase connectivity with asynchronous background refresh."""
     now = time.time()
-    if now - _last_supabase_check["checked_at"] < 30:
-        return _last_supabase_check["connected"]
+    # If telemetry is older than 60 seconds, dispatch a background worker to refresh without blocking
+    if (now - _last_supabase_check["checked_at"] > 60.0) and not _last_supabase_check["is_checking"]:
+        threading.Thread(target=_refresh_supabase_liveness, daemon=True).start()
+    return _last_supabase_check["connected"]
 
-    # 1. Test PostgreSQL connection
-    pg = get_supabase_conn()
-    if pg:
-        try:
-            cur = pg.cursor()
-            cur.execute("SELECT 1;")
-            _last_supabase_check["connected"] = True
-            _last_supabase_check["checked_at"] = now
-            return True
-        except Exception:
-            pass
-        finally:
-            try:
-                pg.close()
-            except Exception:
-                pass
-
-    # 2. Test Supabase Python client SDK
-    url = settings.SUPABASE_URL
-    key = settings.SUPABASE_ANON_KEY
-    if url and key:
-        try:
-            from supabase import create_client
-            sp = create_client(url, key)
-            sp.table("audit_ledger").select("log_id").limit(1).execute()
-            _last_supabase_check["connected"] = True
-            _last_supabase_check["checked_at"] = now
-            return True
-        except Exception:
-            pass
-
-    _last_supabase_check["connected"] = False
-    _last_supabase_check["checked_at"] = now
-    return False
 
 
 def replay_local_dismissals_to_supabase() -> int:

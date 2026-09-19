@@ -1294,7 +1294,7 @@ def get_sc_st_compliance_data() -> dict:
     sc_regex = r"\b(?:SC|Scheduled\s+Caste|Harijan|Dalit|Valmiki|Jatav)\b"
     st_regex = r"\b(?:ST|Scheduled\s+Tribe|Adivasi|Tribal|Vanvasi|Gond|Santhal|Bhil)\b"
 
-    combined_desc = (df["work_category"].fillna("") + " " + df["work_description"].fillna("")).astype(str)
+    combined_desc = df["work_category"].astype(str).fillna("") + " " + df["work_description"].astype(str).fillna("")
     is_sc = combined_desc.str.contains(sc_regex, case=False, regex=True).fillna(False)
     is_st = combined_desc.str.contains(st_regex, case=False, regex=True).fillna(False)
 
@@ -1854,15 +1854,19 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
     df = apply_role_scope(df, user)
 
     monthly_trends = []
-    if "sanction_date" in df.columns:
-        valid_dates = df[df["sanction_date"] != ""].copy()
-        try:
-            valid_dates["dt"] = pd.to_datetime(valid_dates["sanction_date"], errors="coerce")
-            valid_dates = valid_dates.dropna(subset=["dt"])
-            valid_dates["year_month"] = valid_dates["dt"].dt.strftime("%Y-%m")
+    if "sanction_date" in df.columns or "year_month" in df.columns:
+        if "year_month" in df.columns:
+            valid_dates = df[df["year_month"].fillna("") != ""].copy()
+        else:
+            valid_dates = df[df["sanction_date"].fillna("") != ""].copy()
+            raw_dates = valid_dates["sanction_date"].astype(str)
+            is_iso = raw_dates.str.match(r"^\d{4}-\d{2}")
+            valid_dates["year_month"] = np.where(is_iso, raw_dates.str.slice(0, 7), "")
+            valid_dates = valid_dates[valid_dates["year_month"] != ""]
 
+        try:
             monthly_agg = (
-                valid_dates.groupby("year_month")
+                valid_dates.groupby("year_month", observed=False)
                 .agg(
                     works_count=("work_id", "count"),
                     sanctioned_amount=("sanction_amount", "sum"),
@@ -1981,14 +1985,17 @@ def get_trend_analysis(user: Optional[dict] = Depends(get_current_user_optional)
 
     category_trends = []
     if "work_category" in df.columns:
+        is_crit = (df["risk_label"].astype(str) == "CRITICAL").astype("int32")
+        is_delay = (df["timeline_score"] > 50).astype("int32")
         cat_agg = (
-            df.groupby("work_category")
+            df.assign(_crit=is_crit, _delay=is_delay)
+            .groupby("work_category", observed=False)
             .agg(
                 total_works=("work_id", "count"),
-                critical_works=("risk_label", lambda x: (x == "CRITICAL").sum()),
+                critical_works=("_crit", "sum"),
                 avg_risk=("risk_score", "mean"),
                 avg_spent_pct=("progress_pct", "mean"),
-                delayed_count=("timeline_score", lambda x: (x > 50).sum()),
+                delayed_count=("_delay", "sum"),
             )
             .reset_index()
         )
