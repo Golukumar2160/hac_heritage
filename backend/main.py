@@ -160,12 +160,16 @@ async def startup_warmup():
         from backend.core.database import is_supabase_alive
         is_supabase_alive()
 
-        # Pre-compute heavy analytical caches (Trends & SC/ST Quotas) in background thread
+        # Pre-compute heavy analytical caches (Trends, SC/ST, Vendors & Maps) in background thread
         def _prewarm_analytics():
             try:
-                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis
+                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis, get_vendor_leaderboard
+                from backend.routers.geo import get_filter_options, get_state_map_data
                 get_sc_st_compliance_data()
                 get_trend_analysis(user=None)
+                get_vendor_leaderboard(limit=50, user=None)
+                get_filter_options()
+                get_state_map_data(user=None)
             except Exception as e:
                 logger.warning(f"Analytics pre-warm notice: {e}")
 

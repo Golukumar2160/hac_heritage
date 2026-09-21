@@ -205,6 +205,21 @@ export const api = {
     return currentUser;
   },
 
+  async switchStakeholder(roleKey) {
+    const credMap = {
+      ministry: { username: 'ministry_admin', password: 'Ministry@2026' },
+      state: { username: 'state_nodal_up', password: 'StateUP@2026' },
+      district: { username: 'district_pilibhit', password: 'District@2026' },
+      mp: { username: 'mp_javed', password: 'MP@2026' },
+      citizen: { username: 'citizen_pilibhit', password: 'Citizen@2026' }
+    };
+    const cred = credMap[roleKey] || credMap['ministry'];
+    // Invalidate cached responses so scoped queries immediately fetch fresh role data
+    clearClientCache();
+    localStorage.removeItem('cached_kpis');
+    return await this.login(cred.username, cred.password);
+  },
+
   // Executive Overview & KPIs
   async getKpis(filters = {}) {
     const params = new URLSearchParams();
@@ -305,6 +320,11 @@ export const api = {
         category: item.work_category || item.category,
         risk_tier: (item.risk_label || 'LOW').toLowerCase(),
         risk_score: item.risk_score ? (item.risk_score > 1 ? item.risk_score / 100 : item.risk_score) : 0,
+        risk_score_100: item.risk_score !== undefined ? (item.risk_score <= 1.0 ? Number(item.risk_score) * 100 : Number(item.risk_score)) : 0,
+        anomaly_score_pct: item.anomaly_score_pct !== undefined ? Number(item.anomaly_score_pct) : ((Number(item.anomaly_score) || 0) * 100),
+        vendor_score_pct: item.vendor_score_pct !== undefined ? Number(item.vendor_score_pct) : ((Number(item.work_vendor_score || item.vendor_score) || 0) * 100),
+        compliance_score_pct: item.compliance_score_pct !== undefined ? Number(item.compliance_score_pct) : ((Number(item.compliance_score || item.rule_score) || 0) * 100),
+        timeline_score_pct: item.timeline_score_pct !== undefined ? Number(item.timeline_score_pct) : ((Number(item.timeline_score) || 0) * 100),
       })),
     };
   },
@@ -319,6 +339,11 @@ export const api = {
       work_title: w.work_description || w.work_title || `Scheme #${w.work_id}`,
       risk_tier: (w.risk_label || w.risk_tier || 'LOW').toLowerCase(),
       risk_score: w.risk_score ? (w.risk_score > 1 ? w.risk_score / 100 : w.risk_score) : 0,
+      risk_score_100: w.risk_score !== undefined ? (w.risk_score <= 1.0 ? Number(w.risk_score) * 100 : Number(w.risk_score)) : 0,
+      anomaly_score_pct: w.anomaly_score_pct !== undefined ? Number(w.anomaly_score_pct) : ((Number(w.anomaly_score) || 0) * 100),
+      vendor_score_pct: w.vendor_score_pct !== undefined ? Number(w.vendor_score_pct) : ((Number(w.work_vendor_score || w.vendor_score) || 0) * 100),
+      compliance_score_pct: w.compliance_score_pct !== undefined ? Number(w.compliance_score_pct) : ((Number(w.compliance_score || w.rule_score) || 0) * 100),
+      timeline_score_pct: w.timeline_score_pct !== undefined ? Number(w.timeline_score_pct) : ((Number(w.timeline_score) || 0) * 100),
       audit_history: data.audit_history || [],
       document_forensics: data.document_forensics || w.document_forensics || [],
       duplicate_photo_evidence: data.duplicate_photo_evidence || w.duplicate_photo_evidence || []
@@ -536,6 +561,17 @@ export const api = {
       headers: getHeaders(),
     });
     return handleResponse(res);
+  },
+
+  // On-Demand ELA Tamper & Gemini Multimodal Vision Audit
+  async getWorkVisionAudit(workId, sampleFile = null) {
+    const qs = sampleFile ? `?sample_file=${encodeURIComponent(sampleFile)}` : '';
+    const url = `${API_BASE}/api/work/${encodeURIComponent(workId)}/vision-audit${qs}`;
+    return cachedFetch(url, { headers: getHeaders() }, 300000);
+  },
+
+  async runElaOnPhoto(workId, sampleFile = null) {
+    return this.getWorkVisionAudit(workId, sampleFile);
   },
 
   // Model Validation & Triangulation Metrics

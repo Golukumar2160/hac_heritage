@@ -94,9 +94,38 @@ def clean_work_id(series: pd.Series) -> pd.Series:
 
 
 def drop_header_rows(df: pd.DataFrame, id_col: str = 'sr_no') -> pd.DataFrame:
-    """Drop any row where sr_no is not a number (phantom header rows)."""
-    mask = pd.to_numeric(df[id_col], errors='coerce').notna()
-    return df[mask].reset_index(drop=True)
+    """
+    Drop phantom pagination header rows (where 'Sr. No.' header repeats mid-table)
+    WITHOUT dropping legitimate works that have missing or corrupt serial numbers.
+    """
+    if id_col not in df.columns:
+        return df.reset_index(drop=True)
+
+    col_str = df[id_col].astype(str).str.strip().str.lower()
+    
+    # 1. Obvious header row tokens
+    is_header_token = col_str.isin(['sr. no.', 'sr. no', 'sr no', 'sr.no.', 'sr_no', 's.no', 'serial no', 'sr. no. /'])
+    
+    # 2. Check if other columns in this row also repeat column headers
+    header_col_matches = pd.Series(False, index=df.index)
+    for col, header_val in [('state', 'state'), ('work_type', 'work'), ('ida', 'ida'), ('work_id_desc', 'work')]:
+        if col in df.columns:
+            header_col_matches = header_col_matches | (df[col].astype(str).str.strip().str.lower() == header_val)
+            
+    # 3. True phantom header: has header token in sr_no AND (matches other column headers OR all other columns are blank)
+    is_empty_row = df.drop(columns=[id_col], errors='ignore').isna().all(axis=1) | (
+        df.drop(columns=[id_col], errors='ignore').astype(str).apply(lambda row: row.str.strip().isin(['', 'nan', 'none']).all(), axis=1)
+    )
+    is_phantom_header = is_header_token & (header_col_matches | is_empty_row)
+    
+    filtered_df = df[~is_phantom_header].copy()
+    
+    # Auto-repair non-numeric or missing serial numbers for legitimate works so they remain fully tracked
+    num_sr = pd.to_numeric(filtered_df[id_col], errors='coerce')
+    if num_sr.isna().any():
+        filtered_df[id_col] = num_sr.fillna(pd.Series(range(1, len(filtered_df) + 1), index=filtered_df.index))
+        
+    return filtered_df.reset_index(drop=True)
 
 
 def standardise_columns(df: pd.DataFrame, mapping: dict) -> pd.DataFrame:

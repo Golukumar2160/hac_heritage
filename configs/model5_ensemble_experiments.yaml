@@ -1,0 +1,141 @@
+# =====================================================================
+# BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
+# Model 5 Experiment Configuration: Weighted Ensemble Risk Scorer (Output Model)
+# Architecture: 4-Signal Fusion with 1-by-1, 2-at-a-time, and Policy Ablation
+# Grounded in 15,690 Verified Statutory Hard Violations
+# =====================================================================
+
+experiment_metadata:
+  experiment_name: "BHARAT_DRISHTI_ENSEMBLE_EXPERIMENTS"
+  model_type: "Weighted_Ensemble_Risk_Scorer"
+  description: "Composite risk scoring combining financial anomaly, vendor concentration, statutory compliance, and timeline delay with systematic component ablation"
+  author: "MoSPI Data Science & Forensic ML Team"
+  version: "2.0.0"
+  random_seed: 42
+
+data:
+  input_file: "data/processed/fraud_flags.csv"
+  total_records: 98649
+  hard_violation_columns:
+    - "rule_premature_tranche"
+    - "rule_missing_photo"
+    - "rule_overspend"
+    - "rule_early_payment"
+
+constituent_signals:
+  anomaly:
+    column: "anomaly_score_pct"
+    description: "Layer 1/2 Isolation Forest financial outlier percentile (0-100)"
+  vendor:
+    column: "vendor_score_pct"
+    description: "Layer 3 Vendor cartel and monopoly concentration percentile (0-100)"
+  compliance:
+    column: "compliance_score_pct"
+    description: "Layer 3 Deterministic GFR & Clause 3.2 rules penalty percentile (0-100)"
+  timeline:
+    column: "timeline_score_pct"
+    description: "Layer 4 Logistic Regression completion delay percentile (0-100)"
+
+ablation_suites:
+  baseline:
+    name: "exp_00_baseline_standard"
+    weights: [0.35, 0.30, 0.20, 0.15]
+    two_tier_floor: 85.0
+    quantile_high: 0.90
+    quantile_medium: 0.70
+    description: "Production baseline weights (0.35 Anomaly, 0.30 Vendor, 0.20 Compliance, 0.15 Timeline)"
+
+  single_component_isolated:
+    description: "Take 1 component at a time (4 experiments)"
+    experiments:
+      - name: "exp_01_anomaly_only"
+        weights: [1.0, 0.0, 0.0, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_02_vendor_only"
+        weights: [0.0, 1.0, 0.0, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_03_compliance_only"
+        weights: [0.0, 0.0, 1.0, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_04_timeline_only"
+        weights: [0.0, 0.0, 0.0, 1.0]
+        two_tier_floor: 85.0
+
+  pairwise_two_at_a_time:
+    description: "Take 2 components at a time across all combinations (6 experiments)"
+    experiments:
+      - name: "exp_05_pair_anomaly_vendor"
+        weights: [0.55, 0.45, 0.0, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_06_pair_anomaly_compliance"
+        weights: [0.60, 0.0, 0.40, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_07_pair_anomaly_timeline"
+        weights: [0.70, 0.0, 0.0, 0.30]
+        two_tier_floor: 85.0
+      - name: "exp_08_pair_vendor_compliance"
+        weights: [0.0, 0.60, 0.40, 0.0]
+        two_tier_floor: 85.0
+      - name: "exp_09_pair_vendor_timeline"
+        weights: [0.0, 0.65, 0.0, 0.35]
+        two_tier_floor: 85.0
+      - name: "exp_10_pair_compliance_timeline"
+        weights: [0.0, 0.0, 0.60, 0.40]
+        two_tier_floor: 85.0
+
+  leave_one_out:
+    description: "Exclude 1 component at a time (4 experiments)"
+    experiments:
+      - name: "exp_11_loo_exclude_anomaly"
+        weights: [0.0, 0.45, 0.35, 0.20]
+        two_tier_floor: 85.0
+      - name: "exp_12_loo_exclude_vendor"
+        weights: [0.50, 0.0, 0.30, 0.20]
+        two_tier_floor: 85.0
+      - name: "exp_13_loo_exclude_compliance"
+        weights: [0.45, 0.35, 0.0, 0.20]
+        two_tier_floor: 85.0
+      - name: "exp_14_loo_exclude_timeline"
+        weights: [0.40, 0.35, 0.25, 0.0]
+        two_tier_floor: 85.0
+
+  policy_profiles:
+    description: "Statutory, equal, forensic, and cartel policy weights (4 experiments)"
+    experiments:
+      - name: "exp_15_equal_weights"
+        weights: [0.25, 0.25, 0.25, 0.25]
+        two_tier_floor: 85.0
+      - name: "exp_16_statutory_heavy"
+        weights: [0.15, 0.20, 0.50, 0.15]
+        two_tier_floor: 85.0
+      - name: "exp_17_forensic_heavy"
+        weights: [0.45, 0.30, 0.15, 0.10]
+        two_tier_floor: 85.0
+      - name: "exp_18_cartel_heavy"
+        weights: [0.20, 0.50, 0.15, 0.15]
+        two_tier_floor: 85.0
+
+  threshold_variations:
+    description: "Thresholding and hard-floor calibrations (3 experiments)"
+    experiments:
+      - name: "exp_19_pure_percentiles_no_floor"
+        weights: [0.35, 0.30, 0.20, 0.15]
+        two_tier_floor: null
+      - name: "exp_20_hard_floor_90"
+        weights: [0.35, 0.30, 0.20, 0.15]
+        two_tier_floor: 90.0
+      - name: "exp_21_tight_thresholds"
+        weights: [0.35, 0.30, 0.20, 0.15]
+        two_tier_floor: 85.0
+        quantile_high: 0.95
+        quantile_medium: 0.80
+
+evaluation:
+  primary_metric: "hard_violation_capture_rate_top10"
+  secondary_metrics:
+    - "hard_violation_pr_auc"
+    - "score_gini_coefficient"
+    - "critical_alert_count"
+    - "critical_alert_pct"
+    - "high_alert_count"
+    - "mean_risk_score"

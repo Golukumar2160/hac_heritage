@@ -1,0 +1,30 @@
+{
+  "selected_at": "2026-09-19 16:11:58 IST",
+  "selection_criterion": "Best test_score_separation_ratio (max)",
+  "champion_experiment": {
+    "experiment_id": 3,
+    "name": "exp_02_canonical_e200_c002",
+    "run_id": "9063604ed2c4481cb1196060f5e47583",
+    "is_baseline": false,
+    "feature_set": "canonical",
+    "feature_count": 4,
+    "scaler": "standard",
+    "n_estimators": 200,
+    "contamination": 0.02,
+    "max_samples": 1.0,
+    "max_features": 0.75,
+    "bootstrap": false,
+    "test_score_separation_ratio": 4.3717,
+    "test_contrast_margin": 21.95,
+    "test_score_kurtosis": 8.6572,
+    "test_score_iqr": 4.9889,
+    "test_anomalies_detected": 83,
+    "test_anomaly_rate_pct": 0.42,
+    "test_statutory_rule_auc": 0.4657,
+    "train_time_sec": 1.772,
+    "status": "SUCCESS"
+  },
+  "total_experiments_run": 24,
+  "successful_runs": 24,
+  "failed_runs": 0
+}

@@ -1,0 +1,89 @@
+# =====================================================================
+# BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
+# Model 2 Experiment Configuration: Vendor Identity Resolution & NLP Clustering
+# Architecture: Configurable Vectorization (TF-IDF N-grams) + State Partitioning & Clustering
+# =====================================================================
+
+experiment_metadata:
+  experiment_name: "BHARAT_DRISHTI_NLP_EXPERIMENTS"
+  model_type: "NLP_Vendor_Clustering"
+  description: "Vendor alias deduplication and cartel monopoly clustering across Indian states testing text representations, similarity thresholds, and agency filtering"
+  author: "MoSPI Data Science & Forensic ML Team"
+  version: "2.0.0"
+  random_seed: 42
+
+data:
+  input_file: "data/processed/clean_expenditure.csv"
+  cache_file: "data/processed/vendor_alias_map.csv"
+  max_sample_vendors: 5000  # Representative evaluation subset for high-speed matrix execution
+  stratify_by_state: true
+
+text_representations:
+  char_wb_2_4:
+    type: "tfidf"
+    analyzer: "char_wb"
+    ngram_range: [2, 4]
+    max_features: 10000
+    description: "Character n-grams 2-4 inside word boundaries (catches typos & abbreviations)"
+  char_wb_3_5:
+    type: "tfidf"
+    analyzer: "char_wb"
+    ngram_range: [3, 5]
+    max_features: 12000
+    description: "Longer character n-grams 3-5 (finer subword matching)"
+  word_1_2:
+    type: "tfidf"
+    analyzer: "word"
+    ngram_range: [1, 2]
+    max_features: 8000
+    description: "Word-level unigrams and bigrams"
+  hybrid_char_word:
+    type: "hybrid"
+    analyzer: "char_wb"
+    ngram_range: [2, 3]
+    max_features: 6000
+    description: "Lightweight subword n-grams combined with legal suffix normalization"
+
+thresholds:
+  - 0.70
+  - 0.75
+  - 0.80
+  - 0.82
+  - 0.85
+  - 0.90
+
+clustering_algorithms:
+  - "nearest_neighbors_union_find"
+  - "agglomerative_average"
+  - "dbscan"
+
+ablations:
+  state_partitioning:
+    - true
+    - false
+  filter_govt_agencies:
+    - true
+    - false
+  legal_suffix_cleaning:
+    - true
+    - false
+
+evaluation:
+  primary_metric: "compression_ratio"
+  secondary_metrics:
+    - "govt_agency_purity"
+    - "silhouette_score"
+    - "total_clusters"
+    - "total_aliases_detected"
+    - "execution_time_sec"
+
+generation_strategy:
+  target_experiments: 20
+  baseline:
+    name: "exp_00_nlp_production_baseline"
+    representation: "char_wb_2_4"
+    threshold: 0.82
+    algorithm: "nearest_neighbors_union_find"
+    state_partitioning: true
+    filter_govt_agencies: true
+    legal_suffix_cleaning: true

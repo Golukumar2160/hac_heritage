@@ -47,6 +47,7 @@ import {
   Landmark,
   MapPin,
   Vote,
+  Scale,
   Radio,
   Zap,
   ShieldCheck,
@@ -83,18 +84,29 @@ export default function App() {
       setPipelineRunning(true);
       const res = await api.triggerPipeline();
       showToast(res.message || 'ML pipeline started in background thread.');
-      setTimeout(async () => {
+
+      let attempts = 0;
+      const maxAttempts = 60; // 60 * 2.5s = 150s guard
+      const pollInterval = setInterval(async () => {
+        attempts++;
         try {
           const st = await api.getPipelineStatus();
-          setPipelineRunning(st.is_running);
           if (!st.is_running) {
+            clearInterval(pollInterval);
+            setPipelineRunning(false);
             showToast('ML batch audit pipeline completed successfully.');
+            loadKpis();
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            setPipelineRunning(false);
+            showToast('Pipeline execution continues in background.');
             loadKpis();
           }
         } catch {
+          clearInterval(pollInterval);
           setPipelineRunning(false);
         }
-      }, 4000);
+      }, 2500);
     } catch (err) {
       console.error('Pipeline run error:', err);
       showToast(`Pipeline trigger failed: ${err.message}`);
@@ -206,6 +218,40 @@ export default function App() {
     setActiveRole('ministry');
     setKpis(null);
     showToast('Signed out of official account');
+  };
+
+  const [isSwitchingStakeholder, setIsSwitchingStakeholder] = useState(false);
+
+  const handleSwitchStakeholder = async (roleKey) => {
+    if (roleKey === activeRole || isSwitchingStakeholder) return;
+    try {
+      setIsSwitchingStakeholder(true);
+      const res = await api.switchStakeholder(roleKey);
+      setCurrentUser(res);
+      setActiveRole(roleKey);
+      if (res.ida) setSelectedDistrict(res.ida);
+      if (res.state) setSelectedState(res.state);
+      if (roleKey === 'citizen') {
+        setActiveTab('citizen_overview');
+      } else if (activeTab.startsWith('citizen_')) {
+        setActiveTab('overview');
+      }
+      await loadKpis();
+      api.prefetchCoreViews();
+      const roleNames = {
+        ministry: 'MoSPI National Command (98,649 Works)',
+        state: 'State Nodal UP (19,892 Works)',
+        district: 'District Magistrate Pilibhit (293 Works)',
+        mp: "Hon'ble MP Javed Ali Khan (178 Works)",
+        citizen: 'Jan-Drishti Public Watchdog'
+      };
+      showToast(`Switched view to ${roleNames[roleKey] || roleKey.toUpperCase()}`);
+    } catch (err) {
+      console.error('Failed to switch stakeholder:', err);
+      showToast(`Stakeholder switch error: ${err.message}`);
+    } finally {
+      setIsSwitchingStakeholder(false);
+    }
   };
 
   const openAuthModal = (mode = 'login') => {
@@ -347,17 +393,44 @@ export default function App() {
 
           {/* Right: Live Telemetry, IST Clock, Role Scope & Dark/Light Mode Switch */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Real-time System Status Pill (98,649 WORKS) */}
+            {/* Real-time System Status Pill (Scoped Works) */}
             <div className="flex items-center space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono" style={{ background: theme === 'light' ? 'rgba(241,245,249,0.9)' : 'rgba(0,0,0,0.35)', border: theme === 'light' ? '1px solid rgba(203,213,225,0.8)' : '1px solid rgba(255,255,255,0.06)' }}>
               <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ boxShadow: isOnline ? '0 0 8px rgba(52,211,153,0.8)' : '0 0 8px rgba(251,113,133,0.8)' }} />
-              <span className={`font-bold font-mono tracking-wide ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>98,649 WORKS</span>
+              <span className={`font-bold font-mono tracking-wide ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>
+                {kpis?.total_works ? `${Number(kpis.total_works).toLocaleString('en-IN')} WORKS` : '98,649 WORKS'}
+              </span>
             </div>
 
-
-            <div className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold" style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.28)', color: theme === 'light' ? '#6d28d9' : 'rgba(196,181,253,0.95)' }}>
-              <Radio className="w-3.5 h-3.5 animate-pulse text-violet-500" />
-              <span className="hidden sm:inline uppercase font-mono">{currentUser.role || 'Official'}</span>
-              <span className="font-mono">Scope</span>
+            {/* 4-Tier Stakeholder View Switcher (PS 26102 Direct Compliance) */}
+            <div className="flex items-center p-1 rounded-xl bg-slate-900/80 border border-violet-500/30 text-xs font-medium space-x-1" title="Switch Stakeholder Vigilance View">
+              {[
+                { key: 'ministry', label: 'Central MoSPI', icon: Landmark, count: '98.6k' },
+                { key: 'state', label: 'State (UP)', icon: Building2, count: '19.9k' },
+                { key: 'district', label: 'DM (Pilibhit)', icon: Scale, count: '293' },
+                { key: 'mp', label: 'Hon MP (Javed)', icon: Vote, count: '178' },
+              ].map(s => {
+                const Icon = s.icon;
+                const isSelected = activeRole === s.key;
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => handleSwitchStakeholder(s.key)}
+                    disabled={isSwitchingStakeholder}
+                    className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-violet-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    } disabled:opacity-50`}
+                    title={`Switch to ${s.label} View (${s.count} Works)`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xl:inline">{s.label}</span>
+                    <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-violet-800 text-violet-100' : 'bg-slate-800 text-slate-400'}`}>
+                      {s.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Direct Upload CSV Audit Button (Hackathon Primary Feature) */}
@@ -490,9 +563,17 @@ export default function App() {
                   </span>
                   <div>
                     <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                      NATIONAL COMMAND ACTIVE
+                      {activeRole === 'state' ? `STATE NODAL COMMAND (${(currentUser?.state || 'UTTAR PRADESH').toUpperCase()})` :
+                       activeRole === 'district' ? `DISTRICT ENFORCEMENT COMMAND (${(currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || currentUser?.district || 'PILIBHIT').toUpperCase()})` :
+                       activeRole === 'mp' ? `CONSTITUENCY INTEGRITY MONITOR (${(currentUser?.name || "HON'BLE MP").toUpperCase()})` :
+                       'NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)'}
                     </span>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {activeRole === 'state' ? `State planning authority oversight across districts in ${currentUser?.state || 'the state'} under vigilance` :
+                       activeRole === 'district' ? `District Magistrate statutory powers: Tranche freezes, contractor show-causes, ground inspections` :
+                       activeRole === 'mp' ? `Development delivery tracking & Clause 3.2 mandatory SC (15%) and ST (7.5%) fund earmarking` :
+                       'Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)'}
+                    </p>
                   </div>
                 </div>
 
@@ -509,7 +590,7 @@ export default function App() {
               </div>
 
               {/* Executive KPIs Grid */}
-              <ExecutiveKpis key={`kpi-${activeRole}`} kpis={kpis} onFilterTier={handleFilterTier} />
+              <ExecutiveKpis key={`kpi-${activeRole}`} kpis={kpis} onFilterTier={handleFilterTier} activeRole={activeRole} />
 
               {/* Visual Analytics & Breakdown */}
               <QuickStatsCharts key={`stats-${activeRole}`} kpis={kpis} />
@@ -523,7 +604,7 @@ export default function App() {
                       Priority Action Radar
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                      Works flagged with critical composite risk (&gt; 0.85) requiring statutory review.
+                      Works flagged with critical composite risk (Score ≥ 85.0) requiring statutory review.
                     </p>
                   </div>
 
@@ -626,8 +707,9 @@ export default function App() {
           {/* TAB 7: GEOSPATIAL MAP */}
           {(activeTab === 'map' || activeTab === 'citizen_map') && (
             <GeoRiskMapView 
-              key={`map-${activeRole}`} 
+              key={`map-${activeRole}-${currentUser?.username || 'usr'}`} 
               activeRole={activeRole} 
+              currentUser={currentUser}
               onSelectWork={setSelectedWorkId} 
             />
           )}

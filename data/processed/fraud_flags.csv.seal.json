@@ -1,0 +1,11 @@
+{
+  "file_name": "fraud_flags.csv",
+  "sha256_seal": "604817a5beaec7dc0d1559478d822ab2f7d97deb34887a18a9c87f6f9932f721",
+  "record_count": 98649,
+  "total_sanctioned_amount": 58805580837.75,
+  "total_disbursed_amount": 40138231716.14,
+  "critical_risk_count": 15731,
+  "sealed_at": "2026-09-20T18:13:34.394366+00:00",
+  "genesis_seal": "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026",
+  "statutory_authority": "MoSPI DIID / Central Vigilance Commission"
+}

@@ -7,7 +7,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-export default function ExecutiveKpis({ kpis, onFilterTier }) {
+export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'ministry' }) {
   const safeKpis = kpis || {};
 
   const total_works = safeKpis.total_works ?? 98649;
@@ -20,11 +20,20 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
   const low_count = safeKpis.low_count ?? 61998;
   const duplicate_photos_count = safeKpis.duplicate_photos_count ?? 18;
 
+  const roleTitles = {
+    ministry: { outlay: 'Total National Outlay', absorption: 'national fund absorption', worksSubtitle: 'total audited works' },
+    state: { outlay: 'Total State Outlay (UP)', absorption: 'state fund absorption', worksSubtitle: 'state audited works' },
+    district: { outlay: 'District Outlay (Pilibhit)', absorption: 'district fund absorption', worksSubtitle: 'district works under audit' },
+    mp: { outlay: 'Constituency Allocation', absorption: 'constituency fund absorption', worksSubtitle: 'constituency works' },
+    citizen: { outlay: 'Local District Outlay', absorption: 'local fund absorption', worksSubtitle: 'public monitored works' }
+  };
+  const roleCfg = roleTitles[activeRole] || roleTitles.ministry;
+
   const cards = [
     {
-      title: 'Total National Outlay',
+      title: roleCfg.outlay,
       value: `₹${Number(total_sanctioned_cr).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`,
-      subtitle: `${Number(total_works).toLocaleString('en-IN')} total audited works`,
+      subtitle: `${Number(total_works).toLocaleString('en-IN')} ${roleCfg.worksSubtitle}`,
       icon: Layers,
       accentColor: 'rgba(139, 92, 246, 0.9)',
       glowColor: 'rgba(139, 92, 246, 0.22)',
@@ -37,7 +46,7 @@ export default function ExecutiveKpis({ kpis, onFilterTier }) {
     {
       title: 'Disbursed Expenditure',
       value: `₹${Number(total_spent_cr).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`,
-      subtitle: `${((total_spent_cr / (total_sanctioned_cr || 1)) * 100).toFixed(1)}% national fund absorption`,
+      subtitle: `${((total_spent_cr / (total_sanctioned_cr || 1)) * 100).toFixed(1)}% ${roleCfg.absorption}`,
       icon: TrendingUp,
       accentColor: 'rgba(99, 102, 241, 0.9)',
       glowColor: 'rgba(99, 102, 241, 0.22)',

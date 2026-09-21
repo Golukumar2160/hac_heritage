@@ -1,0 +1,67 @@
+# =====================================================================
+# BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
+# Model 4 Experiment Configuration: XGBoost Non-Linear Hazard Scorer
+# Architecture: Gradient-Boosted Decision Trees on Cost Overrun & Execution Duration
+# =====================================================================
+
+experiment_metadata:
+  experiment_name: "BHARAT_DRISHTI_XGBOOST_EXPERIMENTS"
+  model_type: "XGBClassifier"
+  description: "Non-linear hazard and project stalling risk prediction using cost overrun, velocity, and fund release gaps"
+  author: "MoSPI Data Science & Forensic ML Team"
+  version: "1.0.0"
+  random_seed: 42
+
+features:
+  numerical:
+    - name: "log_amount"
+      description: "Log-transformed administrative sanction amount"
+    - name: "spend_ratio"
+      description: "Disbursed expenditure over sanctioned budget ratio"
+    - name: "spend_pace"
+      description: "Fund disbursement velocity per calendar day"
+    - name: "days_norm"
+      description: "Normalized days elapsed since administrative sanction"
+    - name: "anomaly_score"
+      description: "Layer 1 Isolation Forest multi-dimensional financial outlier score"
+    - name: "compliance_score"
+      description: "Layer 3 GFR Rule 144/149 statutory penalty score"
+    - name: "vendor_conc"
+      description: "Vendor allocation concentration ratio under recommending MP"
+
+hyperparameter_suites:
+  baseline_production:
+    n_estimators: 150
+    max_depth: 4
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    scale_pos_weight: 1.5
+    eval_metric: "logloss"
+
+  shallow_trees:
+    n_estimators: 100
+    max_depth: 3
+    learning_rate: 0.08
+    subsample: 0.85
+    colsample_bytree: 0.85
+    scale_pos_weight: 1.2
+    eval_metric: "logloss"
+
+  deep_interactions:
+    n_estimators: 200
+    max_depth: 6
+    learning_rate: 0.03
+    subsample: 0.75
+    colsample_bytree: 0.75
+    scale_pos_weight: 1.8
+    eval_metric: "logloss"
+
+evaluation:
+  target_column: "terminal_outcome"
+  cross_validation_folds: 5
+  primary_metric: "roc_auc"
+  secondary_metrics:
+    - "f1_score"
+    - "precision_at_top_10_pct"
+    - "brier_score_loss"

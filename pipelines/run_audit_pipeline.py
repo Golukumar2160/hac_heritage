@@ -147,6 +147,7 @@ def audit_single_pdf(pdf_path: str, meta_by_wid: dict) -> Optional[Dict[str, Any
 
         pil_rendered = Image.open(render_path)
         phash_val = str(imagehash.phash(pil_rendered))
+        dhash_val = str(imagehash.dhash(pil_rendered))
 
         # 2. Extract Embedded Construction Site Photographs
         embedded_photos = []
@@ -214,6 +215,7 @@ def audit_single_pdf(pdf_path: str, meta_by_wid: dict) -> Optional[Dict[str, Any
             "has_cross_scheme_fraud": entities.get("has_cross_scheme", False),
             "pdf_filename": filename,
             "phash": phash_val,
+            "dhash": dhash_val,
             "audited_at": datetime.now().isoformat()
         }
 

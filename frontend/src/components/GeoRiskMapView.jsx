@@ -28,7 +28,7 @@ import {
   projectGeoPoint
 } from '../data/indiaMapData';
 
-export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }) {
+export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', currentUser = null }) {
   const [states, setStates] = useState([]);
   const [selectedState, setSelectedState] = useState('Uttar Pradesh');
   const [districts, setDistricts] = useState([]);
@@ -47,36 +47,51 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
 
   const svgRef = useRef(null);
 
+  // Dynamic Session & Role Scoping
+  const sessionUser = currentUser || (typeof api !== 'undefined' && api.getCurrentUser ? api.getCurrentUser() : null);
+  const currentRole = activeRole || sessionUser?.role || 'ministry';
+
   // Dynamic Role Configuration
   const roleConfig = useMemo(() => {
-    if (activeRole === 'mp') {
+    if (currentRole === 'mp') {
+      const mpName = sessionUser?.mp_name || sessionUser?.name || 'Hon\'ble Member of Parliament';
+      const mpState = sessionUser?.state || selectedState || 'Uttar Pradesh';
+      const mpScopeLabel = sessionUser?.constituency 
+        ? `${sessionUser.constituency}, ${mpState}`
+        : `${mpName} (${mpState})`;
+
       return {
         badge: 'Parliamentary Constituency Scope',
-        title: 'Constituency Vulnerability & Risk Radar — Shri Javed Ali Khan (MP)',
-        desc: 'Scoped oversight of 178 parliamentary schemes recommended by Hon\'ble MP Shri Javed Ali Khan in Uttar Pradesh. Highlighting 14 statutory audit exceptions.',
+        title: `Constituency Vulnerability & Risk Radar — ${mpName}`,
+        desc: `Scoped oversight of parliamentary schemes recommended by Hon'ble MP ${mpName} in ${mpState}. Highlighting statutory audit exceptions & fund delivery.`,
         jurisdictionLabel: 'Constituency Scope',
-        jurisdictionVal: '1 MP (Sambhal, UP)',
-        scopeBannerText: 'Viewing Scoped Constituency Data for Hon\'ble MP Shri Javed Ali Khan (178 Schemes Monitored)'
+        jurisdictionVal: mpScopeLabel,
+        scopeBannerText: `Viewing Scoped Constituency Data for Hon'ble MP ${mpName} (${mpState})`
       };
     }
-    if (activeRole === 'district') {
+    if (currentRole === 'district') {
+      const rawIda = sessionUser?.ida || sessionUser?.district || 'PILIBHIT';
+      const cleanDistrict = String(rawIda).replace(/\(.*?\)/g, '').replace(/_IDA/g, '').trim();
+      const distState = sessionUser?.state || selectedState || 'Uttar Pradesh';
+
       return {
         badge: 'District Authority Scope',
-        title: 'District Vigilance & Sanctions Console — Pilibhit Jurisdiction',
-        desc: 'Ground verification and milestone monitoring of 293 sanctioned works in Pilibhit district, Uttar Pradesh.',
+        title: `District Vigilance & Sanctions Console — ${cleanDistrict} Jurisdiction`,
+        desc: `Ground verification, tranche sanctions, and milestone monitoring for developmental works in ${cleanDistrict} district, ${distState}.`,
         jurisdictionLabel: 'District Scope',
-        jurisdictionVal: 'Pilibhit, UP',
-        scopeBannerText: 'Viewing Scoped District Authority Data for District Magistrate, Pilibhit (293 Schemes Monitored)'
+        jurisdictionVal: `${cleanDistrict}, ${distState}`,
+        scopeBannerText: `Viewing Scoped District Authority Data for District Magistrate, ${cleanDistrict} (${distState})`
       };
     }
-    if (activeRole === 'state') {
+    if (currentRole === 'state') {
+      const stateName = sessionUser?.state || selectedState || 'Uttar Pradesh';
       return {
         badge: 'State Nodal Authority Scope',
-        title: 'State Project Monitoring Grid — Uttar Pradesh Directorate',
-        desc: 'State-level oversight across 19,892 MPLADS developmental works across all 75 districts of Uttar Pradesh.',
+        title: `State Project Monitoring Grid — ${stateName} Directorate`,
+        desc: `State-level statutory oversight across all MPLADS developmental works in ${stateName}.`,
         jurisdictionLabel: 'State Jurisdiction',
-        jurisdictionVal: 'Uttar Pradesh (75 Districts)',
-        scopeBannerText: 'Viewing State-Wide Monitored Data for State Nodal Authority, Uttar Pradesh (19,892 Schemes)'
+        jurisdictionVal: stateName,
+        scopeBannerText: `Viewing State-Wide Monitored Data for State Nodal Authority, ${stateName}`
       };
     }
     return {
@@ -87,7 +102,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry' }
       jurisdictionVal: `${states.length || 36} Jurisdictions`,
       scopeBannerText: null
     };
-  }, [activeRole, states.length]);
+  }, [currentRole, sessionUser, selectedState, states.length]);
 
   const handleSelectState = (stateName) => {
     setSelectedState(stateName);

@@ -1,0 +1,23 @@
+{
+  "selected_at": "2026-09-19 16:43:36 IST",
+  "selection_criterion": "Best composite_score (compression_ratio * govt_agency_purity)",
+  "champion_experiment": {
+    "experiment_id": 8,
+    "name": "rep_word_1_2",
+    "run_id": "28085994cd1b470cbfca69d9ec121134",
+    "suite": "representation_ablation",
+    "representation": "word_1_2",
+    "threshold": 0.82,
+    "algorithm": "nearest_neighbors_union_find",
+    "state_partitioning": true,
+    "filter_govt_agencies": true,
+    "compression_ratio": 0.1195,
+    "govt_agency_purity": 1.0,
+    "composite_score": 0.1195,
+    "total_aliases": 597.0,
+    "execution_time_sec": 1.595,
+    "status": "SUCCESS"
+  },
+  "total_experiments_run": 18,
+  "successful_runs": 18
+}

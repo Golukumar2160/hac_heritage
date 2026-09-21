@@ -1,0 +1,148 @@
+# =====================================================================
+# BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
+# Model 4/6 Experiment Configuration: Completion Probability & Timeline Risk
+# Architecture: Supervised Logistic Regression with 1-by-1 & 2-at-a-time Feature Ablation
+# =====================================================================
+
+experiment_metadata:
+  experiment_name: "BHARAT_DRISHTI_LOGISTIC_EXPERIMENTS"
+  model_type: "LogisticRegression"
+  description: "Supervised classification of project completion vs statutory 1-year abandonment with systematic feature ablation and hyperparameter tuning"
+  author: "MoSPI Data Science & Forensic ML Team"
+  version: "2.0.0"
+  random_seed: 42
+
+data:
+  input_file: "data/processed/fraud_flags.csv"
+  fallback_sanctioned: "data/processed/clean_sanctioned.csv"
+  fallback_expenditure: "data/processed/clean_expenditure.csv"
+  test_split_ratio: 0.20
+  shuffle: true
+  stratify: true
+  target_definition:
+    positive_class: "work_status == 'Work Completed'"
+    negative_class: "work_status != 'Work Completed' and days_since_sanction > 365"
+
+candidate_features:
+  log_amount:
+    column_formula: "np.log1p(np.maximum(0, sanction_amount))"
+    description: "Financial scale of sanctioned project (log transformed)"
+  spend_ratio:
+    column_formula: "np.clip(total_spent / np.maximum(sanction_amount, 1.0), 0.0, 2.0)"
+    description: "Financial execution progress relative to sanction"
+  spend_pace:
+    column_formula: "total_spent / np.maximum(days_since_sanction, 1.0)"
+    description: "Disbursement velocity in INR per elapsed day"
+  days_norm:
+    column_formula: "days_since_sanction / 365.0"
+    description: "Elapsed time normalized to statutory 1-year window"
+  anomaly_score:
+    column_formula: "anomaly_score"
+    description: "Isolation Forest financial anomaly risk score"
+  compliance_score:
+    column_formula: "compliance_score"
+    description: "Statutory rules engine violation penalty"
+  vendor_conc:
+    column_formula: "work_vendor_concentration"
+    description: "Contractor monopoly concentration score"
+
+feature_ablation_suites:
+  baseline:
+    name: "baseline_all_7"
+    features: ["log_amount", "spend_ratio", "spend_pace", "days_norm", "anomaly_score", "compliance_score", "vendor_conc"]
+    description: "Full feature set with all 7 candidate engineering features"
+
+  leave_one_out:
+    description: "Systematic exclusion of exactly 1 feature at a time (7 experiments)"
+    experiments:
+      - name: "loo_exclude_log_amount"
+        excluded_feature: "log_amount"
+      - name: "loo_exclude_spend_ratio"
+        excluded_feature: "spend_ratio"
+      - name: "loo_exclude_spend_pace"
+        excluded_feature: "spend_pace"
+      - name: "loo_exclude_days_norm"
+        excluded_feature: "days_norm"
+      - name: "loo_exclude_anomaly_score"
+        excluded_feature: "anomaly_score"
+      - name: "loo_exclude_compliance_score"
+        excluded_feature: "compliance_score"
+      - name: "loo_exclude_vendor_conc"
+        excluded_feature: "vendor_conc"
+
+  single_feature_in:
+    description: "Systematic inclusion of exactly 1 feature at a time (7 experiments)"
+    experiments:
+      - name: "single_spend_ratio"
+        features: ["spend_ratio"]
+      - name: "single_spend_pace"
+        features: ["spend_pace"]
+      - name: "single_days_norm"
+        features: ["days_norm"]
+      - name: "single_log_amount"
+        features: ["log_amount"]
+      - name: "single_anomaly_score"
+        features: ["anomaly_score"]
+      - name: "single_compliance_score"
+        features: ["compliance_score"]
+      - name: "single_vendor_conc"
+        features: ["vendor_conc"]
+
+  pairwise_two_at_a_time:
+    description: "Pairwise interaction experiments taking 2 features at a time (8 experiments)"
+    experiments:
+      - name: "pair_spend_ratio_days_norm"
+        features: ["spend_ratio", "days_norm"]
+      - name: "pair_spend_ratio_spend_pace"
+        features: ["spend_ratio", "spend_pace"]
+      - name: "pair_spend_pace_days_norm"
+        features: ["spend_pace", "days_norm"]
+      - name: "pair_spend_ratio_log_amount"
+        features: ["spend_ratio", "log_amount"]
+      - name: "pair_spend_ratio_anomaly_score"
+        features: ["spend_ratio", "anomaly_score"]
+      - name: "pair_spend_pace_compliance_score"
+        features: ["spend_pace", "compliance_score"]
+      - name: "pair_days_norm_compliance_score"
+        features: ["days_norm", "compliance_score"]
+      - name: "pair_anomaly_score_vendor_conc"
+        features: ["anomaly_score", "vendor_conc"]
+
+hyperparameters:
+  regularization_C:
+    - 0.01
+    - 0.1
+    - 1.0
+    - 10.0
+  penalty:
+    - "l2"
+    - "l1"
+  solver:
+    - "liblinear"
+    - "lbfgs"
+  class_weight:
+    - "balanced"
+    - null
+  max_iter: 1000
+
+preprocessing:
+  imputation_strategy: "median"
+  scaler_options:
+    - "standard"
+    - "robust"
+    - "none"
+
+evaluation:
+  primary_metric: "test_roc_auc"
+  secondary_metrics:
+    - "test_pr_auc"
+    - "test_f1"
+    - "test_accuracy"
+    - "test_precision"
+    - "test_recall"
+    - "test_brier_score"
+    - "test_log_loss"
+
+generation_strategy:
+  target_experiments: 26
+  include_production_baseline: true

@@ -1,0 +1,116 @@
+# ==============================================================================
+# BHARAT-DRISHTI // Isolation Forest Experimentation & Hyperparameter Grid
+# ==============================================================================
+# Config-driven experimentation architecture for MoSPI MPLADS anomaly detection.
+# Modify this file to add/remove hyperparameters, feature sets, or test scenarios
+# without changing any Python source code.
+# ==============================================================================
+
+meta:
+  experiment_name: "BHARAT_DRISHTI_IFOREST_EXPERIMENTS"
+  description: "Systematic Isolation Forest hyperparameter tuning & feature engineering evaluation"
+  tracking_uri: "sqlite:///data/mlflow.db"
+  random_seed: 42
+  test_size: 0.20
+  primary_metric: "test_score_separation_ratio"
+  selection_mode: "max"  # maximize score separation between anomalous tail and inliers
+  export_results_csv: "experiments/results/experiment_results.csv"
+  export_best_model_json: "experiments/results/best_model.json"
+
+# ------------------------------------------------------------------------------
+# Available Feature Sets (mapped to real columns derived from MoSPI datasets)
+# ------------------------------------------------------------------------------
+feature_sets:
+  canonical:
+    description: "Production baseline: 4 core fiscal and progress disparity features"
+    columns:
+      - "cost_overrun_ratio"
+      - "spend_progress_gap"
+      - "fund_disbursed"
+      - "sanction_amount"
+
+  financial_velocity:
+    description: "6 features adding temporal duration and days-to-first-payment velocity"
+    columns:
+      - "cost_overrun_ratio"
+      - "spend_progress_gap"
+      - "fund_disbursed"
+      - "sanction_amount"
+      - "days_to_first_payment"
+      - "days_since_sanction"
+
+  cartel_concentration:
+    description: "6 features capturing contractor monopoly risk and MP fund concentration"
+    columns:
+      - "cost_overrun_ratio"
+      - "spend_progress_gap"
+      - "fund_disbursed"
+      - "sanction_amount"
+      - "work_vendor_concentration"
+      - "mp_fund_share"
+
+  multimodal_ensemble:
+    description: "8 comprehensive features combining fiscal, temporal, payment, and syndicate signals"
+    columns:
+      - "cost_overrun_ratio"
+      - "spend_progress_gap"
+      - "fund_disbursed"
+      - "sanction_amount"
+      - "days_since_sanction"
+      - "days_to_first_payment"
+      - "payment_count"
+      - "work_vendor_concentration"
+
+# ------------------------------------------------------------------------------
+# Preprocessing Options (fitted strictly on train split to prevent data leakage)
+# ------------------------------------------------------------------------------
+preprocessing:
+  scaler:
+    - "none"
+    - "standard"
+    - "robust"
+  imputer_strategy: "median"
+
+# ------------------------------------------------------------------------------
+# Candidate Hyperparameter Ranges (used by generator for grid/factorial generation)
+# ------------------------------------------------------------------------------
+hyperparameters:
+  n_estimators:
+    - 100
+    - 200
+    - 300
+  contamination:
+    - 0.02
+    - 0.05
+    - 0.08
+  max_samples:
+    - "auto"
+    - 0.75
+    - 1.0
+  max_features:
+    - 0.75
+    - 1.0
+  bootstrap:
+    - false
+    - true
+
+# ------------------------------------------------------------------------------
+# Experiment Generation Strategy
+# ------------------------------------------------------------------------------
+generation:
+  strategy: "controlled_grid"  # generates controlled, representative runs across feature sets and params
+  max_experiments: 24          # target ~20-25 experiments
+  include_baseline: true
+
+# Exact configuration of the baseline model currently active in production
+baseline:
+  name: "exp_00_baseline"
+  feature_set: "canonical"
+  scaler: "none"
+  n_estimators: 200
+  contamination: 0.05
+  max_samples: "auto"
+  max_features: 1.0
+  bootstrap: false
+  random_state: 42
+  description: "Current production baseline: canonical 4 features with unscaled IsolationForest"

@@ -16,12 +16,22 @@ Output:
 import pandas as pd
 import numpy as np
 import os
+import re
+from typing import Optional, Set
 from collections import defaultdict
-from datetime import datetime
-from sklearn.ensemble import IsolationForest
+from datetime import datetime, timezone
+from sklearn.ensemble import IsolationForest, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 import joblib
+import hashlib
+import json
+
+try:
+    from xgboost import XGBClassifier
+    HAVE_XGBOOST = True
+except ImportError:
+    HAVE_XGBOOST = False
 
 # ---------------------------------------------------------------------
 # PATHS
@@ -106,6 +116,36 @@ GOVT_VENDOR_PATTERNS = (
     r"\bgovernment\s+of\b",
     r"\bgovt\.?\s+of\b",
 )
+
+# Corporate / Private commercial entity indicators.
+# If a vendor name matches ANY of these, it is strictly classified as a PRIVATE CONTRACTOR,
+# even if its name attempts to spoof government titles (e.g. "Executive Engineer Infra Pvt Ltd"
+# or "PWD Construction Associates").
+PRIVATE_COMMERCIAL_PATTERNS = (
+    r"\bpvt\.?\s*ltd\.?\b",
+    r"\bprivate\s+limited\b",
+    r"\bltd\.?\b",
+    r"\blimited\b",
+    r"\bllp\b",
+    r"\benterprises?\b",
+    r"\bassociates?\b",
+    r"\binfra(?:structure)?\b",
+    r"\bconstructions?\b",
+    r"\bcontractors?\b",
+    r"\bbuilders?\b",
+    r"\btraders?\b",
+    r"\bagency\s+and\s+company\b",
+    r"\b&\s*co\.?\b",
+    r"\bcompany\b",
+    r"\bcorporation\s+pvt\b",
+    r"\bsons\b",
+    r"\bbrothers\b",
+    r"\bengg\s+works\b",
+    r"\bcommercial\b",
+)
+
+COMPILED_GOVT_PATTERNS = [re.compile(pat, re.IGNORECASE) for pat in GOVT_VENDOR_PATTERNS]
+COMPILED_PRIVATE_PATTERNS = [re.compile(pat, re.IGNORECASE) for pat in PRIVATE_COMMERCIAL_PATTERNS]
 
 # Timeline: works stuck in pre-completion stages beyond this many days
 DELAY_WARN_DAYS  = 365   # 1 year
@@ -228,7 +268,7 @@ def model1_isolation_forest(san: pd.DataFrame, exp: pd.DataFrame, alloc: pd.Data
 
     iso = IsolationForest(
         n_estimators=200,
-        contamination=0.05,
+        contamination="auto",
         random_state=42,
         n_jobs=-1
     )
@@ -312,11 +352,27 @@ def _build_vendor_alias_map(exp_data) -> dict:
     try:
         from sentence_transformers import SentenceTransformer
         from sklearn.neighbors import NearestNeighbors
+        HAVE_ST = True
     except ImportError:
-        print("  WARNING: sentence-transformers not installed.")
+        HAVE_ST = False
+        print("  NOTE: sentence-transformers not installed.")
         print("  Run: pip install sentence-transformers")
-        print("  Falling back to exact-match grouping (alias detection DISABLED).")
-        return {(row["state"], row["vendor_name"]): row["vendor_name"] for _, row in df_clean.drop_duplicates(["state", "vendor_name"]).iterrows()}
+        print("  Utilizing deterministic string-similarity fallback (difflib SequenceMatcher) for alias clustering...")
+        import difflib
+        alias_map = {}
+        state_groups = df_clean.groupby("state")["vendor_name"].unique()
+        for st_name, st_vendors in state_groups.items():
+            st_vendors = list(st_vendors)
+            canon_map = {}
+            for v in st_vendors:
+                v_clean = v.strip()
+                matches = difflib.get_close_matches(v_clean, canon_map.keys(), n=1, cutoff=0.88)
+                if matches:
+                    alias_map[(st_name, v)] = canon_map[matches[0]]
+                else:
+                    canon_map[v_clean] = v_clean
+                    alias_map[(st_name, v)] = v_clean
+        return alias_map
 
     # Step 1: Encode all unique vendor names nationally into unit vectors
     print("  Loading all-MiniLM-L6-v2 and encoding unique vendor names...")
@@ -409,13 +465,30 @@ def _build_vendor_alias_map(exp_data) -> dict:
 
 def _is_govt_vendor(vendor_name: str) -> bool:
     """
-    Returns True if the vendor name matches known government implementing agency patterns.
+    Returns True if the vendor name matches genuine government implementing agency patterns.
     These are official bodies legally assigned by District Authorities -- flagging their
     spending concentration as 'monopoly' is a domain-knowledge miss.
+
+    CRITICAL ANTI-SPOOFING SHIELD:
+    Private contractors frequently mimic official designations (e.g. "Executive Engineer Infra Pvt Ltd").
+    If the name contains commercial/private indicators (e.g., 'Pvt Ltd', 'LLP', 'Builders', 'Enterprises'),
+    it is strictly classified as a PRIVATE vendor and CANNOT be whitelisted as a government agency.
     """
-    import re
-    name_lower = str(vendor_name).lower()
-    return any(re.search(pat, name_lower) for pat in GOVT_VENDOR_PATTERNS)
+    if not vendor_name or pd.isna(vendor_name):
+        return False
+    name_str = str(vendor_name).strip()
+
+    # 1. Anti-Spoofing: Check for private commercial patterns first
+    for pat in COMPILED_PRIVATE_PATTERNS:
+        if pat.search(name_str):
+            return False
+
+    # 2. Verify legitimate government agency patterns
+    for pat in COMPILED_GOVT_PATTERNS:
+        if pat.search(name_str):
+            return True
+
+    return False
 
 
 def model2_vendor_identity_resolution(exp: pd.DataFrame, alloc: pd.DataFrame) -> pd.DataFrame:
@@ -479,16 +552,50 @@ def model2_vendor_identity_resolution(exp: pd.DataFrame, alloc: pd.DataFrame) ->
         (~pair["is_govt_vendor"])
     )
 
+    # ── Multi-MP Cartel / Regional Syndicate Detection (GFR 2017 Rule 144) ────
+    # Identifies private contractors winning works across multiple MPs with large aggregate funds.
+    vendor_national = exp2.groupby("canonical_vendor", as_index=False).agg(
+        national_spend = ("fund_disbursed", "sum"),
+        mp_count       = ("mp_name", "nunique"),
+        total_works    = ("work_id", "nunique"),
+    )
+    vendor_national["is_govt_vendor"] = vendor_national["canonical_vendor"].apply(_is_govt_vendor)
+    # Cartel threshold: Private vendor capturing works across >= 4 MPs AND aggregate spend >= Rs. 3 Crore
+    vendor_national["cartel_flag"] = (
+        (~vendor_national["is_govt_vendor"]) &
+        (vendor_national["mp_count"] >= 4) &
+        (vendor_national["national_spend"] >= 30_000_000)
+    )
+    pair = pair.merge(
+        vendor_national[["canonical_vendor", "national_spend", "mp_count", "cartel_flag"]],
+        on="canonical_vendor",
+        how="left"
+    )
+    pair["cartel_flag"] = pair["cartel_flag"].fillna(False)
+    pair["monopoly_or_cartel_flag"] = pair["monopoly_flag"] | pair["cartel_flag"]
+    # Boost vendor score for proven cross-MP syndicates
+    pair["vendor_score"] = np.where(
+        pair["cartel_flag"],
+        np.maximum(pair["vendor_score"], 75.0),
+        pair["vendor_score"]
+    )
+
     def build_m2_reason(row):
-        if not row["monopoly_flag"]:
-            return ""
-        aliases = row["alias_names"]
-        alias_note = f" [aliases detected: {aliases}]" if " | " in aliases else ""
-        return (
-            f"Vendor '{row['canonical_vendor']}'{alias_note} received "
-            f"{row['vendor_concentration']*100:.1f}% of MP's total spend "
-            f"({row['contract_count']} contracts, Rs.{row['pair_spend']:,.0f})"
-        )
+        reasons = []
+        if row["monopoly_flag"]:
+            aliases = row["alias_names"]
+            alias_note = f" [aliases detected: {aliases}]" if " | " in aliases else ""
+            reasons.append(
+                f"Vendor '{row['canonical_vendor']}'{alias_note} received "
+                f"{row['vendor_concentration']*100:.1f}% of MP's total spend "
+                f"({row['contract_count']} contracts, Rs.{row['pair_spend']:,.0f})"
+            )
+        if row.get("cartel_flag", False):
+            reasons.append(
+                f"Cross-MP Cartel Alert (GFR Rule 144): Private contractor operating across {int(row.get('mp_count', 0))} MPs "
+                f"with Rs.{row.get('national_spend', 0):,.0f} aggregate public disbursements"
+            )
+        return " | ".join(reasons)
 
     pair["m2_reason"] = pair.apply(build_m2_reason, axis=1)
 
@@ -500,25 +607,21 @@ def model2_vendor_identity_resolution(exp: pd.DataFrame, alloc: pd.DataFrame) ->
     print(f"  Suppressed - MP too few works(<{MIN_MONOPOLY_WORKS}): {n_small_n_filtered:,}")
     print(f"  Suppressed - low spend (<Rs.5L)   : {n_small_spend_filtered:,}")
     print(f"  Monopoly flags (private, active)  : {pair['monopoly_flag'].sum():,}")
+    print(f"  Multi-MP Cartel flags (private)   : {pair['cartel_flag'].sum():,}")
 
     # Build per-work vendor score lookup
-    # Join each expenditure record to the MP-vendor pair scores so we can attach
-    # vendor risk to the SPECIFIC WORK that used a monopolistic vendor -- not to
-    # every work an MP ever touched (the old blanket-per-MP approach).
     exp_scored = exp2[["work_id", "mp_name", "canonical_vendor"]].merge(
         pair[["mp_name", "canonical_vendor", "vendor_concentration",
-              "vendor_score", "monopoly_flag", "alias_names"]],
+              "vendor_score", "monopoly_or_cartel_flag", "alias_names"]],
         on=["mp_name", "canonical_vendor"],
         how="left"
     )
-    # For each work take the vendor with the highest concentration
-    # (a work could have payments to multiple vendors; we flag the worst)
     work_vendor_scores = (
         exp_scored
         .sort_values("vendor_concentration", ascending=False)
         .groupby("work_id", as_index=False)
         .first()[["work_id", "canonical_vendor", "vendor_concentration",
-                  "vendor_score", "monopoly_flag", "alias_names"]]
+                  "vendor_score", "monopoly_or_cartel_flag", "alias_names"]]
     )
     work_vendor_scores.columns = [
         "work_id", "work_top_vendor", "work_vendor_concentration",
@@ -568,9 +671,17 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     df["rule_mp_over_budget"] = df["mp_name"].isin(over_budget_mps)
 
     # Rule 3: Completed work has no photo evidence uploaded (catches all ~12,761 ghost works)
+    # G3 Fix: Never blindly trust has_image=True; verify URL presence and non-placeholder content
     if "has_image" in com.columns and "work_id" in com.columns:
         has_img_series = com["has_image"].fillna(False)
-        is_missing = (has_img_series == False) | (has_img_series.astype(str).str.strip().str.lower().isin(["false", "0", "0.0", "none", "nan", ""]))
+        img_url_series = com["image_url"].fillna("").astype(str).str.strip().str.lower() if "image_url" in com.columns else pd.Series("", index=com.index)
+        invalid_url = img_url_series.isin(["", "none", "nan", "null", "n/a", "-", "false", "0", "0.0", "undefined", "about:blank"])
+        
+        is_missing = (
+            (has_img_series == False) |
+            (has_img_series.astype(str).str.strip().str.lower().isin(["false", "0", "0.0", "none", "nan", ""])) |
+            invalid_url
+        )
         no_photo_ids = set(
             com.loc[is_missing, "work_id"].dropna().tolist()
         )
@@ -592,9 +703,6 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     df["rule_implausible"] = df["implausible_amount_flag"].fillna(False)
 
     # Rule 6: Premature Tranche Release (MPLADS Guidelines 2023 Clause 4.3)
-    # Tranche 2 cannot legally be released until at least 75% of Tranche 1 is utilized.
-    # When Tranche 2 is released within <= 7 days (or same day) of Tranche 1,
-    # it represents a direct administrative bypass of the mandatory 75% utilization gate.
     exp_sorted = exp.sort_values(by=["work_id", "tranche_number", "expenditure_date"])
     t1 = exp_sorted[exp_sorted["tranche_number"] == 1].groupby("work_id").first().reset_index()
     t2 = exp_sorted[exp_sorted["tranche_number"] == 2].groupby("work_id").first().reset_index()
@@ -608,7 +716,6 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     df["rule_premature_tranche"] = df["work_id"].isin(premature_work_ids)
 
     # Rule 7: Stalled / Abandoned Execution with Disbursed Funds (Clause 4.8)
-    # Work has taken public money (> Rs.0), remains incomplete (< 100%), and has stalled > 365 days post-sanction.
     today = pd.Timestamp(datetime.now())
     df["days_since_sanction"] = (today - pd.to_datetime(df["sanction_date"], errors="coerce")).dt.days.fillna(0)
     df["rule_stalled_execution"] = (
@@ -618,25 +725,38 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     )
 
     # Rule 8: GFR 2017 Tender Threshold Evasion (Split Tendering / Threshold Gaming)
-    # General Financial Rules 2017 Rules 149 & 155 strictly prohibit splitting tenders
-    # to bypass mandatory procurement thresholds:
-    # - Rs.4.5L - Rs.4.99L: Clustered just below Rs.5 Lakh mandatory multi-bid threshold (5,160 works)
-    # - Rs.9.0L - Rs.9.99L: Clustered just below Rs.10 Lakh mandatory e-tendering threshold (3,783 works)
     df["rule_split_tender"] = (
         (df["sanction_amount"].between(450000, 499999)) |
         (df["sanction_amount"].between(900000, 999999))
     )
 
+    # Rule 9: Implausible Progress Velocity & Milestone Inflation (GFR Rule 144 / IDA Gaming Guard)
+    df["rule_implausible_progress"] = (
+        ((df["days_since_sanction"] <= 30) & (df["progress_pct"] >= 50)) |
+        ((df["progress_pct"] >= 80) & (df["rule_missing_photo"]))
+    )
+
+    # Rule 10: PAC Audit Norm -- March Fiscal Year-End Rush (Lapse Evasion Surge)
+    # Sanctions issued in final 15 days of fiscal year (March 15-31) to exhaust unspent balances,
+    # coupled with stalled progress, split tendering, or missing photo verification.
+    sanc_dt = pd.to_datetime(df["sanction_date"], errors="coerce")
+    is_march_rush = (sanc_dt.dt.month == 3) & (sanc_dt.dt.day >= 15)
+    df["rule_march_rush"] = is_march_rush & (
+        df["rule_split_tender"] | df["rule_stalled_execution"] | df["rule_missing_photo"] | (df["progress_pct"] < 20)
+    )
+
     # Score: weighted sum of violations, capped at 100
     df["compliance_score"] = (
-        df["rule_overspend"].astype(int)          * 40 +
-        df["rule_mp_over_budget"].astype(int)     * 30 +
-        df["rule_missing_photo"].astype(int)      * 25 +
-        df["rule_early_payment"].astype(int)      * 35 +
-        df["rule_premature_tranche"].astype(int)  * 45 +
-        df["rule_stalled_execution"].astype(int)  * 35 +
-        df["rule_split_tender"].astype(int)       * 30 +
-        df["rule_implausible"].astype(int)        * 15
+        df["rule_overspend"].astype(int)              * 40 +
+        df["rule_mp_over_budget"].astype(int)         * 30 +
+        df["rule_missing_photo"].astype(int)          * 25 +
+        df["rule_early_payment"].astype(int)          * 35 +
+        df["rule_premature_tranche"].astype(int)      * 45 +
+        df["rule_stalled_execution"].astype(int)      * 35 +
+        df["rule_split_tender"].astype(int)           * 30 +
+        df["rule_implausible_progress"].astype(int)   * 30 +
+        df["rule_march_rush"].astype(int)             * 25 +
+        df["rule_implausible"].astype(int)            * 15
     ).clip(0, 100)
 
     def build_m3_reason(row):
@@ -648,7 +768,7 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
         if row["rule_mp_over_budget"]:
             parts.append("MP cumulative spend exceeds true_budget (post-calamity allocation)")
         if row["rule_missing_photo"]:
-            parts.append("Work marked Completed but no photo evidence uploaded")
+            parts.append("Work marked Completed but photo evidence is missing or placeholder URL")
         if row["rule_early_payment"]:
             parts.append("Payment disbursed before official sanction date")
         if row["rule_premature_tranche"]:
@@ -657,6 +777,10 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
             parts.append(f"Stalled execution: funds disbursed but incomplete after >1 year ({int(row['days_since_sanction'])} days)")
         if row["rule_split_tender"]:
             parts.append(f"GFR 2017 Rule 149/155: Sanction Rs.{row['sanction_amount']:,.0f} clustered just below procurement threshold (Split Tendering)")
+        if row["rule_implausible_progress"]:
+            parts.append(f"Implausible progress velocity: {int(row['progress_pct'])}% reported with zero physical photo verification or in <30 days")
+        if row.get("rule_march_rush", False):
+            parts.append("PAC Audit Red Flag: Fiscal year-end March surge sanction (lapse evasion) with negligible milestone delivery")
         if row["rule_implausible"]:
             parts.append(f"Sanction amount Rs.{row['sanction_amount']:.2f} is implausibly low (data-entry error)")
         return "; ".join(parts) if parts else ""
@@ -672,20 +796,22 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     print(f"  - Premature Tranche 2    : {df['rule_premature_tranche'].sum():,}")
     print(f"  - Stalled Execution (>1y): {df['rule_stalled_execution'].sum():,}")
     print(f"  - Split Tendering (GFR)  : {df['rule_split_tender'].sum():,}")
+    print(f"  - Implausible Progress   : {df['rule_implausible_progress'].sum():,}")
     print(f"  - Implausible amount     : {df['rule_implausible'].sum():,}")
 
     return df[["work_id", "compliance_score", "m3_reason",
                "rule_overspend", "rule_mp_over_budget",
                "rule_missing_photo", "rule_early_payment",
                "rule_premature_tranche", "rule_stalled_execution",
-               "rule_split_tender", "rule_implausible"]].copy()
+               "rule_split_tender", "rule_implausible_progress",
+               "rule_implausible"]].copy()
 
 
 # ---------------------------------------------------------------------
 # MODEL 4 -- TIMELINE EARLY WARNING
 # ---------------------------------------------------------------------
 
-def model4_timeline(san: pd.DataFrame) -> pd.DataFrame:
+def model4_timeline(san: pd.DataFrame, com: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     print("\n[Model 4] Timeline Early Warning...")
 
     today = pd.Timestamp(datetime.now())
@@ -695,6 +821,13 @@ def model4_timeline(san: pd.DataFrame) -> pd.DataFrame:
 
     completed_statuses = ["Work Completed"]
     df["is_completed"] = df["work_status"].isin(completed_statuses)
+
+    # Pre-compute works with missing photos to neutralize unverified self-reported progress gaming
+    no_photo_ids: Set[str] = set()
+    if com is not None and "has_image" in com.columns and "work_id" in com.columns:
+        has_img_series = com["has_image"].fillna(False)
+        is_missing = (has_img_series == False) | (has_img_series.astype(str).str.strip().str.lower().isin(["false", "0", "0.0", "none", "nan", ""]))
+        no_photo_ids = set(com.loc[is_missing, "work_id"].dropna().tolist())
 
     def timeline_score(row):
         if row["is_completed"]:
@@ -711,11 +844,24 @@ def model4_timeline(san: pd.DataFrame) -> pd.DataFrame:
         else:
             return 0
 
-        # Progress dampening: a work at 90% complete should not receive the same
-        # timeline penalty as one at 0%. Scale penalty by (1 - progress_pct).
-        # Minimum factor 0.1 so near-complete works still show some flag.
+        # Progress dampening guard:
+        # A corrupt Implementing Agency (IDA) can fraudulently self-report progress = 65% or 90%
+        # to slash the delay score by 65-90%.
+        # Anti-Gaming Defense:
+        # 1. If the work is missing photo evidence, self-reported progress is unverified
+        #    and receives ZERO timeline dampening (progress_factor = 1.0).
+        # 2. If the work is stalled > 730 days (2 years), the discount is capped at max 30% discount
+        #    (factor >= 0.70) because prolonged stalling overrides self-reported claims.
         progress = row.get("progress_pct", 0) or 0
-        progress_factor = max(0.10, 1.0 - (progress / 100.0))
+        is_missing_photo = (row["work_id"] in no_photo_ids) if no_photo_ids else False
+
+        if is_missing_photo:
+            progress_factor = 1.0  # Zero discount for unverified self-reported progress
+        elif days > DELAY_CRIT_DAYS:
+            progress_factor = max(0.70, 1.0 - (progress / 100.0))
+        else:
+            progress_factor = max(0.10, 1.0 - (progress / 100.0))
+
         return round(base * progress_factor, 1)
 
     df["timeline_score"] = df.apply(timeline_score, axis=1)
@@ -802,13 +948,14 @@ def model5_ensemble(m1: pd.DataFrame, m2: tuple, m3: pd.DataFrame,
             "rule_overspend", "rule_mp_over_budget",
             "rule_missing_photo", "rule_early_payment",
             "rule_premature_tranche", "rule_stalled_execution",
-            "rule_split_tender", "rule_implausible"]],
+            "rule_split_tender", "rule_implausible_progress",
+            "rule_march_rush", "rule_implausible"]],
         on="work_id", how="left"
     )
     base["compliance_score"] = base["compliance_score"].fillna(0)
     for b_col in ["rule_overspend", "rule_mp_over_budget", "rule_missing_photo", 
                   "rule_early_payment", "rule_premature_tranche", "rule_stalled_execution",
-                  "rule_split_tender", "rule_implausible"]:
+                  "rule_split_tender", "rule_implausible_progress", "rule_march_rush", "rule_implausible"]:
         if b_col in base.columns:
             base[b_col] = base[b_col].fillna(False).astype(bool)
 
@@ -952,7 +1099,30 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
 
-    clf = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)
+    # Initialize XGBoost model with defensive fallback
+    if HAVE_XGBOOST:
+        clf = XGBClassifier(
+            n_estimators=150,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            scale_pos_weight=1.5,
+            random_state=42,
+            eval_metric='logloss',
+            use_label_encoder=False
+        )
+        model_name_str = "XGBoost (XGBClassifier)"
+    else:
+        clf = GradientBoostingClassifier(
+            n_estimators=150,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            random_state=42
+        )
+        model_name_str = "GradientBoostingClassifier (Scikit-Learn Fallback)"
+
     clf.fit(X_train_scaled, y_train)
 
     X_all_scaled = scaler.transform(feat_df[features])
@@ -970,12 +1140,16 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
         model_out_dir = os.path.join(ROOT_DIR, "models")
         os.makedirs(model_out_dir, exist_ok=True)
         completion_model_path = os.path.join(model_out_dir, "completion_model.joblib")
-        joblib.dump({
+        xgboost_model_path = os.path.join(model_out_dir, "xgboost_completion_model.joblib")
+        payload = {
             "scaler": scaler,
             "model": clf,
+            "model_type": model_name_str,
             "features": features
-        }, completion_model_path)
-        print(f"  [OK] Serialized completion risk model to {completion_model_path}")
+        }
+        joblib.dump(payload, completion_model_path)
+        joblib.dump(payload, xgboost_model_path)
+        print(f"  [OK] Serialized {model_name_str} completion model to {completion_model_path}")
     except Exception as e:
         print(f"  [!] Note: Failed to serialize completion model: {e}")
 
@@ -988,9 +1162,11 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
         mlflow.set_experiment(settings.MLFLOW_EXPERIMENT_NAME)
         with mlflow.start_run(run_name=f"completion_risk_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
             mlflow.log_params({
-                "model_type": "LogisticRegression",
+                "model_type": model_name_str,
                 "features": ",".join(features),
-                "class_weight": "balanced"
+                "n_estimators": 150,
+                "max_depth": 4,
+                "learning_rate": 0.05
             })
             mlflow.log_metrics({
                 "terminal_cases_trained": len(train_df),
@@ -998,21 +1174,22 @@ def model6_completion_prediction(base: pd.DataFrame) -> pd.DataFrame:
             })
             mlflow.set_tags({
                 "model_name": "MPLADS_Completion_Risk_Predictor",
-                "stage": "Production"
+                "stage": "Production",
+                "algorithm": model_name_str
             })
             mlflow.sklearn.log_model(
                 sk_model=clf,
                 artifact_path="completion_risk_model",
                 registered_model_name="MPLADS_Completion_Risk_Predictor"
             )
-        print("  [OK] Registered MPLADS_Completion_Risk_Predictor in MLflow Model Registry.")
+        print(f"  [OK] Registered {model_name_str} in MLflow Model Registry.")
     except Exception as mlf_err:
         print(f"  [*] MLflow completion model registry note: {mlf_err}")
 
     # Drop temporary column
     df = df.drop(columns=['terminal_outcome'])
 
-    print(f"  Trained Logistic Regression on {len(train_df):,} historical terminal cases")
+    print(f"  Trained {model_name_str} on {len(train_df):,} historical terminal cases")
     print(f"  Average predicted completion probability: {df['completion_probability'].mean()*100:.1f}%")
     print(f"  - Completed works avg       : {df[df['work_status']=='Work Completed']['completion_probability'].mean()*100:.1f}%")
     print(f"  - Partially completed avg   : {df[df['work_status']=='Work partially Completed']['completion_probability'].mean()*100:.1f}%")
@@ -1123,13 +1300,39 @@ def main():
     m1       = model1_isolation_forest(san, exp, alloc)
     m2       = model2_vendor_identity_resolution(exp, alloc)  # returns (pair, work_vendor_scores)
     m3       = model3_compliance_rules(san, exp, com, alloc)
-    m4       = model4_timeline(san)
+    m4       = model4_timeline(san, com)
 
     flags    = model5_ensemble(m1, m2, m3, m4, san, exp)
     flags    = model6_completion_prediction(flags)
 
     flags.to_csv(OUT_FILE, index=False, encoding="utf-8-sig")
     print(f"\n  fraud_flags.csv saved: {len(flags):,} works scored")
+
+    # Cryptographic SHA-256 Tamper-Evident Dataset Sealing (Pillar 4 CVC Compliance)
+    with open(OUT_FILE, "rb") as f:
+        csv_bytes = f.read()
+    file_sha256 = hashlib.sha256(csv_bytes).hexdigest()
+    
+    sha256_path = OUT_FILE + ".sha256"
+    with open(sha256_path, "w", encoding="utf-8") as f:
+        f.write(f"{file_sha256}  fraud_flags.csv\n")
+        
+    seal_metadata = {
+        "file_name": "fraud_flags.csv",
+        "sha256_seal": file_sha256,
+        "record_count": len(flags),
+        "total_sanctioned_amount": float(pd.to_numeric(flags.get("sanction_amount", 0), errors="coerce").sum()),
+        "total_disbursed_amount": float(pd.to_numeric(flags.get("total_spent", 0), errors="coerce").sum()),
+        "critical_risk_count": int((flags.get("risk_label") == "CRITICAL").sum()) if "risk_label" in flags.columns else 0,
+        "sealed_at": datetime.now(timezone.utc).isoformat(),
+        "genesis_seal": "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026",
+        "statutory_authority": "MoSPI DIID / Central Vigilance Commission"
+    }
+    seal_json_path = OUT_FILE + ".seal.json"
+    with open(seal_json_path, "w", encoding="utf-8") as f:
+        json.dump(seal_metadata, f, indent=2)
+    print(f"  Tamper-Evident SHA-256 Seal: {file_sha256}")
+    print(f"  Seal metadata persisted to: {os.path.basename(seal_json_path)}")
 
     write_summary(flags, m2[0])   # m2[0] = pair DataFrame
     print(f"\n  fraud_summary.txt saved")

@@ -23,6 +23,7 @@ import base64
 import re
 from typing import Dict, Any, Optional
 from PIL import Image, ImageChops, ImageEnhance
+from PIL.ExifTags import TAGS
 import numpy as np
 
 # Load environment configuration
@@ -36,11 +37,114 @@ except Exception:
     pass
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+
+# In-memory cache for instant subsequent lookups
+_vision_audit_cache: Dict[str, Any] = {}
+
+# Known synthetic AI generator, editing software, and canvas tools
+KNOWN_AI_SOFTWARE_SIGNATURES = [
+    "midjourney", "stable diffusion", "stablediffusion", "dall-e", "dalle",
+    "flux", "firefly", "comfyui", "automatic1111", "novelai", "invokeai",
+    "photoshop", "gimp", "canva", "picsart", "lightroom"
+]
 
 
 # ==============================================================================
-# 1. ERROR LEVEL ANALYSIS (ELA) — Pure Math / Zero Cloud Dependencies
+# 1. HARDWARE SENSOR & EXIF AUTHENTICITY AUDITOR (Zero Latency)
+# ==============================================================================
+
+def inspect_image_authenticity(image_path: str) -> Dict[str, Any]:
+    """
+    Local Zero-Latency Sensor Forensics:
+    Inspects hardware camera EXIF sensor tags, software signatures, and synthetic fingerprints.
+    
+    Legitimate field inspection photos taken by District Engineers / Gram Panchayats
+    carry authentic camera sensor metadata (Make: Samsung, Vivo, Xiaomi, Apple, Motorola;
+    Model, DateTimeOriginal, FocalLength).
+    
+    Generative AI tools (Midjourney, DALL-E, Stable Diffusion, Flux):
+    1. Strip all hardware camera sensor tags (Make/Model completely absent).
+    2. Embed generator signatures in Software or UserComment tags.
+    3. Often output fixed square resolutions (512, 768, 1024, 2048) with zero camera EXIF.
+    """
+    try:
+        with Image.open(image_path) as img:
+            exif_raw = img._getexif()
+            width, height = img.size
+            info_dict = img.info or {}
+
+        if not exif_raw:
+            # Check if PNG/JPEG info dict contains AI generation prompt markers (common in SD/ComfyUI)
+            info_text = " ".join([f"{k}:{v}" for k, v in info_dict.items() if isinstance(v, (str, bytes))]).lower()
+            found_ai_tag = None
+            for sig in KNOWN_AI_SOFTWARE_SIGNATURES:
+                if sig in info_text:
+                    found_ai_tag = sig
+                    break
+                    
+            is_suspicious_dimensions = (width == height) and (width in [512, 768, 1024, 1536, 2048])
+            
+            return {
+                "has_hardware_exif": False,
+                "camera_make": None,
+                "camera_model": None,
+                "software_signature": found_ai_tag,
+                "is_synthetic_suspect": bool(found_ai_tag or is_suspicious_dimensions),
+                "authenticity_risk": "HIGH" if (found_ai_tag or is_suspicious_dimensions) else "MODERATE",
+                "notes": (
+                    f"Identified synthetic generator software signature: '{found_ai_tag}'."
+                    if found_ai_tag else
+                    "No hardware camera EXIF sensor tags found (stripped metadata). Possible web download or synthetic render."
+                    if is_suspicious_dimensions else
+                    "Standard camera metadata stripped or re-encoded."
+                )
+            }
+
+        tags = {TAGS.get(k, k): v for k, v in exif_raw.items()}
+        make = str(tags.get("Make", "")).strip()
+        model = str(tags.get("Model", "")).strip()
+        software = str(tags.get("Software", "")).strip()
+        datetime_taken = str(tags.get("DateTimeOriginal") or tags.get("DateTime") or "").strip()
+
+        # Check for explicit software generation tags
+        found_sw_ai = None
+        for sig in KNOWN_AI_SOFTWARE_SIGNATURES:
+            if sig in software.lower():
+                found_sw_ai = sig
+                break
+
+        has_valid_sensor = bool(make and model and make.lower() not in ["unknown", "generic"])
+        is_synthetic = bool(found_sw_ai or (not has_valid_sensor and not datetime_taken))
+
+        return {
+            "has_hardware_exif": has_valid_sensor,
+            "camera_make": make or None,
+            "camera_model": model or None,
+            "software_signature": software or None,
+            "datetime_taken": datetime_taken or None,
+            "is_synthetic_suspect": is_synthetic,
+            "authenticity_risk": "HIGH" if is_synthetic else "LOW",
+            "notes": (
+                f"Hardware camera sensor verified: {make} {model} (Captured: {datetime_taken})"
+                if has_valid_sensor and not found_sw_ai else
+                f"Flagged: Editing / AI Software detected: '{software}'"
+                if found_sw_ai else
+                "Camera hardware metadata missing or incomplete."
+            )
+        }
+    except Exception as e:
+        return {
+            "has_hardware_exif": False,
+            "error": str(e),
+            "is_synthetic_suspect": False,
+            "authenticity_risk": "UNKNOWN",
+            "notes": "Could not parse EXIF metadata."
+        }
+
+
+# ==============================================================================
+# 2. ERROR LEVEL ANALYSIS (ELA) — Pure Math / Zero Cloud Dependencies
 # ==============================================================================
 
 def generate_ela_heatmap(
@@ -170,17 +274,24 @@ Audit Guidelines:
 1. Examine what is physically depicted in the photograph.
 2. Does it show genuine civil infrastructure matching the declared work (e.g. paved concrete road, masonry hall, hand pump, solar light pole)?
 3. Or does it depict an unrelated scene (e.g. empty agricultural wasteland with weeds, indoor domestic room, office desk, selfie, stock photo)?
-4. Look for authentic construction markers: fresh concrete curing, road curb leveling, drainage joints, brickwork.
-5. Provide a strict confidence score (0 to 100).
+4. Look for authentic construction markers: fresh concrete curing, road curb leveling, drainage joints, brickwork, real dust/grit.
+5. GENERATIVE AI & SYNTHETIC TAMPER INSPECTION:
+   Inspect for signs of AI generation (Midjourney, DALL-E, Stable Diffusion, Flux):
+   - Unnaturally smooth surfaces, rubbery/plastic concrete textures, dreamlike or ethereal lighting.
+   - Architectural implausibilities (roads dissolving into terrain, impossible curb angles, nonsensical scaffolding).
+   - Distorted bystanders, garbled Hindi/English letters on project signboards, surreal vegetation.
+   If AI generation is detected or suspected, set "is_ai_generated": true and verdict: "SUSPECTED_AI_GENERATED_PHOTO".
 
 Return your findings strictly in valid JSON format:
 {{
   "asset_verified": true or false,
+  "is_ai_generated": true or false,
+  "ai_confidence": 0-100,
   "detected_scene": "Accise 1-sentence description of what is actually visible",
   "claimed_asset": "{work_title}",
   "confidence_score": 0-100,
-  "verdict": "VERIFIED_INFRASTRUCTURE" | "SUSPECTED_GHOST_ASSET" | "INCONCLUSIVE",
-  "audit_reasoning": "Detailed civil engineering forensic observation",
+  "verdict": "VERIFIED_INFRASTRUCTURE" | "SUSPECTED_GHOST_ASSET" | "SUSPECTED_AI_GENERATED_PHOTO" | "INCONCLUSIVE",
+  "audit_reasoning": "Detailed civil engineering and authenticity forensic observation",
   "action_recommendation": "Clear administrative step for District Magistrate"
 }}
 """
@@ -224,17 +335,22 @@ Return your findings strictly in valid JSON format:
 
     except Exception as e:
         is_quota = "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e)
-        # Resilient fallback: Return deterministic civil engineering assessment
+        # Fail-closed statutory audit: Service failure MUST NOT produce a clean verification
         return {
-            "success": True,
-            "asset_verified": True,
-            "detected_scene": f"Civil construction work consistent with declared schedule: {work_title[:50]}",
+            "success": False,
+            "asset_verified": False,
+            "detected_scene": "API Connection / Quota Unavailable: Multimodal inspection unverified",
             "claimed_asset": work_title,
-            "confidence_score": 88,
-            "verdict": "VERIFIED_INFRASTRUCTURE",
-            "audit_reasoning": "Forensic image geometry confirms masonry and earthwork profile aligned with approved engineering estimates. Zero structural occlusion.",
-            "action_recommendation": "Cross-reference Measurement Book (MB) entries with ground site coordinates.",
-            "quota_notice": "Cloud Vision quota safely handled; deterministic forensic assessment rendered." if is_quota else None
+            "confidence_score": 0,
+            "verdict": "AUDIT_INCONCLUSIVE_RETRY_REQUIRED",
+            "audit_reasoning": (
+                f"Automated multimodal vision audit could not complete due to upstream service unavailability "
+                f"({'Cloud Vision Quota Exhausted' if is_quota else 'Vision API Connection Error'}). "
+                "CVC norms mandate physical verification by District Magistrate inspection team."
+            ),
+            "action_recommendation": "Flag for mandatory physical site inspection; retry automated scan during off-peak window.",
+            "quota_notice": "Cloud Vision quota safely handled; flagged for offline verification." if is_quota else None,
+            "error": str(e)
         }
 
 
@@ -258,38 +374,61 @@ def run_full_vision_audit(
             "error": f"Image file not found: {image_path}",
             "verdict": "IMAGE_NOT_FOUND"
         }
+
+    cache_key = f"{os.path.abspath(image_path)}_{work_title}_{sanction_amount}"
+    if cache_key in _vision_audit_cache:
+        return dict(_vision_audit_cache[cache_key])
         
-    # 1. Error Level Analysis
+    # 1. Hardware Sensor & EXIF Authenticity Check
+    exif_res = inspect_image_authenticity(image_path)
+
+    # 2. Error Level Analysis
     ela_res = generate_ela_heatmap(image_path)
-    
-    # 2. Multimodal Scene Verification
+
+    # 3. Multimodal Scene Verification
     vision_res = audit_asset_photo_gemini(
         image_path=image_path,
         work_title=work_title,
         sanction_amount=sanction_amount,
         category=category
     )
-    
-    # 3. Composite Risk Evaluation
+
+    # 4. Composite Risk Evaluation
     is_tampered = ela_res.get("is_tampered", False)
     is_ghost = vision_res.get("verdict") == "SUSPECTED_GHOST_ASSET"
-    
-    if is_tampered and is_ghost:
+    is_ai = (
+        vision_res.get("is_ai_generated", False) or 
+        (vision_res.get("verdict") == "SUSPECTED_AI_GENERATED_PHOTO") or
+        (exif_res.get("is_synthetic_suspect", False) and exif_res.get("software_signature") is not None)
+    )
+    is_inconclusive = (
+        vision_res.get("verdict") == "AUDIT_INCONCLUSIVE_RETRY_REQUIRED" or
+        not vision_res.get("success", False)
+    )
+
+    if is_ai:
+        overall_status = "SYNTHETIC_AI_IMAGE_DETECTED"
+    elif is_tampered and is_ghost:
         overall_status = "CRITICAL_FRAUD_RISK"
     elif is_tampered:
         overall_status = "TAMPERED_PHOTOGRAPH_DETECTED"
     elif is_ghost:
         overall_status = "SUSPECTED_GHOST_ASSET"
+    elif is_inconclusive:
+        overall_status = "INCONCLUSIVE_RETRY_REQUIRED"
     else:
         overall_status = "VERIFIED_AUTHENTIC_ASSET"
-        
-    return {
+
+    result = {
         "success": True,
         "image_path": image_path,
         "overall_status": overall_status,
+        "authenticity": exif_res,
         "ela": ela_res,
         "vision": vision_res
     }
+    _vision_audit_cache[cache_key] = result
+    return result
 
 
 if __name__ == "__main__":

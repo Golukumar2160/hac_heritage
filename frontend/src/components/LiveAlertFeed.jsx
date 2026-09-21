@@ -92,33 +92,36 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
   }, [loadData]);
 
   const getTierBadge = (riskScore, tierName) => {
-    const score = Number(riskScore) || 0;
-    if (score >= 0.85 || tierName === 'critical') {
+    const rawScore = Number(riskScore) || 0;
+    const score100 = rawScore <= 1.0 ? rawScore * 100 : rawScore;
+    const tierUpper = String(tierName || '').toUpperCase();
+
+    if (tierUpper === 'CRITICAL' || score100 >= 85.0) {
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-rose-500/15 text-rose-300 border border-rose-500/30">
           <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
-          CRITICAL ({score.toFixed(2)})
+          CRITICAL ({score100.toFixed(1)})
         </span>
       );
     }
-    if (score >= 0.65 || tierName === 'high') {
+    if (tierUpper === 'HIGH' || score100 >= 58.0) {
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
           <span className="w-2 h-2 rounded-full bg-amber-400 mr-1.5" />
-          HIGH ({score.toFixed(2)})
+          HIGH ({score100.toFixed(1)})
         </span>
       );
     }
-    if (score >= 0.4 || tierName === 'medium') {
+    if (tierUpper === 'MEDIUM' || score100 >= 39.0) {
       return (
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold font-mono bg-violet-500/15 text-violet-300 border border-violet-500/30">
-          MED ({score.toFixed(2)})
+          MED ({score100.toFixed(1)})
         </span>
       );
     }
     return (
       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-        LOW ({score.toFixed(2)})
+        LOW ({score100.toFixed(1)})
       </span>
     );
   };
@@ -288,7 +291,10 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                   const sanction = Number(work.sanction_amount || 0);
                   const spent = Number(work.total_spent || 0);
                   const overrun = work.cost_overrun_pct || 0;
-                  const isCritical = (Number(work.risk_score) || 0) >= 0.85;
+                  const rawScore = Number(work.risk_score_100 || work.risk_score || 0);
+                  const score100 = rawScore <= 1.0 ? rawScore * 100 : rawScore;
+                  const tierUpper = String(work.risk_label || work.risk_tier || '').toUpperCase();
+                  const isCritical = tierUpper === 'CRITICAL' || score100 >= 85.0;
 
                   return (
                     <tr 
@@ -337,16 +343,16 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                       {/* Risk Score */}
                       <td className="py-4 px-4">
                         <div>
-                          {getTierBadge(work.risk_score, work.risk_tier)}
+                          {getTierBadge(score100, work.risk_tier)}
                         </div>
                         <div className="w-28 bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
                           <div
-                            className={`h-full rounded-full ${
+                            className={`h-full rounded-full transition-all duration-300 ${
                               isCritical ? 'bg-rose-500' :
-                              (Number(work.risk_score) || 0) >= 0.65 ? 'bg-amber-400' :
+                              score100 >= 58.0 ? 'bg-amber-400' :
                               'bg-violet-400'
                             }`}
-                            style={{ width: `${Math.min(100, (Number(work.risk_score) || 0) * 100)}%` }}
+                            style={{ width: `${Math.min(100, Math.max(3, score100))}%` }}
                           />
                         </div>
                         {work.completion_probability !== undefined && (
@@ -363,8 +369,22 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                         )}
                       </td>
 
-                      {/* Anomaly Triggers Badges */}
+                      {/* Anomaly Triggers & Model 5 Ensemble Signals */}
                       <td className="py-4 px-4">
+                        <div className="w-full flex items-center gap-1 text-[10px] font-mono text-slate-400 mb-1.5" title="Model 5 Weighted Ensemble 4-Signal Percentiles: Anomaly (35%), Vendor (30%), Compliance (20%), Timeline (15%)">
+                          <span className="px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30" title="Layer 1/2 Isolation Forest Percentile">
+                            A:{Math.round(work.anomaly_score_pct || 0)}%
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Layer 3 Vendor Cartel Percentile">
+                            V:{Math.round(work.vendor_score_pct || 0)}%
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Layer 3 Statutory Compliance Percentile">
+                            C:{Math.round(work.compliance_score_pct || 0)}%
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Layer 4 Timeline Delay Percentile">
+                            T:{Math.round(work.timeline_score_pct || 0)}%
+                          </span>
+                        </div>
                         <div className="flex flex-wrap gap-1.5 max-w-xs">
                           {work.rule_premature_tranche && (
                             <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40" title="Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)">

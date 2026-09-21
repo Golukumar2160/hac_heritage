@@ -1,0 +1,25 @@
+{
+  "selected_at": "2026-09-19 16:42:09 IST",
+  "selection_criterion": "Best test_roc_auc (max)",
+  "champion_experiment": {
+    "experiment_id": 1,
+    "name": "baseline_all_7",
+    "run_id": "7c62e16b660d4ff2ae3f7c5ee6dedb1b",
+    "suite": "baseline",
+    "features": "log_amount,spend_ratio,spend_pace,days_norm,anomaly_score,compliance_score,vendor_conc",
+    "feature_count": 7,
+    "excluded_feature": "none",
+    "scaler": "standard",
+    "C": 1.0,
+    "penalty": "l2",
+    "test_roc_auc": 0.9535,
+    "test_pr_auc": 0.7927,
+    "test_f1": 0.6311,
+    "test_accuracy": 0.8861,
+    "test_brier_score": 0.0875,
+    "train_time_sec": 0.074,
+    "status": "SUCCESS"
+  },
+  "total_experiments_run": 27,
+  "successful_runs": 27
+}
