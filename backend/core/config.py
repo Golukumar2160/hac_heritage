@@ -120,7 +120,8 @@ class Settings:
 
     # AI & External Services
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "google/gemini-2.5-flash-lite")
+    AICREDITS_BASE_URL: str = os.getenv("AICREDITS_BASE_URL", "https://api.aicredits.in/v1")
     NETWORK_TIMEOUT_SECONDS: float = 2.0
 
     # MLOps & MLflow Tracking

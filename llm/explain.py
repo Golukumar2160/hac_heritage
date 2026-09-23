@@ -29,6 +29,12 @@ try:
 except ImportError:
     _GENAI_AVAILABLE = False
 
+try:
+    import httpx
+    _HTTPX_AVAILABLE = True
+except ImportError:
+    _HTTPX_AVAILABLE = False
+
 from .context_builder import ContextBuilder
 
 
@@ -57,7 +63,7 @@ def _format_sse(text: str) -> str:
     Formats text into an SSE-compliant data payload.
     In the SSE protocol:
     - Every line must be prefixed with 'data: '.
-    - An empty line terminates the event ('\\n\\n').
+    - An empty line terminates the event ('\n\n').
     """
     if not text:
         return "data: \n\n"
@@ -69,14 +75,19 @@ class GeminiExplainer:
     """
     Forensic explainer client using Gemini Flash.
     Acts as a Senior CAG Forensic Auditor specializing in public procurement integrity.
+    Supports both direct Google GenAI SDK and OpenAI-compatible gateway (e.g. AICredits).
     """
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self.model = model or os.getenv("GEMINI_MODEL", "google/gemini-2.5-flash-lite")
+        self.base_url = os.getenv("AICREDITS_BASE_URL", "https://api.aicredits.in/v1")
+        self.is_openai_compat = bool(self.api_key and (self.api_key.startswith("sk-") or "aicredits" in self.base_url))
         
         self.client = None
-        if _GENAI_AVAILABLE and self.api_key:
+        if self.is_openai_compat and _HTTPX_AVAILABLE and self.api_key:
+            self.client = "openai_compat"
+        elif _GENAI_AVAILABLE and self.api_key:
             try:
                 self.client = genai.Client(api_key=self.api_key)
             except Exception as e:
@@ -91,6 +102,30 @@ class GeminiExplainer:
     def _call_generate_content(self, **kwargs):
         """Calls generate_content with automatic fallback if configured model is deprecated."""
         model_to_use = kwargs.pop("model", self.model)
+        
+        if self.is_openai_compat and _HTTPX_AVAILABLE:
+            url = f"{self.base_url.rstrip('/')}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            prompt_text = kwargs.get("contents", "")
+            data = {
+                "model": model_to_use,
+                "messages": [{"role": "user", "content": prompt_text}],
+                "temperature": kwargs.get("temperature", 0.1)
+            }
+            with httpx.Client(timeout=15.0) as http_client:
+                r = http_client.post(url, headers=headers, json=data)
+                r.raise_for_status()
+                resp_json = r.json()
+                content = resp_json["choices"][0]["message"]["content"]
+                
+                class OpenAICompatResponse:
+                    def __init__(self, text):
+                        self.text = text
+                return OpenAICompatResponse(content)
+
         try:
             return self.client.models.generate_content(model=model_to_use, **kwargs)
         except Exception as e:
@@ -104,6 +139,41 @@ class GeminiExplainer:
     def _call_generate_content_stream(self, **kwargs):
         """Calls generate_content_stream with automatic fallback if configured model is deprecated."""
         model_to_use = kwargs.pop("model", self.model)
+        
+        if self.is_openai_compat and _HTTPX_AVAILABLE:
+            url = f"{self.base_url.rstrip('/')}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            prompt_text = kwargs.get("contents", "")
+            data = {
+                "model": model_to_use,
+                "messages": [{"role": "user", "content": prompt_text}],
+                "stream": True,
+                "temperature": kwargs.get("temperature", 0.2)
+            }
+            class OpenAICompatStreamChunk:
+                def __init__(self, text):
+                    self.text = text
+
+            def _stream_generator():
+                with httpx.stream("POST", url, headers=headers, json=data, timeout=20.0) as stream_resp:
+                    stream_resp.raise_for_status()
+                    for line in stream_resp.iter_lines():
+                        if line.startswith("data: "):
+                            chunk_str = line[6:].strip()
+                            if chunk_str == "[DONE]":
+                                break
+                            try:
+                                chunk_json = json.loads(chunk_str)
+                                delta = chunk_json["choices"][0].get("delta", {}).get("content", "")
+                                if delta:
+                                    yield OpenAICompatStreamChunk(delta)
+                            except Exception:
+                                pass
+            return _stream_generator()
+
         try:
             return self.client.models.generate_content_stream(model=model_to_use, **kwargs)
         except Exception as e:

@@ -1,7 +1,8 @@
 # =====================================================================
 # BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
-# Model 4/6 Experiment Configuration: Completion Probability & Timeline Risk
+# Model 6 Linear Baseline Configuration: Completion Probability & Timeline Risk
 # Architecture: Supervised Logistic Regression with 1-by-1 & 2-at-a-time Feature Ablation
+# Note: Serves as the interpretable linear benchmark comparing against Model 6 XGBoost production ensemble
 # =====================================================================
 
 experiment_metadata:

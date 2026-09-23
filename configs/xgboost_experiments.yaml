@@ -1,6 +1,6 @@
 # =====================================================================
 # BHARAT-DRISHTI: MoSPI MPLADS Forensic Anomaly Detection
-# Model 4 Experiment Configuration: XGBoost Non-Linear Hazard Scorer
+# Model 6 Production & Experiment Configuration: XGBoost Non-Linear Completion Hazard Scorer
 # Architecture: Gradient-Boosted Decision Trees on Cost Overrun & Execution Duration
 # =====================================================================
 

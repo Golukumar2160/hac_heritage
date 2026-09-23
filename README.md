@@ -89,8 +89,8 @@ graph TD
 |:---|:---|
 | **Frontend UI** | React 19, Vite, TailwindCSS, Lucide Icons, Canvas-Confetti |
 | **Backend API** | Python 3.11, FastAPI, Uvicorn, Pydantic, Pandas, NumPy |
-| **AI & Machine Learning** | Scikit-Learn (Isolation Forest, Logistic Regression), XGBoost, SciPy (Benford's Law) |
-| **Generative AI** | Google Gemini 2.0 Flash / Pro Vision API (`@google/genai`) |
+| **AI & Machine Learning** | Scikit-Learn (Isolation Forest), XGBoost (Completion & Hazard Prediction), Logistic Regression (Linear Benchmark), SciPy (Benford's Law) |
+| **Generative AI** | Google Gemini 2.5 Flash Vision API (`@google/genai`) |
 | **Image Forensics** | OpenCV, PIL (Pillow), Perceptual Hashing (pHash), Error Level Analysis (ELA) |
 | **Database & Cloud** | PostgreSQL (Supabase Cloud Pooler) + Local Fast-Cache CSV Engine |
 | **Security & Auditing** | JWT (JSON Web Tokens), Role-Based Access Control, SHA-256 Hash Chain |

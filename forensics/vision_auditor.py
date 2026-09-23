@@ -26,6 +26,12 @@ from PIL import Image, ImageChops, ImageEnhance
 from PIL.ExifTags import TAGS
 import numpy as np
 
+try:
+    import httpx
+    _HTTPX_AVAILABLE = True
+except ImportError:
+    _HTTPX_AVAILABLE = False
+
 # Load environment configuration
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_FILE = os.path.join(ROOT_DIR, ".env")
@@ -37,7 +43,7 @@ except Exception:
     pass
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "google/gemini-2.5-flash-lite")
 
 # In-memory cache for instant subsequent lookups
 _vision_audit_cache: Dict[str, Any] = {}
@@ -253,11 +259,6 @@ def audit_asset_photo_gemini(
         }
         
     try:
-        from google import genai
-        from google.genai import types
-        
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        
         with open(image_path, "rb") as f:
             image_bytes = f.read()
             
@@ -295,28 +296,59 @@ Return your findings strictly in valid JSON format:
   "action_recommendation": "Clear administrative step for District Magistrate"
 }}
 """
-        try:
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                    prompt
-                ]
-            )
-        except Exception as _m_err:
-            if ("404" in str(_m_err) or "NOT_FOUND" in str(_m_err) or "no longer available" in str(_m_err)) and GEMINI_MODEL != "gemini-flash-latest":
-                print(f"[!] Configured vision model '{GEMINI_MODEL}' unavailable ({_m_err}). Switching to 'gemini-flash-latest'.")
+        is_openai_compat = bool(GEMINI_API_KEY and (GEMINI_API_KEY.startswith("sk-") or "aicredits" in os.getenv("AICREDITS_BASE_URL", "")))
+        
+        if is_openai_compat and _HTTPX_AVAILABLE:
+            base_url = os.getenv("AICREDITS_BASE_URL", "https://api.aicredits.in/v1")
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {GEMINI_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            b64_img = base64.b64encode(image_bytes).decode("utf-8")
+            payload = {
+                "model": GEMINI_MODEL,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}}
+                        ]
+                    }
+                ],
+                "temperature": 0.2
+            }
+            with httpx.Client(timeout=20.0) as http_client:
+                res = http_client.post(url, headers=headers, json=payload)
+                res.raise_for_status()
+                text = res.json()["choices"][0]["message"]["content"].strip()
+        else:
+            from google import genai
+            from google.genai import types
+            
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            try:
                 response = client.models.generate_content(
-                    model="gemini-flash-latest",
+                    model=GEMINI_MODEL,
                     contents=[
                         types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
                         prompt
                     ]
                 )
-            else:
-                raise _m_err
-        
-        text = response.text.strip()
+            except Exception as _m_err:
+                if ("404" in str(_m_err) or "NOT_FOUND" in str(_m_err) or "no longer available" in str(_m_err)) and GEMINI_MODEL != "gemini-flash-latest":
+                    print(f"[!] Configured vision model '{GEMINI_MODEL}' unavailable ({_m_err}). Switching to 'gemini-flash-latest'.")
+                    response = client.models.generate_content(
+                        model="gemini-flash-latest",
+                        contents=[
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                            prompt
+                        ]
+                    )
+                else:
+                    raise _m_err
+            text = response.text.strip()
         match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
         if match:
             json_str = match.group(1).strip()
