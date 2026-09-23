@@ -47,6 +47,7 @@ import {
   Landmark,
   MapPin,
   Vote,
+  UserCheck,
   Scale,
   Radio,
   Zap,
@@ -58,9 +59,12 @@ import {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => api.getCurrentUser());
-  const isCitizen = false;
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeRole, setActiveRole] = useState('ministry');
+  const activeRole = currentUser?.role || 'ministry';
+  const isCitizen = activeRole === 'citizen';
+  const [activeTab, setActiveTab] = useState(() => {
+    const user = api.getCurrentUser();
+    return user?.role === 'citizen' ? 'citizen_overview' : 'overview';
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [selectedWorkId, setSelectedWorkId] = useState(null);
@@ -395,20 +399,52 @@ export default function App() {
               </span>
             </div>
 
-            {/* Central MoSPI National Authority Indicator */}
+            {/* Scoped Authority Indicator Badge (Locked to User's Role, No Switcher Options) */}
             <div 
               className="flex items-center space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold tracking-wide shadow-xs"
               style={{
-                background: 'rgba(139,92,246,0.18)',
-                border: '1px solid rgba(139,92,246,0.4)',
-                color: '#c4b5fd'
+                background: activeRole === 'state' ? 'rgba(6,182,212,0.18)' :
+                            activeRole === 'district' ? 'rgba(16,185,129,0.18)' :
+                            activeRole === 'mp' ? 'rgba(245,158,11,0.18)' :
+                            activeRole === 'citizen' ? 'rgba(20,184,166,0.18)' :
+                            'rgba(139,92,246,0.18)',
+                border: activeRole === 'state' ? '1px solid rgba(6,182,212,0.4)' :
+                        activeRole === 'district' ? '1px solid rgba(16,185,129,0.4)' :
+                        activeRole === 'mp' ? '1px solid rgba(245,158,11,0.4)' :
+                        activeRole === 'citizen' ? '1px solid rgba(20,184,166,0.4)' :
+                        '1px solid rgba(139,92,246,0.4)',
+                color: activeRole === 'state' ? '#67e8f9' :
+                       activeRole === 'district' ? '#6ee7b7' :
+                       activeRole === 'mp' ? '#fcd34d' :
+                       activeRole === 'citizen' ? '#5eead4' :
+                       '#c4b5fd'
               }}
-              title="Central MoSPI — Pan-India Sovereign Oversight (98,649 Works)"
+              title={`Authenticated Session: ${currentUser?.name || 'Official'} (${(activeRole || 'ministry').toUpperCase()})`}
             >
-              <Landmark className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-              <span>Central MoSPI</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-800/80 text-violet-100 font-semibold">
-                98.6k
+              {activeRole === 'state' ? <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> :
+               activeRole === 'district' ? <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> :
+               activeRole === 'mp' ? <Vote className="w-3.5 h-3.5 text-amber-400 shrink-0" /> :
+               activeRole === 'citizen' ? <UserCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" /> :
+               <Landmark className="w-3.5 h-3.5 text-violet-400 shrink-0" />}
+              <span>
+                {activeRole === 'state' ? `State (${currentUser?.state ? (currentUser.state.length > 12 ? currentUser.state.slice(0, 10) + '..' : currentUser.state) : 'UP'})` :
+                 activeRole === 'district' ? `DM (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
+                 activeRole === 'mp' ? `Hon MP (${currentUser?.name ? currentUser.name.split(' ').slice(0, 2).join(' ') : 'Javed'})` :
+                 activeRole === 'citizen' ? `Citizen (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
+                 'Central MoSPI'}
+              </span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold ${
+                activeRole === 'state' ? 'bg-cyan-800/80 text-cyan-100' :
+                activeRole === 'district' ? 'bg-emerald-800/80 text-emerald-100' :
+                activeRole === 'mp' ? 'bg-amber-800/80 text-amber-100' :
+                activeRole === 'citizen' ? 'bg-teal-800/80 text-teal-100' :
+                'bg-violet-800/80 text-violet-100'
+              }`}>
+                {activeRole === 'state' ? (kpis?.total_works ? `${(kpis.total_works / 1000).toFixed(1)}k` : '19.9k') :
+                 activeRole === 'district' ? (kpis?.total_works ? `${kpis.total_works}` : '293') :
+                 activeRole === 'mp' ? (kpis?.total_works ? `${kpis.total_works}` : '178') :
+                 activeRole === 'citizen' ? 'Public' :
+                 '98.6k'}
               </span>
             </div>
 
@@ -542,10 +578,16 @@ export default function App() {
                   </span>
                   <div>
                     <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                      NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)
+                      {activeRole === 'state' ? `STATE NODAL COMMAND (${(currentUser?.state || 'UTTAR PRADESH').toUpperCase()})` :
+                       activeRole === 'district' ? `DISTRICT ENFORCEMENT COMMAND (${(currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || currentUser?.district || 'PILIBHIT').toUpperCase()})` :
+                       activeRole === 'mp' ? `CONSTITUENCY INTEGRITY MONITOR (${(currentUser?.name || "HON'BLE MP").toUpperCase()})` :
+                       'NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)'}
                     </span>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)
+                      {activeRole === 'state' ? `State planning authority oversight across districts in ${currentUser?.state || 'the state'} under vigilance` :
+                       activeRole === 'district' ? `District Magistrate statutory powers: Tranche freezes, contractor show-causes, ground inspections` :
+                       activeRole === 'mp' ? `Development delivery tracking & Clause 3.2 mandatory SC (15%) and ST (7.5%) fund earmarking` :
+                       'Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)'}
                     </p>
                   </div>
                 </div>

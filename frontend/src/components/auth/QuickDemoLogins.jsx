@@ -17,51 +17,90 @@ export const DEMO_CREDENTIALS = [
     password: 'Ministry@2026',
     badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
     icon: Landmark
+  },
+  {
+    role: 'state',
+    label: 'State Nodal (UP)',
+    designation: 'Principal Secretary (Planning)',
+    username: 'state_nodal_up',
+    password: 'StateUP@2026',
+    badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+    icon: Building2
+  },
+  {
+    role: 'district',
+    label: 'District Magistrate',
+    designation: 'DM & Collector (Pilibhit IDA)',
+    username: 'district_pilibhit',
+    password: 'District@2026',
+    badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    icon: MapPin
+  },
+  {
+    role: 'mp',
+    label: 'Hon\'ble MP',
+    designation: 'Shri Javed Ali Khan (Parliament)',
+    username: 'mp_javed',
+    password: 'MP@2026',
+    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    icon: Vote
+  },
+  {
+    role: 'citizen',
+    label: 'Citizen Watchdog',
+    designation: 'Jan-Drishti Public Oversight',
+    username: 'citizen_pilibhit',
+    password: 'Citizen@2026',
+    badge: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+    icon: UserCheck
   }
 ];
 
 export default function QuickDemoLogins({ onSelectCredential, activeUsername }) {
-  const centralCred = DEMO_CREDENTIALS[0];
-  const Icon = centralCred.icon;
-  const isSelected = activeUsername === centralCred.username;
-
   return (
     <div className="p-3.5 rounded-2xl bg-[#040714]/90 border border-violet-500/20 space-y-2">
       <div className="flex items-center justify-between text-xs">
         <span className="font-mono text-violet-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          Central Sovereign Access (1-Click Fill)
+          Evaluator Quick Credentials (1-Click Fill)
         </span>
-        <span className="text-[10px] text-slate-400 font-mono">Central MoSPI</span>
+        <span className="text-[10px] text-slate-400 font-mono">PS 26102 Demo</span>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onSelectCredential(centralCred.username, centralCred.password)}
-        title={`${centralCred.designation} (${centralCred.username})`}
-        className={`w-full p-2.5 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between group ${
-          isSelected
-            ? 'bg-violet-600/20 border-violet-500/60 shadow-md shadow-violet-500/10'
-            : 'bg-slate-900/70 border-slate-800 hover:border-violet-500/40 hover:bg-slate-800/80'
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-violet-500/20 text-violet-400 group-hover:scale-110 transition-transform">
-            <Icon className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-white font-display">
-              {centralCred.label}
-            </div>
-            <div className="text-[10px] font-mono text-slate-400">
-              {centralCred.designation} • <span className="text-violet-300 font-semibold">{centralCred.username}</span>
-            </div>
-          </div>
-        </div>
-        <span className="text-[10px] px-2 py-0.5 rounded border font-mono font-bold bg-violet-500/20 text-violet-300 border-violet-500/40">
-          Auto-Fill
-        </span>
-      </button>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
+        {DEMO_CREDENTIALS.map((cred) => {
+          const Icon = cred.icon;
+          const isSelected = activeUsername === cred.username;
+          return (
+            <button
+              key={cred.username}
+              type="button"
+              onClick={() => onSelectCredential(cred.username, cred.password)}
+              title={`${cred.designation} (${cred.username})`}
+              className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between group ${
+                isSelected
+                  ? 'bg-violet-600/20 border-violet-500/60 shadow-md shadow-violet-500/10'
+                  : 'bg-slate-900/70 border-slate-800 hover:border-violet-500/40 hover:bg-slate-800/80'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon className="w-3 h-3 text-violet-400 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-bold text-white truncate font-display">
+                  {cred.label}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[9px] font-mono text-slate-400 truncate">
+                  {cred.username}
+                </span>
+                <span className={`text-[8px] px-1 py-0.2 rounded border font-mono font-bold ${cred.badge}`}>
+                  Fill
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
