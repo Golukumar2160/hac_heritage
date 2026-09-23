@@ -34,7 +34,7 @@ export default function Sidebar({
 
   // Desktop hover expansion or mobile drawer toggle
   const isExpanded = isHovered || isMobileOpen;
-  const isCitizen = currentUser?.role === 'citizen';
+  const isCitizen = false;
 
   const citizenNavItems = [
     {

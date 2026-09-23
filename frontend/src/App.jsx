@@ -58,15 +58,9 @@ import {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => api.getCurrentUser());
-  const isCitizen = currentUser?.role === 'citizen';
-  const [activeTab, setActiveTab] = useState(() => {
-    const user = api.getCurrentUser();
-    return user?.role === 'citizen' ? 'citizen_overview' : 'overview';
-  });
-  const [activeRole, setActiveRole] = useState(() => {
-    const user = api.getCurrentUser();
-    return user?.role || 'ministry';
-  });
+  const isCitizen = false;
+  const [activeTab, setActiveTab] = useState('overview');
+  const [activeRole, setActiveRole] = useState('ministry');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [selectedWorkId, setSelectedWorkId] = useState(null);
@@ -401,36 +395,21 @@ export default function App() {
               </span>
             </div>
 
-            {/* 4-Tier Stakeholder View Switcher (PS 26102 Direct Compliance) */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-900/80 border border-violet-500/30 text-xs font-medium space-x-1" title="Switch Stakeholder Vigilance View">
-              {[
-                { key: 'ministry', label: 'Central MoSPI', icon: Landmark, count: '98.6k' },
-                { key: 'state', label: 'State (UP)', icon: Building2, count: '19.9k' },
-                { key: 'district', label: 'DM (Pilibhit)', icon: Scale, count: '293' },
-                { key: 'mp', label: 'Hon MP (Javed)', icon: Vote, count: '178' },
-              ].map(s => {
-                const Icon = s.icon;
-                const isSelected = activeRole === s.key;
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => handleSwitchStakeholder(s.key)}
-                    disabled={isSwitchingStakeholder}
-                    className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-violet-600 text-white font-bold shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                    } disabled:opacity-50`}
-                    title={`Switch to ${s.label} View (${s.count} Works)`}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden xl:inline">{s.label}</span>
-                    <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-violet-800 text-violet-100' : 'bg-slate-800 text-slate-400'}`}>
-                      {s.count}
-                    </span>
-                  </button>
-                );
-              })}
+            {/* Central MoSPI National Authority Indicator */}
+            <div 
+              className="flex items-center space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold tracking-wide shadow-xs"
+              style={{
+                background: 'rgba(139,92,246,0.18)',
+                border: '1px solid rgba(139,92,246,0.4)',
+                color: '#c4b5fd'
+              }}
+              title="Central MoSPI — Pan-India Sovereign Oversight (98,649 Works)"
+            >
+              <Landmark className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+              <span>Central MoSPI</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-800/80 text-violet-100 font-semibold">
+                98.6k
+              </span>
             </div>
 
             {/* Direct Upload CSV Audit Button (Hackathon Primary Feature) */}
@@ -563,16 +542,10 @@ export default function App() {
                   </span>
                   <div>
                     <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                      {activeRole === 'state' ? `STATE NODAL COMMAND (${(currentUser?.state || 'UTTAR PRADESH').toUpperCase()})` :
-                       activeRole === 'district' ? `DISTRICT ENFORCEMENT COMMAND (${(currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || currentUser?.district || 'PILIBHIT').toUpperCase()})` :
-                       activeRole === 'mp' ? `CONSTITUENCY INTEGRITY MONITOR (${(currentUser?.name || "HON'BLE MP").toUpperCase()})` :
-                       'NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)'}
+                      NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)
                     </span>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {activeRole === 'state' ? `State planning authority oversight across districts in ${currentUser?.state || 'the state'} under vigilance` :
-                       activeRole === 'district' ? `District Magistrate statutory powers: Tranche freezes, contractor show-causes, ground inspections` :
-                       activeRole === 'mp' ? `Development delivery tracking & Clause 3.2 mandatory SC (15%) and ST (7.5%) fund earmarking` :
-                       'Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)'}
+                      Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)
                     </p>
                   </div>
                 </div>

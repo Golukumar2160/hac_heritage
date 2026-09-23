@@ -680,7 +680,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
               {currentStateObj.critical_pct || 0}% Critical Schemes Ratio
             </span>
             <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800">
-              Avg Risk: {currentStateObj.avg_risk_score || 0}
+              Avg Risk: {Number(currentStateObj.avg_risk_score || 0).toFixed(1)}
             </span>
           </div>
         </div>
@@ -783,7 +783,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
                           ₹{(amt / 10000000).toFixed(2)} Cr
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-cyan-400">
-                          {d.avg_risk_score}
+                          {Number(d.avg_risk_score || 0).toFixed(1)}
                         </td>
                       </tr>
                     );

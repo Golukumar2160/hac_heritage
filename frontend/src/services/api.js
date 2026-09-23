@@ -546,6 +546,11 @@ export const api = {
     return cachedFetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() }, 30000);
   },
 
+  // MP Profile & Parliamentary Constituency Dossier
+  async getMpDetails(mpName) {
+    return cachedFetch(`${API_BASE}/api/mp/${encodeURIComponent(mpName)}`, { headers: getHeaders() }, 30000);
+  },
+
   // Image Forensics
   async getImageForensics() {
     const res = await fetch(`${API_BASE}/api/image-forensics`, { headers: getHeaders() });
