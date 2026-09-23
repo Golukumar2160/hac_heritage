@@ -496,6 +496,12 @@ export const api = {
     return handleResponse(res);
   },
 
+  // CVC Surveillance: Flagged District Authorities with High Dismissal Rate
+  async getFlaggedDas() {
+    const res = await fetch(`${API_BASE}/api/audit/da-flagged`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
   // Dismiss / Escalate Flag (Strict 50 chars validation)
   async submitAuditAction(workId, action, justification, originalRiskScore = 85.0) {
     clearClientCache();
@@ -527,6 +533,17 @@ export const api = {
     if (state) params.append('state', state);
     if (limit) params.append('limit', limit);
     return cachedFetch(`${API_BASE}/api/constituency/unspent-forecast?${params.toString()}`, { headers: getHeaders() }, 30000);
+  },
+
+  // Statutory Quota Compliance (Clause 3.2 SC/ST)
+  async getQuotaCompliance(params = {}) {
+    const query = new URLSearchParams();
+    if (params.state && params.state !== 'all') query.append('state', params.state);
+    if (params.mp_name) query.append('mp_name', params.mp_name);
+    if (params.violators_only !== undefined) query.append('violators_only', Boolean(params.violators_only));
+    if (params.limit) query.append('limit', params.limit);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return cachedFetch(`${API_BASE}/api/compliance/quotas${qs}`, { headers: getHeaders() }, 30000);
   },
 
   // Image Forensics

@@ -26,6 +26,14 @@ if ROOT_DIR not in sys.path:
 
 API_BASE = "http://127.0.0.1:8000"
 
+_client = None
+try:
+    from backend.main import app
+    from starlette.testclient import TestClient
+    _client = TestClient(app, raise_server_exceptions=False)
+except Exception:
+    _client = None
+
 PASSED = 0
 FAILED = 0
 
@@ -41,10 +49,16 @@ def record_result(test_name: str, success: bool, detail: str = ""):
 
 
 def http_get(path: str, headers: dict = None) -> tuple:
+    if _client is not None:
+        try:
+            resp = _client.get(path, headers=headers or {})
+            return resp.status_code, resp.content
+        except Exception as e:
+            return 0, str(e).encode()
     url = f"{API_BASE}{path}"
     req = urllib.request.Request(url, headers=headers or {})
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = resp.read()
             return resp.status, data
     except urllib.error.HTTPError as e:
@@ -54,6 +68,12 @@ def http_get(path: str, headers: dict = None) -> tuple:
 
 
 def http_post_json(path: str, payload: dict, headers: dict = None) -> tuple:
+    if _client is not None:
+        try:
+            resp = _client.post(path, json=payload, headers=headers or {})
+            return resp.status_code, resp.content
+        except Exception as e:
+            return 0, str(e).encode()
     url = f"{API_BASE}{path}"
     body = json.dumps(payload).encode("utf-8")
     h = {"Content-Type": "application/json"}
@@ -61,7 +81,7 @@ def http_post_json(path: str, payload: dict, headers: dict = None) -> tuple:
         h.update(headers)
     req = urllib.request.Request(url, data=body, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = resp.read()
             return resp.status, data
     except urllib.error.HTTPError as e:

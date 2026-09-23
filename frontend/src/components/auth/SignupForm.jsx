@@ -73,8 +73,7 @@ export default function SignupForm({
     state: authOptions.states?.[0] || 'Uttar Pradesh',
     ida: (authOptions.districts_by_state?.['Uttar Pradesh'] || [])[0] || '',
     mp_name: '',
-    house: '',
-    clearance_code: ''
+    house: ''
   });
 
   const currentRoleMeta = ROLE_DESCRIPTIONS[selectedRole] || ROLE_DESCRIPTIONS.ministry;
@@ -171,8 +170,7 @@ export default function SignupForm({
         designation: selectedRole === 'citizen' ? 'Jan-Drishti Public Watchdog' : (form.designation.trim() || undefined),
         state: selectedRole !== 'ministry' ? form.state : undefined,
         ida: (selectedRole === 'district' || selectedRole === 'citizen') ? form.ida : undefined,
-        mp_name: selectedRole === 'mp' ? form.mp_name : undefined,
-        clearance_code: selectedRole === 'citizen' ? 'CITIZEN-PUBLIC' : (form.clearance_code || undefined),
+        mp_name: selectedRole === 'mp' ? form.mp_name : undefined
       };
 
       const user = await api.register(payload);

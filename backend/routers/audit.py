@@ -27,7 +27,10 @@ import time
 import hashlib
 import threading
 import subprocess
+import logging
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 from typing import Optional, List
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -354,7 +357,7 @@ def get_flagged_das(user=Depends(decode_token)):
                 pg,
             )
         except Exception as _e:
-            print(f"[!] Warning querying Supabase for flagged DAs: {_e}")
+            logger.warning(f"Warning querying Supabase for flagged DAs: {_e}")
         finally:
             try:
                 pg.close()

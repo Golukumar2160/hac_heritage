@@ -878,7 +878,7 @@ def get_work_detail(
                         item["original_risk_score"] = float(item["original_risk_score"])
                     audit_history_list.append(item)
         except Exception as _e:
-            print(f"[!] Warning fetching case audit history from Supabase: {_e}")
+            logger.warning(f"Warning fetching case audit history from Supabase: {_e}")
         finally:
             try:
                 pg.close()
@@ -896,7 +896,7 @@ def get_work_detail(
             conn.close()
             audit_history_list = history_df.to_dict(orient="records")
         except Exception as _e:
-            print(f"[!] SQLite case audit history note: {_e}")
+            logger.warning(f"SQLite case audit history note: {_e}")
 
     # Look up Scanned Document OCR Forensics
     doc_verdicts = []

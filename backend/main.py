@@ -21,6 +21,7 @@ import threading
 import logging
 from datetime import datetime
 from typing import Optional
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,11 +86,45 @@ ALLOWED_ORIGINS = settings.ALLOWED_ORIGINS
 # Backward-compatible statutory audit query contract:
 # "SELECT log_id, work_id, user_id, role, action, justification FROM audit_ledger WHERE work_id = %s"
 
+# ── Modern Lifespan Handler (Pre-warming & Seed Lifecycle) ─────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern Starlette/FastAPI lifespan context manager pre-warming analytical caches and liveness probes."""
+    try:
+        from backend.core.data_cache import get_cached_flags, get_cached_allocations
+        get_cached_flags()
+        get_cached_allocations()
+
+        # Non-blocking async kick-off for Supabase liveness
+        from backend.core.database import is_supabase_alive
+        is_supabase_alive()
+
+        # Pre-compute heavy analytical caches (Trends, SC/ST, Vendors & Maps) in background thread
+        def _prewarm_analytics():
+            try:
+                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis, get_vendor_leaderboard
+                from backend.routers.geo import get_filter_options, get_state_map_data
+                get_sc_st_compliance_data()
+                get_trend_analysis(user=None)
+                get_vendor_leaderboard(limit=50, user=None)
+                get_filter_options()
+                get_state_map_data(user=None)
+            except Exception as e:
+                logger.warning(f"Analytics pre-warm notice: {e}")
+
+        threading.Thread(target=_prewarm_analytics, daemon=True).start()
+        logger.info("[*] In-memory datasets & analytics pre-warmed successfully via lifespan.")
+    except Exception as _e:
+        logger.warning(f"[!] Lifespan cache warmup warning: {_e}")
+    yield
+
+
 # ── Initialize FastAPI Application ─────────────────────────────────────────────
 app = FastAPI(
     title=settings.API_TITLE,
     description=settings.DESCRIPTION,
     version=settings.API_VERSION,
+    lifespan=lifespan,
 )
 
 # ── CORS Middleware Configuration ──────────────────────────────────────────────
@@ -147,36 +182,6 @@ try:
 except Exception as _sync_err:
     logger.warning(f"Initial sync warning: {_sync_err}")
 
-
-@app.on_event("startup")
-async def startup_warmup():
-    """Pre-warm in-memory data cache, allocations, and analytical views during server boot to eliminate first-user latency."""
-    try:
-        from backend.core.data_cache import get_cached_flags, get_cached_allocations
-        get_cached_flags()
-        get_cached_allocations()
-
-        # Non-blocking async kick-off for Supabase liveness
-        from backend.core.database import is_supabase_alive
-        is_supabase_alive()
-
-        # Pre-compute heavy analytical caches (Trends, SC/ST, Vendors & Maps) in background thread
-        def _prewarm_analytics():
-            try:
-                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis, get_vendor_leaderboard
-                from backend.routers.geo import get_filter_options, get_state_map_data
-                get_sc_st_compliance_data()
-                get_trend_analysis(user=None)
-                get_vendor_leaderboard(limit=50, user=None)
-                get_filter_options()
-                get_state_map_data(user=None)
-            except Exception as e:
-                logger.warning(f"Analytics pre-warm notice: {e}")
-
-        threading.Thread(target=_prewarm_analytics, daemon=True).start()
-        logger.info("[*] In-memory datasets & analytics pre-warmed successfully on startup.")
-    except Exception as _e:
-        logger.warning(f"[!] Startup cache warmup warning: {_e}")
 
 # ── Non-Blocking Background Pipeline Execution (Persisted in SQLite) ───────────
 _pipeline_lock = threading.Lock()
