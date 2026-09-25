@@ -195,7 +195,6 @@ export default function App() {
 
   const handleAuthSuccess = (user) => {
     setCurrentUser(user);
-    setActiveRole(user.role || 'ministry');
     setShowAuthModal(false);
     if (user.ida) setSelectedDistrict(user.ida);
     if (user.state) setSelectedState(user.state);
@@ -213,7 +212,6 @@ export default function App() {
     api.logout();
     setCurrentUser(null);
     setActiveTab('overview');
-    setActiveRole('ministry');
     setKpis(null);
     showToast('Signed out of official account');
   };
@@ -226,7 +224,6 @@ export default function App() {
       setIsSwitchingStakeholder(true);
       const res = await api.switchStakeholder(roleKey);
       setCurrentUser(res);
-      setActiveRole(roleKey);
       if (res.ida) setSelectedDistrict(res.ida);
       if (res.state) setSelectedState(res.state);
       if (roleKey === 'citizen') {

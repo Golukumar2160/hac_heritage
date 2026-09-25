@@ -90,7 +90,7 @@ def register_official(req: RegisterRequest):
     assigned_ida = (req.ida or "").strip()
     assigned_mp = (req.mp_name or "").strip()
 
-    if role == "district" and not assigned_ida:
+    if role in ("district", "citizen") and not assigned_ida:
         assigned_ida = "PILIBHIT"
     if role in ("state", "district", "citizen") and not assigned_state:
         assigned_state = "Uttar Pradesh"

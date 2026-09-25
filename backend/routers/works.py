@@ -150,6 +150,15 @@ def get_executive_kpis(
         "split_tender_works": (
             int(df["rule_split_tender"].sum()) if "rule_split_tender" in df.columns else 0
         ),
+        "prohibited_works_count": (
+            int(df["rule_prohibited_work"].sum()) if "rule_prohibited_work" in df.columns else 0
+        ),
+        "text_duplicate_works_count": (
+            int(df["rule_text_duplicate"].sum()) if "rule_text_duplicate" in df.columns else 0
+        ),
+        "sanction_stalling_works_count": (
+            int(df["rule_sanction_stalling"].sum()) if "rule_sanction_stalling" in df.columns else 0
+        ),
         "duplicate_photos_count": _get_duplicate_photos_count(),
         "average_risk_score": round(float(df["risk_score"].mean()), 2),
     }
@@ -209,8 +218,19 @@ def get_flags(
             df = df[df["rule_stalled_execution"] == True]
         elif t == "split_tender" and "rule_split_tender" in df.columns:
             df = df[df["rule_split_tender"] == True]
-        elif t == "duplicate" and "is_duplicate" in df.columns:
-            df = df[df["is_duplicate"] == True]
+        elif t == "duplicate":
+            dup_mask = pd.Series(False, index=df.index)
+            if "is_duplicate" in df.columns:
+                dup_mask = dup_mask | (df["is_duplicate"] == True)
+            if "rule_text_duplicate" in df.columns:
+                dup_mask = dup_mask | (df["rule_text_duplicate"] == True)
+            df = df[dup_mask]
+        elif t in ("text_duplicate", "semantic_duplicate") and "rule_text_duplicate" in df.columns:
+            df = df[df["rule_text_duplicate"] == True]
+        elif t in ("prohibited", "prohibited_work", "clause_4") and "rule_prohibited_work" in df.columns:
+            df = df[df["rule_prohibited_work"] == True]
+        elif t in ("stalling", "sanction_stalling", "clause_3_10") and "rule_sanction_stalling" in df.columns:
+            df = df[df["rule_sanction_stalling"] == True]
         elif t == "missing_photo" and "rule_missing_photo" in df.columns:
             df = df[df["rule_missing_photo"] == True]
         elif t == "overspend" and "rule_overspend" in df.columns:
@@ -599,7 +619,7 @@ def get_work_qr_code(work_id: str, request: Request):
         parsed = urllib.parse.urlparse(origin)
         base_origin = f"{parsed.scheme}://{parsed.netloc}"
     else:
-        base_origin = os.getenv("FRONTEND_BASE_URL", "http://localhost:3131")
+        base_origin = os.getenv("FRONTEND_BASE_URL", "https://hac-heritage.vercel.app")
 
     verify_url = f"{base_origin}/?verify={urllib.parse.quote(canon_id)}"
 
@@ -1186,6 +1206,9 @@ def get_early_warning_works(
             "progress_pct": round(float(row.get("progress_pct", 0.0)), 1),
             "rule_stalled_execution": bool(row.get("rule_stalled_execution", False)),
             "rule_premature_tranche": bool(row.get("rule_premature_tranche", False)),
+            "rule_prohibited_work": bool(row.get("rule_prohibited_work", False)),
+            "rule_text_duplicate": bool(row.get("rule_text_duplicate", False)),
+            "rule_sanction_stalling": bool(row.get("rule_sanction_stalling", False)),
             "m1_reason": str(row.get("m1_reason", "")),
             "m4_reason": str(row.get("m4_reason", "")),
         })

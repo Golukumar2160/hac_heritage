@@ -66,7 +66,9 @@ def get_cached_flags() -> pd.DataFrame:
             bool_cols = [
                 "work_vendor_flag", "rule_missing_photo", "rule_overspend", "is_duplicate",
                 "rule_premature_tranche", "rule_stalled_execution", "rule_early_payment",
-                "rule_mp_over_budget", "rule_split_tender", "implausible_amount_flag", "rule_implausible"
+                "rule_mp_over_budget", "rule_split_tender", "implausible_amount_flag", "rule_implausible",
+                "rule_prohibited_work", "rule_text_duplicate", "rule_sanction_stalling",
+                "rule_march_rush", "rule_implausible_progress"
             ]
             for col in bool_cols:
                 if col in df.columns:

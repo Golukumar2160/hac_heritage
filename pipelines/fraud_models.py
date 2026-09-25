@@ -644,8 +644,20 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
                              com: pd.DataFrame, alloc: pd.DataFrame) -> pd.DataFrame:
     print("\n[Model 3] Compliance Rules Engine...")
 
-    df = san[["work_id", "mp_name", "mp_number", "sanction_amount",
-              "sanction_date", "work_status", "progress_pct", "implausible_amount_flag"]].copy()
+    cols_to_take = ["work_id", "mp_name", "mp_number", "sanction_amount",
+                    "sanction_date", "work_status", "progress_pct", "implausible_amount_flag"]
+    for c in ["work_description", "state", "constituency", "days_to_sanction", "recommended_date"]:
+        if c in san.columns and c not in cols_to_take:
+            cols_to_take.append(c)
+    df = san[cols_to_take].copy()
+
+    # Ensure days_to_sanction exists and is computed defensively
+    if "days_to_sanction" not in df.columns or df["days_to_sanction"].isna().all():
+        if "recommended_date" in df.columns and "sanction_date" in df.columns:
+            df["days_to_sanction"] = (pd.to_datetime(df["sanction_date"], errors="coerce") - 
+                                      pd.to_datetime(df["recommended_date"], errors="coerce")).dt.days.fillna(0)
+        else:
+            df["days_to_sanction"] = 0
 
     # Rule 1: Work-level overspend
     spent_per_work = exp.groupby("work_id")["fund_disbursed"].sum().reset_index()
@@ -745,8 +757,68 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
         df["rule_split_tender"] | df["rule_stalled_execution"] | df["rule_missing_photo"] | (df["progress_pct"] < 20)
     )
 
+    # Rule 11: Prohibited Works (MPLADS Guidelines 2023 Clause 4.1 & Clause 5.2 Statutory Bar)
+    # Strictly bans public funds on religious places, memorials/statues, private properties, commercial complexes
+    pat_prohibited = re.compile(
+        r'(\b(construction|renovation|repair|development|maintenance|beautification|upgradation|addition|extension|erection|installation)\s+(of\s+)?(a\s+)?([a-zA-Z\s]{0,25}?)(mandir|temple|masjid|mosque|church|gurudwara|gurdwara|ashram|samadhi|dargah|mutt|matha|makbara|shrine|prayer\s+hall|statue|bust|memorial|smarak|smruti)\b)|'
+        r'(\b(mandir|temple|masjid|mosque|church|gurudwara|ashram|samadhi|dargah|mutt|statue|bust|memorial|smarak)\s+([a-zA-Z\s]{0,20}?)(construction|repair|renovation|compound\s+wall|boundary\s+wall|shed|hall|gate|room|works?)\b)|'
+        r'(\bprivate\s+(property|school|college|trust|society|hospital|nursing\s+home|club|firm|land)\b)|'
+        r'(\b(commercial\s+complex|shopping\s+complex|shopping\s+mall)\b)',
+        re.IGNORECASE
+    )
+
+    def _is_prohibited_work(text):
+        if not isinstance(text, str) or not text.strip():
+            return False
+        # If the religious/memorial term is solely a geographic landmark ('near ... temple')
+        for m in pat_prohibited.finditer(text):
+            start_idx = m.start()
+            prefix = text[:start_idx].strip().lower()
+            if any(prefix.endswith(prep) for prep in ('near', 'opposite', 'behind', 'beside', 'adjacent to')):
+                continue
+            return True
+        return False
+
+    if "work_description" in df.columns:
+        df["rule_prohibited_work"] = df["work_description"].fillna("").astype(str).apply(_is_prohibited_work)
+    else:
+        df["rule_prohibited_work"] = False
+
+    # Rule 12: Semantic Textual Duplication (GFR Rule 144 / Ghost Work Evasion)
+    # Detects repeated, cloned, or split work descriptions under the same MP jurisdiction
+    def _normalize_tokens(text):
+        if not isinstance(text, str) or not text.strip():
+            return ""
+        t = re.sub(r'[^a-zA-Z\s]', ' ', text.lower())
+        stopwords = {
+            'construction', 'of', 'at', 'in', 'near', 'from', 'to', 'village', 'gp',
+            'gram', 'panchayat', 'ward', 'tq', 'taluk', 'district', 'work', 'works',
+            'nos', 'sl', 'no', 'and', 'for', 'the', 'under', 'providing', 'provision',
+            'reach', 'phase', 'stage', 'part', 'section', 'chainage', 'ch', 'km', 'item'
+        }
+        tokens = [w for w in t.split() if w not in stopwords and len(w) > 2]
+        return " ".join(sorted(set(tokens)))
+
+    if "work_description" in df.columns and "mp_number" in df.columns:
+        norm_series = df["work_description"].apply(_normalize_tokens)
+        has_min_tokens = norm_series.str.len() > 8
+        group_keys = ["mp_number"]
+        if "state" in df.columns:
+            group_keys.insert(0, "state")
+        dup_mask = has_min_tokens & df.assign(_norm=norm_series).duplicated(subset=group_keys + ["_norm"], keep=False)
+        df["rule_text_duplicate"] = dup_mask
+    else:
+        df["rule_text_duplicate"] = False
+
+    # Rule 13: Bureaucratic Sanction Delay (MPLADS Guidelines 2023 Clause 3.10)
+    # Mandates that District Authority must sanction eligible works within 45 days of MP recommendation
+    sanction_days = pd.to_numeric(df.get("days_to_sanction", 0), errors="coerce").fillna(0)
+    df["rule_sanction_stalling"] = sanction_days > 45
+
     # Score: weighted sum of violations, capped at 100
     df["compliance_score"] = (
+        df["rule_prohibited_work"].astype(int)        * 50 +
+        df["rule_text_duplicate"].astype(int)         * 35 +
         df["rule_overspend"].astype(int)              * 40 +
         df["rule_mp_over_budget"].astype(int)         * 30 +
         df["rule_missing_photo"].astype(int)          * 25 +
@@ -756,11 +828,16 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
         df["rule_split_tender"].astype(int)           * 30 +
         df["rule_implausible_progress"].astype(int)   * 30 +
         df["rule_march_rush"].astype(int)             * 25 +
+        df["rule_sanction_stalling"].astype(int)      * 25 +
         df["rule_implausible"].astype(int)            * 15
     ).clip(0, 100)
 
     def build_m3_reason(row):
         parts = []
+        if row.get("rule_prohibited_work", False):
+            parts.append("Clause 4.1/5.2 Violation: Prohibited public expenditure (Religious / Memorial / Private / Commercial asset)")
+        if row.get("rule_text_duplicate", False):
+            parts.append("GFR 144 Duplicate Red Flag: High semantic textual similarity with project in same MP jurisdiction")
         if row["rule_overspend"]:
             parts.append(
                 f"Spent Rs.{row['total_spent']:,.0f} > sanctioned Rs.{row['sanction_amount']:,.0f}"
@@ -781,6 +858,9 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
             parts.append(f"Implausible progress velocity: {int(row['progress_pct'])}% reported with zero physical photo verification or in <30 days")
         if row.get("rule_march_rush", False):
             parts.append("PAC Audit Red Flag: Fiscal year-end March surge sanction (lapse evasion) with negligible milestone delivery")
+        if row.get("rule_sanction_stalling", False):
+            days_stalled = int(pd.to_numeric(row.get('days_to_sanction', 0), errors='coerce') or 0)
+            parts.append(f"Clause 3.10 Stalling: District Authority sanction delayed beyond 45-day statutory limit ({days_stalled} days)")
         if row["rule_implausible"]:
             parts.append(f"Sanction amount Rs.{row['sanction_amount']:.2f} is implausibly low (data-entry error)")
         return "; ".join(parts) if parts else ""
@@ -789,6 +869,9 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
 
     violations = (df["compliance_score"] > 0).sum()
     print(f"  Works with >=1 violation : {violations:,}")
+    print(f"  - Prohibited works (Cl.4): {df['rule_prohibited_work'].sum():,}")
+    print(f"  - Semantic duplicates    : {df['rule_text_duplicate'].sum():,}")
+    print(f"  - Sanction stalling (>45d): {df['rule_sanction_stalling'].sum():,}")
     print(f"  - Overspend              : {df['rule_overspend'].sum():,}")
     print(f"  - MP over true_budget    : {df['rule_mp_over_budget'].sum():,}")
     print(f"  - Missing photo          : {df['rule_missing_photo'].sum():,}")
@@ -797,6 +880,7 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
     print(f"  - Stalled Execution (>1y): {df['rule_stalled_execution'].sum():,}")
     print(f"  - Split Tendering (GFR)  : {df['rule_split_tender'].sum():,}")
     print(f"  - Implausible Progress   : {df['rule_implausible_progress'].sum():,}")
+    print(f"  - March Rush Surge       : {df['rule_march_rush'].sum():,}")
     print(f"  - Implausible amount     : {df['rule_implausible'].sum():,}")
 
     return df[["work_id", "compliance_score", "m3_reason",
@@ -804,6 +888,8 @@ def model3_compliance_rules(san: pd.DataFrame, exp: pd.DataFrame,
                "rule_missing_photo", "rule_early_payment",
                "rule_premature_tranche", "rule_stalled_execution",
                "rule_split_tender", "rule_implausible_progress",
+               "rule_march_rush", "rule_prohibited_work",
+               "rule_text_duplicate", "rule_sanction_stalling",
                "rule_implausible"]].copy()
 
 
@@ -949,13 +1035,17 @@ def model5_ensemble(m1: pd.DataFrame, m2: tuple, m3: pd.DataFrame,
             "rule_missing_photo", "rule_early_payment",
             "rule_premature_tranche", "rule_stalled_execution",
             "rule_split_tender", "rule_implausible_progress",
-            "rule_march_rush", "rule_implausible"]],
+            "rule_march_rush", "rule_prohibited_work",
+            "rule_text_duplicate", "rule_sanction_stalling",
+            "rule_implausible"]],
         on="work_id", how="left"
     )
     base["compliance_score"] = base["compliance_score"].fillna(0)
     for b_col in ["rule_overspend", "rule_mp_over_budget", "rule_missing_photo", 
                   "rule_early_payment", "rule_premature_tranche", "rule_stalled_execution",
-                  "rule_split_tender", "rule_implausible_progress", "rule_march_rush", "rule_implausible"]:
+                  "rule_split_tender", "rule_implausible_progress", "rule_march_rush",
+                  "rule_prohibited_work", "rule_text_duplicate", "rule_sanction_stalling",
+                  "rule_implausible"]:
         if b_col in base.columns:
             base[b_col] = base[b_col].fillna(False).astype(bool)
 
@@ -987,9 +1077,10 @@ def model5_ensemble(m1: pd.DataFrame, m2: tuple, m3: pd.DataFrame,
 
     # ----------------------------------------------------------------
     # TWO-TIER RISK ARCHITECTURE:
-    # 1. Tier 1 (Hard Floor): Confirmed statutory crimes (Clause 4.3 premature tranche,
-    #    missing photo on completed work, overspend, payment prior to sanction)
-    #    must NEVER be diluted by ML percentiles. Floor set to >=85.0 (CRITICAL).
+    # 1. Tier 1 (Hard Floor): Confirmed statutory crimes (Clause 4.1/5.2 prohibited work,
+    #    Clause 4.3 premature tranche, missing photo on completed work, overspend,
+    #    payment prior to sanction) must NEVER be diluted by ML percentiles.
+    #    Floor set to >=85.0 (CRITICAL).
     # 2. Tier 2 (Dynamic ML Percentiles): Compute HIGH and MEDIUM thresholds
     #    from the composite score distribution so non-statutory anomalies
     #    remain meaningfully distributed.
@@ -1001,7 +1092,8 @@ def model5_ensemble(m1: pd.DataFrame, m2: tuple, m3: pd.DataFrame,
         base["rule_premature_tranche"] | 
         base["rule_missing_photo"] | 
         base["rule_overspend"] |
-        base["rule_early_payment"]
+        base["rule_early_payment"] |
+        base["rule_prohibited_work"]
     )
     base["risk_score"] = np.where(
         has_hard_violation, 

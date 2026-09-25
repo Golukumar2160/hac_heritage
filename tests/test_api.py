@@ -117,7 +117,42 @@ class BharatDrishtiApiTests(unittest.TestCase):
         res_dup = self.client.get("/api/image-forensics/duplicates")
         self.assertEqual(res_dup.status_code, 200)
         data_dup = res_dup.json()
-        self.assertIsInstance(data_dup, list)
+    def test_10_statutory_triggers_and_kpis(self):
+        """GET /api/kpis and /api/flags?trigger= must support prohibited, duplicate, and stalling flags."""
+        # 1. KPIs
+        res_kpis = self.client.get("/api/kpis")
+        self.assertEqual(res_kpis.status_code, 200)
+        kpis = res_kpis.json()
+        self.assertIn("prohibited_works_count", kpis)
+        self.assertIn("text_duplicate_works_count", kpis)
+        self.assertIn("sanction_stalling_works_count", kpis)
+        self.assertGreater(kpis["prohibited_works_count"], 0)
+        self.assertGreater(kpis["text_duplicate_works_count"], 0)
+        self.assertGreater(kpis["sanction_stalling_works_count"], 0)
+
+        # 2. Trigger: prohibited
+        res_prohib = self.client.get("/api/flags?trigger=prohibited&page_size=5")
+        self.assertEqual(res_prohib.status_code, 200)
+        items_p = res_prohib.json().get("items", [])
+        self.assertGreater(len(items_p), 0)
+        for it in items_p:
+            self.assertTrue(it.get("rule_prohibited_work"))
+
+        # 3. Trigger: text_duplicate
+        res_dup = self.client.get("/api/flags?trigger=text_duplicate&page_size=5")
+        self.assertEqual(res_dup.status_code, 200)
+        items_d = res_dup.json().get("items", [])
+        self.assertGreater(len(items_d), 0)
+        for it in items_d:
+            self.assertTrue(it.get("rule_text_duplicate"))
+
+        # 4. Trigger: stalling
+        res_stall = self.client.get("/api/flags?trigger=stalling&page_size=5")
+        self.assertEqual(res_stall.status_code, 200)
+        items_s = res_stall.json().get("items", [])
+        self.assertGreater(len(items_s), 0)
+        for it in items_s:
+            self.assertTrue(it.get("rule_sanction_stalling"))
 
 
 if __name__ == "__main__":

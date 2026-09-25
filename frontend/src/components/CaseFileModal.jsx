@@ -335,6 +335,36 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                 </div>
               </div>
 
+              {/* Sovereign Statutory Violations Banner */}
+              {(workObj?.rule_prohibited_work || workObj?.rule_text_duplicate || workObj?.rule_sanction_stalling) && (
+                <div className="p-4 rounded-xl bg-rose-950/30 border border-rose-500/40 space-y-2">
+                  <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider font-mono">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Statutory Audit Violations & Non-Compliance</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {workObj?.rule_prohibited_work && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/50 text-rose-200 text-xs font-semibold">
+                        <span className="text-rose-400 font-bold">🚫 Clause 4.1/5.2 Violation:</span>
+                        <span>Barred Public Expenditure (Religious Structure / Memorial / Private Asset / Commercial Facility)</span>
+                      </div>
+                    )}
+                    {workObj?.rule_text_duplicate && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pink-900/40 border border-pink-500/50 text-pink-200 text-xs font-semibold">
+                        <span className="text-pink-400 font-bold">📑 GFR 144 Semantic Duplicate:</span>
+                        <span>High textual similarity with other work in same MP/district jurisdiction</span>
+                      </div>
+                    )}
+                    {workObj?.rule_sanction_stalling && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-900/40 border border-amber-500/50 text-amber-200 text-xs font-semibold">
+                        <span className="text-amber-400 font-bold">⏱️ Clause 3.10 Delay:</span>
+                        <span>Sanction delayed beyond statutory 45-day SLA ({Math.round(workObj?.days_to_sanction || 0)} days elapsed)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Navigation Tabs within Modal */}
               <div className="flex items-center space-x-2 border-b border-slate-800">
                 {[

@@ -979,6 +979,13 @@ export default function ModelValidationView({ onSelectWork }) {
               />
             </div>
 
+            {mlflowRuns.length <= 1 && (
+              <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+                <span>Baseline Model (Version 1) is currently active. At least one retraining cycle is required before executing a version rollback.</span>
+              </div>
+            )}
+
             {rollbackError && (
               <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -996,7 +1003,7 @@ export default function ModelValidationView({ onSelectWork }) {
               </button>
               <button
                 onClick={handleExecuteRollback}
-                disabled={rollingBack || !rollbackReason.trim()}
+                disabled={rollingBack || !rollbackReason.trim() || mlflowRuns.length <= 1}
                 className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-colors flex items-center gap-2 shadow-lg shadow-rose-600/30 disabled:opacity-50"
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${rollingBack ? 'animate-spin' : ''}`} />

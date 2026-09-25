@@ -11,7 +11,10 @@ import {
   Building2,
   TrendingDown,
   CameraOff,
-  Clock
+  Clock,
+  Ban,
+  Copy,
+  Timer
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -66,7 +69,13 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
       } else if (triggerFilter === 'stalled') {
         items = items.filter(f => f.rule_stalled_execution);
       } else if (triggerFilter === 'duplicate') {
-        items = items.filter(f => f.is_duplicate);
+        items = items.filter(f => f.is_duplicate || f.rule_text_duplicate);
+      } else if (triggerFilter === 'prohibited') {
+        items = items.filter(f => f.rule_prohibited_work);
+      } else if (triggerFilter === 'text_duplicate') {
+        items = items.filter(f => f.rule_text_duplicate);
+      } else if (triggerFilter === 'stalling') {
+        items = items.filter(f => f.rule_sanction_stalling);
       } else if (triggerFilter === 'missing_photo') {
         items = items.filter(f => f.rule_missing_photo);
       } else if (triggerFilter === 'overspend') {
@@ -224,10 +233,13 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mr-1">Anomaly Type:</span>
             {[
               { id: 'all', label: 'Any Flag', icon: null },
+              { id: 'prohibited', label: 'Clause 4.1 Prohibited', icon: Ban },
+              { id: 'text_duplicate', label: 'Semantic Duplicate', icon: Copy },
+              { id: 'stalling', label: 'Clause 3.10 Stalled (>45d)', icon: Timer },
               { id: 'premature_tranche', label: 'Clause 4.3 Tranche Gate', icon: AlertOctagon },
               { id: 'split_tender', label: 'GFR Split Tender', icon: FileSearch },
               { id: 'stalled', label: 'Stalled (>1y)', icon: Clock },
-              { id: 'duplicate', label: 'Duplicate Photo', icon: ImageIcon },
+              { id: 'duplicate', label: 'Duplicate Works', icon: ImageIcon },
               { id: 'missing_photo', label: 'Missing Photo', icon: CameraOff },
               { id: 'overspend', label: 'Cost Overrun', icon: TrendingDown },
               { id: 'vendor', label: 'Vendor Monopoly', icon: Building2 },
@@ -386,6 +398,21 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 max-w-xs">
+                          {work.rule_prohibited_work && (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-600/30 text-rose-300 border border-rose-500/60 shadow-sm" title="Clause 4.1/5.2 Violation: Prohibited public expenditure (Religious / Memorial / Private / Commercial asset)">
+                              🚫 Cl. 4.1 Prohibited
+                            </span>
+                          )}
+                          {work.rule_text_duplicate && (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-pink-500/20 text-pink-300 border border-pink-500/40" title="GFR 144: High semantic textual similarity with other project in same MP jurisdiction">
+                              📑 Semantic Duplicate
+                            </span>
+                          )}
+                          {work.rule_sanction_stalling && (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40" title="Clause 3.10: District Authority sanction delayed beyond 45-day statutory SLA">
+                              ⏱️ Cl. 3.10 Delay ({Math.round(work.days_to_sanction || 0)}d)
+                            </span>
+                          )}
                           {work.rule_premature_tranche && (
                             <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40" title="Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)">
                               ⚖️ Cl. 4.3 Tranche Gate
@@ -421,7 +448,7 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                               🏢 Monopoly
                             </span>
                           )}
-                          {!work.rule_premature_tranche && !work.rule_split_tender && !work.rule_stalled_execution && !work.is_duplicate && !work.rule_missing_photo && !work.rule_overspend && !work.work_vendor_flag && (
+                          {!work.rule_prohibited_work && !work.rule_text_duplicate && !work.rule_sanction_stalling && !work.rule_premature_tranche && !work.rule_split_tender && !work.rule_stalled_execution && !work.is_duplicate && !work.rule_missing_photo && !work.rule_overspend && !work.work_vendor_flag && (
                             <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400">
                               ML Statistical Anomaly
                             </span>

@@ -668,7 +668,6 @@ export const api = {
         formData.append('files', fileOrFiles[i]);
       }
     } else if (fileOrFiles) {
-      formData.append('file', fileOrFiles);
       formData.append('files', fileOrFiles);
     }
     const headers = {};

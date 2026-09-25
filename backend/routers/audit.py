@@ -636,11 +636,15 @@ async def audit_batch_csv_upload(
     from backend.batch_audit_engine import run_batch_audit
 
     upload_list = []
+    seen_names = set()
     if files:
-        upload_list.extend([f for f in files if f.filename and f.filename.lower().endswith(".csv")])
-    if file and file.filename and file.filename.lower().endswith(".csv"):
-        if file not in upload_list:
-            upload_list.append(file)
+        for f in files:
+            if f.filename and f.filename.lower().endswith(".csv") and f.filename not in seen_names:
+                upload_list.append(f)
+                seen_names.add(f.filename)
+    if file and file.filename and file.filename.lower().endswith(".csv") and file.filename not in seen_names:
+        upload_list.append(file)
+        seen_names.add(file.filename)
 
     if not upload_list:
         raise HTTPException(

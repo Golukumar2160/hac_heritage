@@ -131,6 +131,108 @@ def test_gps_regional_bounding():
     print("  --> PASSED: 4/4 GPS displacement test scenarios validated.")
 
 
+def test_statutory_rules_engine():
+    print("\n[TEST 5] Sovereign Statutory Rules Engine (Clause 4.1/5.2, Semantic Duplication, Clause 3.10)...")
+    san_statutory = pd.DataFrame([
+        {
+            "work_id": "W_PROHIBITED_01",
+            "mp_name": "Test MP",
+            "mp_number": 99,
+            "state": "Karnataka",
+            "sanction_amount": 500000,
+            "sanction_date": pd.Timestamp("2024-05-10"),
+            "recommended_date": pd.Timestamp("2024-05-01"),
+            "days_to_sanction": 9,
+            "work_description": "Renovation and compound wall construction of Durga Mandir",
+            "work_status": "Work in Progress",
+            "progress_pct": 30,
+            "implausible_amount_flag": False
+        },
+        {
+            "work_id": "W_LANDMARK_LEGIT",
+            "mp_name": "Test MP",
+            "mp_number": 99,
+            "state": "Karnataka",
+            "sanction_amount": 500000,
+            "sanction_date": pd.Timestamp("2024-05-10"),
+            "recommended_date": pd.Timestamp("2024-05-01"),
+            "days_to_sanction": 9,
+            "work_description": "Construction of Community Hall near Mallikarjun Temple",
+            "work_status": "Work in Progress",
+            "progress_pct": 30,
+            "implausible_amount_flag": False
+        },
+        {
+            "work_id": "W_DUP_01",
+            "mp_name": "Test MP",
+            "mp_number": 99,
+            "state": "Karnataka",
+            "sanction_amount": 400000,
+            "sanction_date": pd.Timestamp("2024-06-01"),
+            "recommended_date": pd.Timestamp("2024-05-20"),
+            "days_to_sanction": 12,
+            "work_description": "Providing CC road from Bus Stand to Primary School at Ward 4",
+            "work_status": "Work in Progress",
+            "progress_pct": 20,
+            "implausible_amount_flag": False
+        },
+        {
+            "work_id": "W_DUP_02",
+            "mp_name": "Test MP",
+            "mp_number": 99,
+            "state": "Karnataka",
+            "sanction_amount": 400000,
+            "sanction_date": pd.Timestamp("2024-09-01"),
+            "recommended_date": pd.Timestamp("2024-08-15"),
+            "days_to_sanction": 17,
+            "work_description": "Providing CC road from Bus Stand to Primary School (reach-2) at Ward 4",
+            "work_status": "Work in Progress",
+            "progress_pct": 20,
+            "implausible_amount_flag": False
+        },
+        {
+            "work_id": "W_STALLED_SANCTION",
+            "mp_name": "Test MP",
+            "mp_number": 99,
+            "state": "Karnataka",
+            "sanction_amount": 750000,
+            "sanction_date": pd.Timestamp("2024-08-15"),
+            "recommended_date": pd.Timestamp("2024-05-01"),
+            "days_to_sanction": 106,  # 106 days > 45-day statutory limit
+            "work_description": "Construction of Public Drinking Water Filtration Plant",
+            "work_status": "Work in Progress",
+            "progress_pct": 10,
+            "implausible_amount_flag": False
+        }
+    ])
+    exp_empty = pd.DataFrame(columns=["work_id", "mp_name", "fund_disbursed", "expenditure_date", "tranche_number"])
+    com_empty = pd.DataFrame(columns=["work_id", "has_image"])
+    alloc_empty = pd.DataFrame(columns=["mp_name", "true_budget"])
+
+    m3_res = model3_compliance_rules(san_statutory, exp_empty, com_empty, alloc_empty)
+
+    # 1. Check Clause 4.1/5.2 Prohibited Works
+    prohib_row = m3_res[m3_res["work_id"] == "W_PROHIBITED_01"].iloc[0]
+    legit_row = m3_res[m3_res["work_id"] == "W_LANDMARK_LEGIT"].iloc[0]
+    assert prohib_row["rule_prohibited_work"] == True, "Failed: Mandir construction must be flagged under Clause 4.1/5.2"
+    assert "Clause 4.1/5.2 Violation" in prohib_row["m3_reason"], "Failed: Missing Clause 4.1/5.2 citation in reason"
+    assert legit_row["rule_prohibited_work"] == False, "Failed: Legitimate community hall near temple landmark must NOT be flagged"
+
+    # 2. Check Semantic Textual Duplication
+    dup1_row = m3_res[m3_res["work_id"] == "W_DUP_01"].iloc[0]
+    dup2_row = m3_res[m3_res["work_id"] == "W_DUP_02"].iloc[0]
+    assert dup1_row["rule_text_duplicate"] == True, "Failed: Semantic text duplicate work 1 must be flagged"
+    assert dup2_row["rule_text_duplicate"] == True, "Failed: Semantic text duplicate work 2 must be flagged"
+    assert "GFR 144 Duplicate Red Flag" in dup1_row["m3_reason"], "Failed: Missing GFR 144 citation in reason"
+
+    # 3. Check Clause 3.10 Sanction Stalling
+    stalled_row = m3_res[m3_res["work_id"] == "W_STALLED_SANCTION"].iloc[0]
+    assert stalled_row["rule_sanction_stalling"] == True, "Failed: days_to_sanction=106 must trigger rule_sanction_stalling"
+    assert "Clause 3.10 Stalling" in stalled_row["m3_reason"], "Failed: Missing Clause 3.10 citation in reason"
+
+    print("  --> PASSED: Clause 4.1/5.2, Semantic Duplication, and Clause 3.10 Stalling fully verified.")
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("  BHARAT-DRISHTI: FIXED BLINDSPOTS REGRESSION SUITE")
@@ -139,6 +241,7 @@ if __name__ == "__main__":
     test_progress_gaming_neutralizer()
     test_ai_photo_and_exif()
     test_gps_regional_bounding()
+    test_statutory_rules_engine()
     print("\n" + "=" * 60)
-    print("  ALL 4 BLINDSPOT DEFENSES VERIFIED WORKING WITH 100% ACCURACY!")
+    print("  ALL 5 BLINDSPOT DEFENSES VERIFIED WORKING WITH 100% ACCURACY!")
     print("=" * 60)
