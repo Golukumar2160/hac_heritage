@@ -4,6 +4,8 @@ __pycache__/
 .DS_Store
 copy/
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 /fraud_summary.txt

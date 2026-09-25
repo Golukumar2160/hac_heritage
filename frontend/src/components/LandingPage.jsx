@@ -1,461 +1,367 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, 
-  Lock, 
-  ArrowRight, 
-  Cpu, 
-  FileSearch, 
-  Landmark, 
-  Building2, 
-  MapPin, 
-  Vote, 
-  Layers, 
-  Activity, 
-  Eye, 
-  Sparkles, 
-  CheckCircle2, 
-  ChevronRight,
-  Database,
-  Fingerprint,
-  Scale,
-  FileText,
-  Radio,
-  Network,
-  Zap,
-  ShieldAlert,
-  Server,
-  Sun,
-  Moon,
-  LogIn,
-  UserPlus
-} from 'lucide-react';
-import emblemLogo from '../assets/logo_dark.jpg';
+﻿import React, { useState } from "react";
+import {
+  BarChart3, Brain, FileText, Users, ArrowRight, AlertTriangle,
+  CheckCircle2, Database, Settings, Search, X, Mail, MapPin,
+  Building2, Layers, TrendingUp,
+} from "lucide-react";
+import indiaMapHero from "../assets/india_map_hero.jpg";
 
-export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = 'dark', onToggleTheme }) {
-  const [animReady, setAnimReady] = useState(false);
+export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = "light", onToggleTheme }) {
+  const [activeNav, setActiveNav] = useState("Home");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
+  const [showDashboardModal, setShowDashboardModal] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
 
-  useEffect(() => {
-    // Smooth high-tech emblem ignition animation on mount
-    const timer = setTimeout(() => setAnimReady(true), 120);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const coreThreatVectors = [
-    {
-      title: 'Split-Tender Evasion',
-      code: 'GFR-144-V1',
-      desc: 'Detects artificial invoice fragmentation right below ₹50 Lakh statutory e-procurement thresholds.',
-      status: 'ACTIVE SURVEILLANCE',
-      stat: 'Tender Evasion Flagged: 128',
-      color: 'border-violet-500/30 text-violet-400 bg-violet-950/20'
-    },
-    {
-      title: 'Contractor Syndicates',
-      code: 'CARTEL-NET-V4',
-      desc: 'Discovers bid-rigging rings and shadow shell companies monopolizing parliamentary disbursements.',
-      status: 'TOPOLOGICAL RADAR',
-      stat: '98% Spend Concentration',
-      color: 'border-amber-500/30 text-amber-400 bg-amber-950/20'
-    },
-    {
-      title: 'Recycled Photo Proof',
-      code: 'PHASH-VAULT-V2',
-      desc: 'Computes 64-bit perceptual image hashes to catch recycled completion photos from prior years.',
-      status: 'ZERO-HAMMING SCAN',
-      stat: '157 Verified Evidence Hashes',
-      color: 'border-emerald-500/30 text-emerald-400 bg-emerald-950/20'
-    },
-    {
-      title: 'Paper vs Portal OCR',
-      code: 'OCR-DELTA-V3',
-      desc: 'Extracts physical signed sanction orders at 300 DPI to expose hidden local fund withholdings.',
-      status: 'PYMUPDF PARSER',
-      stat: '₹14.5L Unreconciled Gap',
-      color: 'border-indigo-500/30 text-indigo-400 bg-indigo-950/20'
+  const handleNavClick = (item) => {
+    setActiveNav(item);
+    if (item === "Home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (item === "About") {
+      document.getElementById("stats-bar")?.scrollIntoView({ behavior: "smooth" });
+    } else if (item === "Dashboard" || item === "Insights" || item === "Reports") {
+      setShowDashboardModal(true);
+    } else if (item === "Contact") {
+      setShowContactModal(true);
     }
-  ];
+  };
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    setContactSubmitted(true);
+    setTimeout(() => {
+      setContactSubmitted(false);
+      setShowContactModal(false);
+      setContactForm({ name: "", email: "", message: "" });
+    }, 2000);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) onOpenAuthModal("login");
+  };
 
   return (
-    <div 
-      className={`min-h-screen flex flex-col relative overflow-hidden font-sans transition-colors duration-300 ${theme === 'light' ? 'bg-[#f4f6fb] text-slate-900' : 'bg-[#050810] text-slate-100'}`} 
-      style={{ 
-        background: theme === 'light' 
-          ? 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)' 
-          : 'linear-gradient(180deg, #050810 0%, #060a14 50%, #050810 100%)' 
-      }}
-    >
-      
-      {/* Top National Tricolor Brand Stripe */}
-      <div className="tricolor-stripe w-full fixed top-0 left-0 z-50" />
+    <div className="min-h-screen bg-white text-slate-800 font-sans flex flex-col">
 
-      {/* Ambient Radial Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[650px] pointer-events-none -z-10" style={{ background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.12) 0%, rgba(99,102,241,0.06) 40%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div className="absolute top-[35%] -left-48 w-[700px] h-[700px] pointer-events-none -z-10" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 60%)', filter: 'blur(100px)' }} />
-      <div className="absolute top-[55%] -right-48 w-[700px] h-[700px] pointer-events-none -z-10" style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 60%)', filter: 'blur(100px)' }} />
-
-      {/* Cyber Grid Overlay */}
-      <div className="cyber-grid absolute inset-0 opacity-30 pointer-events-none -z-10" />
-
-      {/* Top Futuristic Navigation Bar */}
-      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-20">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden p-0.5 relative group" style={{ border: '1px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.06)' }}>
-            <img src={emblemLogo} alt="Emblem" className="w-full h-full object-cover rounded-xl" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className={`font-black tracking-[0.12em] text-xl font-display ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>BHARAT-DRISHTI</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-md font-mono font-bold" style={{ background: 'rgba(139,92,246,0.12)', color: theme === 'light' ? '#6d28d9' : 'rgba(196,181,253,0.9)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                MoSPI DIID
-              </span>
+      {/* NAV */}
+      <header className="w-full bg-white border-b border-slate-100 sticky top-0 z-40">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between gap-4">
+          <div onClick={() => handleNavClick("Home")} className="flex items-center space-x-2.5 cursor-pointer shrink-0">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden bg-white border-2 border-slate-100 shadow-sm">
+              <svg viewBox="0 0 36 36" className="w-full h-full">
+                <path d="M 7 18 A 11 11 0 0 1 29 18" fill="none" stroke="#FF9933" strokeWidth="5" strokeLinecap="round" />
+                <path d="M 29 18 A 11 11 0 0 1 7 18" fill="none" stroke="#138808" strokeWidth="5" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="3" fill="#000080" />
+              </svg>
             </div>
-            <p className={`text-xs sm:text-sm font-medium tracking-wide ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'}`}>
-              National MPLADS AI Vigilance &amp; Anti-Corruption Command Network
-            </p>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center space-x-3">
-          {/* Live Supabase Cloud Database Status Indicator */}
-          <div 
-            className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-mono backdrop-blur-md"
-            style={{
-              background: theme === 'light' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.4)',
-              border: theme === 'light' ? '1px solid rgba(203,213,225,0.95)' : '1px solid rgba(139,92,246,0.25)',
-              color: theme === 'light' ? '#334155' : '#cbd5e1'
-            }}
-            title="PostgreSQL Database on Supabase Cloud is connected and synchronized"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-semibold">Supabase DB</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-500 font-bold border border-emerald-500/30">ONLINE</span>
+            <span className="font-extrabold text-xl text-slate-900 tracking-tight">Bharat Drishti</span>
           </div>
 
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              className="p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center hover:scale-105 shadow-sm"
-              style={{
-                background: theme === 'light' ? '#ffffff' : 'rgba(0,0,0,0.4)',
-                border: theme === 'light' ? '1px solid rgba(203,213,225,0.95)' : '1px solid rgba(255,255,255,0.1)',
-                color: theme === 'light' ? '#0f172a' : '#ffffff'
-              }}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle Theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform" />
-              ) : (
-                <Moon className="w-4 h-4 text-violet-600 hover:-rotate-12 transition-transform" />
-              )}
+          <nav className="hidden lg:flex items-center space-x-7 text-sm font-medium text-slate-600">
+            {["Home", "About", "Dashboard", "Insights", "Reports", "Contact"].map((item) => (
+              <button key={item} onClick={() => handleNavClick(item)}
+                className={`relative py-0.5 transition-colors cursor-pointer ${activeNav === item ? "text-slate-900 font-bold" : "hover:text-slate-900"}`}>
+                {item}
+                {activeNav === item && <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] bg-[#054631] rounded-full" />}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <form onSubmit={handleSearch} className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 gap-2 w-52">
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <input type="text" placeholder="Search constituency, MP, district..."
+                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-xs text-slate-600 placeholder-slate-400 focus:outline-none w-full" />
+            </form>
+            <button onClick={() => onOpenAuthModal("login")}
+              className="px-5 py-2 rounded-lg text-sm font-bold text-white bg-[#054631] hover:bg-[#033424] transition-all shadow-sm cursor-pointer whitespace-nowrap">
+              Sign In
             </button>
-          )}
-
-          <button
-            onClick={() => onOpenAuthModal('login')}
-            className={`px-5 py-2.5 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all rounded-xl cursor-pointer ${theme === 'light' ? 'text-slate-700 hover:text-slate-900 bg-white border border-slate-300 shadow-sm' : 'text-slate-200 hover:text-white'}`}
-            style={theme === 'dark' ? { border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' } : undefined}
-          >
-            Sign In to Portal
-          </button>
-          <button
-            onClick={() => onOpenAuthModal('register')}
-            className="px-6 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition-all rounded-xl flex items-center space-x-2 transform hover:-translate-y-0.5 cursor-pointer shadow-lg"
-            style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(99,102,241,0.9) 100%)', boxShadow: '0 8px 24px -4px rgba(139,92,246,0.4)' }}
-          >
-            <Lock className="w-4 h-4 text-violet-100" />
-            <span>Register Official</span>
-          </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Hero & Animated Emblem Showcase */}
-      <main className="flex-1 max-w-7xl mx-auto px-6 pt-4 pb-20 flex flex-col items-center z-10 w-full relative">
-        {/* Animated Emblem Central Spotlight */}
-        <div className="relative my-8 flex items-center justify-center">
-          {/* Animated Sonar / Radar Rings */}
-          <div className={`absolute w-72 h-72 md:w-[400px] md:h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${animReady ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} style={{ border: '1px solid rgba(139,92,246,0.2)' }} />
-          <div className="absolute w-84 h-84 md:w-[460px] md:h-[460px] rounded-full pointer-events-none animate-ping [animation-duration:4s]" style={{ border: '1px solid rgba(99,102,241,0.12)' }} />
-          <div className="absolute w-64 h-64 md:w-80 md:h-80 rounded-full border-2 border-dashed pointer-events-none emblem-spin-slow" style={{ borderColor: 'rgba(139,92,246,0.25)' }} />
+      {/* HERO */}
+      <main className="flex-1">
+        <section className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start min-h-[480px]">
 
-          {/* Central Emblem Frame */}
-          <div className={`relative w-48 h-48 md:w-64 md:h-64 rounded-full p-2.5 border-2 shadow-2xl transition-all duration-1000 ease-out transform ${animReady ? 'scale-100 opacity-100 rotate-0' : 'scale-75 opacity-0 -rotate-12'} emblem-pulse`}
-            style={{ background: 'linear-gradient(180deg, rgba(139,92,246,0.3) 0%, rgba(8,12,24,0.9) 50%, rgba(99,102,241,0.25) 100%)', borderColor: 'rgba(139,92,246,0.4)' }}
-          >
-            <div className="w-full h-full rounded-full overflow-hidden relative shadow-inner bg-[#0b1022]">
-              <img 
-                src={emblemLogo} 
-                alt="Bharat-Drishti Official Vigilance Emblem" 
-                className="w-full h-full object-cover select-none transform hover:scale-105 transition-transform duration-500" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060911]/60 via-transparent to-transparent pointer-events-none" />
-            </div>
-
-            {/* Glowing Orbiting Radar Indicator */}
-            <div className="absolute -inset-1 rounded-full pointer-events-none opacity-60" style={{ border: '1px solid rgba(139,92,246,0.35)' }} />
-          </div>
-        </div>
-
-        {/* Hero Headline & Subtitle */}
-        <div className="text-center max-w-4xl mx-auto space-y-4">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase mb-2 backdrop-blur-md" style={{ border: '1px solid rgba(139,92,246,0.25)', background: 'rgba(139,92,246,0.08)', color: 'rgba(196,181,253,0.9)' }}>
-            <Sparkles className="w-4 h-4 animate-pulse text-violet-400" />
-            <span>Government of India • Ministry of Statistics and Programme Implementation (MoSPI)</span>
-          </div>
-
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-display text-white leading-tight">
-            National MPLADS AI Vigilance &amp; <br />
-            <span className="gradient-text-gold">Statutory Anti-Corruption</span> Command
-          </h1>
-
-          <p className="text-slate-300 text-base md:text-lg max-w-3xl mx-auto leading-relaxed font-normal">
-            Autonomous multi-model AI surveillance safeguarding India's <strong className="text-violet-300 font-semibold">₹4,000+ Crore annual Parliamentary public funds</strong> across all 543 Lok Sabha and 245 Rajya Sabha constituencies.
-          </p>
-
-          {/* Primary Action Buttons */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => onOpenAuthModal('login')}
-              className="w-full sm:w-auto px-9 py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-xl"
-              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(99,102,241,0.9) 100%)', boxShadow: '0 8px 32px -4px rgba(139,92,246,0.45)' }}
-            >
-              <LogIn className="w-5 h-5" />
-              <span>Sign In</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => onOpenAuthModal('signup')}
-              className="w-full sm:w-auto px-9 py-4 rounded-xl font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center space-x-2.5 text-base transform hover:-translate-y-0.5 cursor-pointer shadow-lg backdrop-blur-md border border-white/15 hover:border-violet-500/50"
-              style={{ background: 'rgba(255,255,255,0.06)' }}
-            >
-              <UserPlus className="w-5 h-5 text-violet-400" />
-              <span>Register</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Real-time Threat Vector Interception Telemetry HUD */}
-        <div className="w-full mt-16 pt-8 border-t border-slate-800/80">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="flex h-2.5 w-2.5 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-                </span>
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-300">
-                  Autonomous Vigilance Defense Matrix
-                </span>
+            {/* LEFT */}
+            <div className="lg:col-span-5 flex flex-col justify-center py-6 space-y-5">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#065f46] bg-[#ecfdf5] border border-[#a7f3d0] rounded-full px-3 py-1 self-start">
+                <span>Transparent MPLADS</span>
+                <span className="text-emerald-400">•</span>
+                <span>Data-Driven Governance</span>
+                <span className="text-emerald-400">•</span>
+                <span>Stronger Bharat</span>
               </div>
-              <h2 className="text-2xl font-bold text-white font-display mt-1">
-                Multi-Vector Fraud Interception Protocol
-              </h2>
-            </div>
-            <div className="mt-3 sm:mt-0 flex items-center space-x-2 text-xs font-mono px-3.5 py-1.5 rounded-xl" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)', color: 'rgba(196,181,253,0.85)' }}>
-              <Radio className="w-3.5 h-3.5 animate-pulse text-violet-400" />
-              <span>STATUTORY AUDIT ENGINE ACTIVE</span>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-            {coreThreatVectors.map((v, idx) => (
-              <div
-                key={idx}
-                className="glass-panel p-5 rounded-2xl card-interactive cursor-pointer flex flex-col justify-between space-y-3 group border border-slate-200/80 dark:border-white/[0.06]"
-              >
+              <h1 className="text-4xl sm:text-[2.7rem] lg:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+                A Clearer View<br />
+                for a Stronger <span className="text-[#ea580c]">Bharat</span>
+              </h1>
+
+              <p className="text-slate-600 text-sm sm:text-[0.95rem] leading-relaxed max-w-lg">
+                Bharat Drishti brings transparency to MPLADS implementation through data, AI and visual insights — helping citizens, researchers and policymakers track, analyze and ensure accountable development across India.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button onClick={() => onOpenAuthModal("login")}
+                  className="flex items-center gap-2 px-7 py-3 rounded-lg text-sm font-bold text-white bg-[#054631] hover:bg-[#033424] transition-all shadow-sm hover:shadow-md cursor-pointer">
+                  <span>Explore Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button onClick={() => document.getElementById("features-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="px-7 py-3 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm cursor-pointer">
+                  Learn More
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT: Map + stat cards */}
+            <div className="lg:col-span-7 relative flex items-center justify-center pt-2 min-h-[420px]">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-50/60 via-emerald-50/40 to-blue-50/30 rounded-3xl blur-2xl pointer-events-none" />
+              <div className="relative z-10 w-full max-w-[520px] drop-shadow-xl">
+                <img src={indiaMapHero} alt="India MPLADS Map" className="w-full h-auto object-contain select-none" />
+              </div>
+
+              {/* Card 1: Total MPLADS Funds - top left */}
+              <div className="absolute top-4 left-2 sm:left-8 z-20 bg-white rounded-2xl shadow-lg border border-slate-100 px-4 py-3 flex items-center gap-3 min-w-[160px]">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-5 h-5 text-[#054631]" />
+                </div>
                 <div>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-xs font-mono px-2.5 py-0.5 rounded-md font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                      {v.code}
-                    </span>
-                    <span className={`text-xs font-mono px-2.5 py-0.5 rounded-md font-bold border ${v.color}`}>
-                      {v.status}
-                    </span>
+                  <div className="text-xs text-slate-500 font-medium leading-none">Total MPLADS Funds</div>
+                  <div className="text-lg font-extrabold text-slate-900 leading-tight">₹5,369 Cr</div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <TrendingUp className="w-3 h-3 text-emerald-500" />
+                    <span className="text-[10px] text-emerald-600 font-semibold">↑ 12% from last year</span>
                   </div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                    {v.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
-                    {v.desc}
-                  </p>
-                </div>
-                <div className="pt-2.5 flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-white/[0.06]">
-                  <span>Telemetry:</span>
-                  <span className="font-semibold text-violet-600 dark:text-violet-300">{v.stat}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* 4 Architectural Innovations & Forensic Engines */}
-        <div className="w-full mt-16">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-extrabold font-display text-white">Architectural Innovations &amp; Forensic Engines</h2>
-            <p className="text-slate-300 text-sm md:text-base max-w-xl mx-auto mt-2 leading-relaxed">
-              Beyond simple reporting dashboards: an active deterrence framework engineered under Central Ministry and GFR guidelines.
-            </p>
-          </div>
+              {/* Card 2: Works Completed - top right */}
+              <div className="absolute top-4 right-2 sm:right-4 z-20 bg-white rounded-2xl shadow-lg border border-slate-100 px-4 py-3 flex items-center gap-3 min-w-[160px]">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 relative">
+                  <svg className="w-8 h-8 absolute" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="12" fill="none" stroke="#e2e8f0" strokeWidth="3.5" />
+                    <circle cx="16" cy="16" r="12" fill="none" stroke="#2563eb" strokeWidth="3.5"
+                      strokeDasharray={`${0.684 * 75.4} 75.4`} strokeLinecap="round" transform="rotate(-90 16 16)" />
+                  </svg>
+                  <span className="text-[9px] font-bold text-blue-600 z-10">68%</span>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 font-medium leading-none">Works Completed</div>
+                  <div className="text-lg font-extrabold text-slate-900 leading-tight">68.4%</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">1.12 Lakh of 1.64 Lakh</div>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Pillar 1 */}
-            <div className="p-6 rounded-2xl glass-panel card-interactive border border-slate-800/90 hover:border-violet-500/40 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 shadow-inner">
-                <Cpu className="w-6 h-6" />
+              {/* Card 3: Risk Analysis - bottom left */}
+              <div className="absolute bottom-16 left-2 sm:left-6 z-20 bg-white rounded-2xl shadow-lg border border-rose-100 px-4 py-3 flex items-center gap-3 min-w-[160px]">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-rose-500" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 font-medium leading-none">Risk Analysis</div>
+                  <div className="text-lg font-extrabold text-rose-600 leading-tight">214</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Potential Irregularities</div>
+                </div>
               </div>
-              <h3 className="font-bold text-white text-lg">5-Model AI Fraud Ensemble</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Isolation Forest for cost overruns, GFR threshold splitting tests for invoice manipulation, and SentenceTransformers for monopoly cartel detection.
-              </p>
-              <div className="pt-2 flex items-center space-x-2 text-xs font-semibold text-violet-300 font-mono">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>98,649 Works Audited</span>
-              </div>
-            </div>
 
-            {/* Pillar 2 */}
-            <div className="p-6 rounded-2xl glass-panel card-interactive border border-slate-800/90 hover:border-violet-500/40 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner">
-                <FileSearch className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-white text-lg">300 DPI Document OCR</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Renders high-resolution completion certificates via PyMuPDF to extract physical signed amounts, surfacing hidden local withholdings and private contractor accounts.
-              </p>
-              <div className="pt-2 flex items-center space-x-2 text-xs font-semibold text-indigo-300 font-mono">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Portal vs Paper Matrix</span>
-              </div>
-            </div>
-
-            {/* Pillar 3 */}
-            <div className="p-6 rounded-2xl glass-panel card-interactive border border-slate-800/90 hover:border-emerald-500/40 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
-                <Fingerprint className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-white text-lg">Persistent pHash Vault</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                64-bit perceptual hashing matches uploaded site photography against a national hash vault, detecting duplicate structures recycled across states or years.
-              </p>
-              <div className="pt-2 flex items-center space-x-2 text-xs font-semibold text-emerald-300 font-mono">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Zero-Hamming Matching</span>
-              </div>
-            </div>
-
-            {/* Pillar 4 */}
-            <div className="p-6 rounded-2xl glass-panel card-interactive border border-slate-800/90 hover:border-purple-500/40 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-inner">
-                <Scale className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-white text-lg">Statutory Enforcement Suite</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Generates 1-click CAG/CVC audit dossiers, draft GFR Rule 144 show-cause notices for the District Magistrate, and immutable SHA-256 Treasury Hold alerts.
-              </p>
-              <div className="pt-2 flex items-center space-x-2 text-xs font-semibold text-purple-300 font-mono">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>SHA-256 Merkle Log</span>
+              {/* Card 4: Total Works - bottom right */}
+              <div className="absolute bottom-16 right-2 sm:right-4 z-20 bg-white rounded-2xl shadow-lg border border-slate-100 px-4 py-3 flex items-center gap-3 min-w-[160px]">
+                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 font-medium leading-none">Total Works</div>
+                  <div className="text-lg font-extrabold text-slate-900 leading-tight">1.64 Lakh</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Across 543 Constituencies</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Live Scheme Scale Banner */}
-        <div className="w-full mt-14 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 glass-panel border border-violet-500/25">
-          <div className="space-y-1 text-center md:text-left">
-            <h4 className="font-bold text-slate-900 dark:text-white text-xl font-display">National Scale Data Provenance</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Verified against official MoSPI open data snapshots preserved in encrypted cloud vaults.</p>
+        {/* KEY FEATURES */}
+        <section id="features-section" className="bg-white border-t border-slate-100 py-14">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Key Features</h2>
+              <p className="text-slate-500 text-sm mt-1.5">A comprehensive platform to enhance transparency and accountability in MPLADS.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                { icon: BarChart3, color: "#054631", bg: "#eaf7f0", label: "Interactive Dashboard", desc: "Explore MPLADS data with dynamic visualizations across India." },
+                { icon: Brain, color: "#ea580c", bg: "#fff4eb", label: "AI-Powered Analysis", desc: "Detect anomalies, fraud and inefficiencies using advanced AI/ML models." },
+                { icon: FileText, color: "#2563eb", bg: "#eef6ff", label: "Detailed Reports", desc: "Access project-wise details, status, cost and implementation history." },
+                { icon: Users, color: "#7c3aed", bg: "#f5f0ff", label: "Constituency Insights", desc: "Compare performance across MPs, states and districts." },
+              ].map(({ icon: Icon, color, bg, label, desc }) => (
+                <div key={label} onClick={() => onOpenAuthModal("login")}
+                  className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer group flex flex-col justify-between min-h-[180px]">
+                  <div>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"
+                      style={{ background: bg, color }}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm mb-1.5">{label}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        </section>
 
-          <div className="flex flex-wrap items-center justify-center gap-8">
-            <div className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-violet-600 dark:text-violet-400">98,649</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mt-0.5">Audited Schemes</p>
-            </div>
-            <div className="w-px h-10 hidden md:block bg-slate-200 dark:bg-white/[0.06]" />
-            <div className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-indigo-600 dark:text-indigo-400">₹58,805 Cr</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mt-0.5">Monitored Allocation</p>
-            </div>
-            <div className="w-px h-10 hidden md:block bg-slate-200 dark:bg-white/[0.06]" />
-            <div className="text-center">
-              <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">&lt; 20 ms</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mt-0.5">PostgreSQL Query Ping</p>
+        {/* BOTTOM STATS BAR */}
+        <section id="stats-bar" className="bg-[#f0fdf6] border-t border-[#bbf7d0] py-10">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[
+                { icon: Settings, bg: "#eaf7f0", color: "#054631", val: "1.64 Lakh", label: "Total MPLADS Works" },
+                { icon: Database, bg: "#fff7ed", color: "#f97316", val: "₹5,369 Cr", label: "Total Sanctioned Funds" },
+                { icon: CheckCircle2, bg: "#eff6ff", color: "#3b82f6", val: "68.4%", label: "Works Completed" },
+                { icon: AlertTriangle, bg: "#fef2f2", color: "#ef4444", val: "214", label: "Potential Irregularities (AI)" },
+              ].map(({ icon: Icon, bg, color, val, label }) => (
+                <div key={label} className="flex items-center gap-4 bg-white rounded-2xl px-5 py-4 border border-slate-100 shadow-sm">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: bg, color }}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-extrabold text-slate-900 leading-none">{val}</div>
+                    <div className="text-xs text-slate-500 font-medium mt-0.5">{label}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
+        </section>
       </main>
 
-      {/* Platform Footer */}
-      <footer className="w-full mt-20 pt-12 pb-8 px-6 z-10 max-w-7xl mx-auto" style={{ borderTop: '1px solid rgba(139,92,246,0.15)' }}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-left">
-          
-          {/* Col 1: Brand & Ministry */}
-          <div className="md:col-span-2 space-y-3.5">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl p-0.5" style={{ border: '1px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)' }}>
-                <img src={emblemLogo} alt="Emblem" className="w-full h-full object-cover rounded-lg" />
-              </div>
-              <div>
-                <span className="font-extrabold text-white text-base tracking-wider font-display block">BHARAT-DRISHTI</span>
-                <span className="text-xs text-violet-300 font-mono">National MPLADS AI Vigilance &amp; Autonomous Audit System</span>
-              </div>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed max-w-md">
-              A statutory vigilance intelligence platform developed for the Ministry of Statistics &amp; Programme Implementation (MoSPI), Government of India. Continuously auditing fund sanctions and physical delivery across 98,649 works.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
-              <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 border border-violet-500/30 font-semibold">MoSPI DIID</span>
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold">100% GFR 2017 Compliant</span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 border border-slate-800 font-semibold">DPDP Act 2023 Masked</span>
-            </div>
-          </div>
-
-          {/* Col 2: Core Vigilance Pillars */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Audit Pillars</h4>
-            <ul className="space-y-2 text-xs text-slate-300 font-medium">
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Predictive Early Warning Radar</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> RapidOCR Neural PDF Stamping</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> 64-bit DCT pHash Duplicate Vault</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> GFR 2017 Tender Split Radar</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Autonomous Case File Generation</li>
-            </ul>
-          </div>
-
-          {/* Col 3: Statutory Authority */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Constitutional Mandate</h4>
-            <ul className="space-y-2 text-xs text-slate-300 font-medium">
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Article 282 Constitutional Purview</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> CAG Performance Audit Directives</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Public Accounts Committee (PAC)</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> Central Vigilance Commission (CVC)</li>
-              <li className="flex items-center gap-1.5"><span className="text-violet-400 font-bold">•</span> 543 Lok Sabha + 245 Rajya Sabha</li>
-            </ul>
-          </div>
-
-        </div>
-
-        {/* Bottom Sub-footer Bar */}
-        <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
-          <p>© 2026 BHARAT-DRISHTI • Ministry of Statistics &amp; Programme Implementation (MoSPI)</p>
-          <div className="flex items-center space-x-3 font-mono text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-slate-300 font-medium">System Telemetry: Online</span>
-            </span>
-            <span>•</span>
-            <span>Security Clearance: Official Vigilance Console</span>
+      {/* FOOTER */}
+      <footer className="w-full bg-white border-t border-slate-100 py-7">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+          <p>© 2026 Bharat Drishti • Ministry of Statistics &amp; Programme Implementation (MoSPI)</p>
+          <div className="flex items-center gap-5">
+            <button onClick={() => setShowHowItWorksModal(true)} className="hover:text-slate-900 transition-colors">How It Works</button>
+            <button onClick={() => setShowContactModal(true)} className="hover:text-slate-900 transition-colors">Contact</button>
+            <button onClick={() => onOpenAuthModal("login")} className="font-semibold text-[#054631] hover:underline">Official Access</button>
           </div>
         </div>
       </footer>
+
+      {/* DASHBOARD ACCESS MODAL */}
+      {showDashboardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 relative text-center">
+            <button onClick={() => setShowDashboardModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="w-12 h-12 rounded-xl bg-[#eaf7f0] text-[#054631] flex items-center justify-center mx-auto mb-4"><BarChart3 className="w-6 h-6" /></div>
+            <h3 className="font-bold text-slate-900 text-base mb-1.5">Access Required</h3>
+            <p className="text-xs text-slate-500 mb-5">Sign in with your official credentials to access the dashboard, insights, and reports.</p>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => { setShowDashboardModal(false); onOpenAuthModal("login"); }}
+                className="w-full py-2.5 rounded-lg font-bold text-white bg-[#054631] hover:bg-[#033424] transition-all cursor-pointer text-sm">Sign In to Platform</button>
+              <button onClick={() => { setShowDashboardModal(false); onOpenAuthModal("signup"); }}
+                className="w-full py-2.5 rounded-lg font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer text-sm">Create New Account</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTACT MODAL */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+            <button onClick={() => setShowContactModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#054631] flex items-center justify-center"><Building2 className="w-5 h-5" /></div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Contact Bharat Drishti Desk</h3>
+                <p className="text-[11px] text-slate-500">Ministry of Statistics &amp; Programme Implementation</p>
+              </div>
+            </div>
+            {contactSubmitted ? (
+              <div className="py-8 text-center space-y-2">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                <h4 className="font-bold text-slate-900 text-sm">Message Received</h4>
+                <p className="text-xs text-slate-500">Thank you. Your inquiry has been dispatched to the MoSPI helpdesk.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Your Name</label>
+                  <input type="text" required placeholder="e.g. Ramesh Kumar" value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Email</label>
+                  <input type="email" required placeholder="official@gov.in" value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Message</label>
+                  <textarea rows={3} required placeholder="Your inquiry regarding MPLADS works or platform access..." value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs" />
+                </div>
+                <button type="submit" className="w-full py-2.5 rounded-lg font-bold text-white bg-[#054631] hover:bg-[#033424] transition-all cursor-pointer">Send Inquiry</button>
+              </form>
+            )}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+              <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> support-mplads@mospi.gov.in</span>
+              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> New Delhi, India</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HOW IT WORKS MODAL */}
+      {showHowItWorksModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 relative">
+            <button onClick={() => setShowHowItWorksModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#054631] flex items-center justify-center"><Layers className="w-5 h-5" /></div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">How Bharat Drishti Works</h3>
+                <p className="text-[11px] text-slate-500">Autonomous 3-Step Monitoring Pipeline</p>
+              </div>
+            </div>
+            <div className="space-y-3 text-xs">
+              {[
+                { step: "1", title: "Data Ingestion & Digitization", body: "Captures transaction records, sanctions, physical milestones, and completion certificates from the official MoSPI portal." },
+                { step: "2", title: "5-Layer Forensic Triangulation", body: "Applies ML models, Benford's Law, GFR statutory rules, OCR, and perceptual image hashing to detect fraud and fund overruns." },
+                { step: "3", title: "Multi-Tier Governance Alerts", body: "Surfaces tailored dashboards for Ministry, State Nodal Authorities, District Magistrates, MPs and public citizens." },
+              ].map(({ step, title, body }) => (
+                <div key={step} className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="w-6 h-6 rounded-full bg-[#054631] text-white text-xs font-bold flex items-center justify-center shrink-0">{step}</span>
+                  <div>
+                    <div className="font-bold text-slate-800 text-sm">{title}</div>
+                    <div className="text-slate-500 mt-0.5">{body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">Ready to explore?</span>
+              <button onClick={() => { setShowHowItWorksModal(false); onOpenAuthModal("login"); }}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#054631] hover:bg-[#033424] cursor-pointer transition-all">
+                Access Platform →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
