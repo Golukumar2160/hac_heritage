@@ -436,7 +436,7 @@ export default function VendorNetworkView({ onSelectWork }) {
 
                 <div className="flex items-center space-x-2">
                   <span className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-mono font-bold bg-slate-900 border border-slate-700 text-violet-200">
-                    Risk Score: {vendorProfile.avg_risk_score} / 100
+                    Risk Score: {Number(vendorProfile.avg_risk_score || 0).toFixed(2)} / 100
                   </span>
                 </div>
               </div>

@@ -857,7 +857,7 @@ export default function ModelValidationView({ onSelectWork }) {
                       </td>
                       <td className="py-3 px-3 text-slate-300">{mp.total_works}</td>
                       <td className="py-3 px-3 text-rose-400 font-bold">{mp.critical_works}</td>
-                      <td className="py-3 px-3 text-violet-300 font-bold">{mp.avg_risk_score}</td>
+                      <td className="py-3 px-3 text-violet-300 font-bold">{Number(mp.avg_risk_score || 0).toFixed(2)}</td>
                       <td className="py-3 px-3 text-amber-400 font-bold">{mp.benford_mad}</td>
                       <td className="py-3 px-4 text-xs text-rose-300 font-sans">
                         {mp.conformity_status}

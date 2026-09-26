@@ -148,7 +148,7 @@ export default function MpProfileModal({ mpName, onClose, onSelectWork }) {
                 <div className="glass-panel p-4 rounded-xl border border-slate-800 bg-slate-900/50">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Average Risk Score</span>
                   <div className="text-xl font-extrabold font-mono text-amber-400 mt-1">
-                    {data.avg_risk_score} <span className="text-xs text-slate-500">/ 100</span>
+                    {Number(data.avg_risk_score || 0).toFixed(2)} <span className="text-xs text-slate-500">/ 100</span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
                     L2 Tabular Ensemble

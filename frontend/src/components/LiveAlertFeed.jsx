@@ -173,11 +173,11 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
         cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
       });
     }
-    if (work.rule_premature_tranche) {
+    if (work.is_duplicate) {
       list.push({
-        label: '⚖️ Cl. 4.3 Tranche Gate',
-        desc: 'Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)',
-        cls: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+        label: '📸 Duplicate pHash',
+        desc: 'Perceptual Hashing (pHash): Duplicate image detected across distinct projects',
+        cls: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30'
       });
     }
     if (work.rule_split_tender) {
@@ -187,32 +187,25 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
         cls: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
       });
     }
-    if (work.is_duplicate) {
-      list.push({
-        label: '📸 Duplicate pHash',
-        desc: 'Perceptual Hashing (pHash): Duplicate image detected across distinct projects',
-        cls: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30'
-      });
-    }
-    if (work.rule_text_duplicate) {
-      list.push({
-        label: '📑 Semantic Duplicate',
-        desc: 'GFR 144: High semantic textual similarity with other project in same MP jurisdiction',
-        cls: 'bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30'
-      });
-    }
-    if (work.rule_sanction_stalling) {
-      list.push({
-        label: `⏱️ Cl. 3.10 Delay (${Math.round(work.days_to_sanction || 0)}d)`,
-        desc: 'Clause 3.10: District Authority sanction delayed beyond 45-day statutory SLA',
-        cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-      });
-    }
     if (work.work_vendor_flag) {
       list.push({
         label: '🏢 Monopoly',
         desc: 'Single vendor concentration or cartel pattern detected',
         cls: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30'
+      });
+    }
+    if (work.rule_premature_tranche) {
+      list.push({
+        label: '⚖️ Cl. 4.3 Tranche Gate',
+        desc: 'Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)',
+        cls: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+      });
+    }
+    if (work.rule_missing_photo) {
+      list.push({
+        label: '⚠️ Missing Photo',
+        desc: 'Missing mandatory site inspection evidence photo',
+        cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
       });
     }
     if (work.rule_stalled_execution) {
@@ -523,36 +516,65 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                         )}
                       </td>
 
-                      {/* Violation Triggers (Option 1: Primary Badge + Pill) */}
+                      {/* Violation Triggers (2-Line Multi-Badge Layout) */}
                       <td className="py-3 px-4">
                         {(() => {
                           const violations = getWorkViolations(work);
                           const primary = violations[0];
-                          const remainingCount = violations.length - 1;
+                          const secondary = violations[1];
+                          const tertiary = violations[2];
+                          const total = violations.length;
+
+                          // If total is 3, show both secondary and tertiary on the second line
+                          // If total > 3, show secondary + (+N more) button
+                          const remainingCount = total > 3 ? total - 2 : 0;
                           const moreTooltip = remainingCount > 0 
-                            ? `Additional flags (${remainingCount}): ${violations.slice(1).map(v => v.label.replace(/[^\w\s\.\(\)\>\-]/g, '').trim()).join(', ')}. Click to inspect case.`
+                            ? `Additional flags (${remainingCount}): ${violations.slice(2).map(v => v.label.replace(/[^\w\s\.\(\)\>\-]/g, '').trim()).join(', ')}. Click to inspect case.`
                             : undefined;
 
                           return (
-                            <div className="flex items-center gap-1.5 flex-nowrap">
+                            <div className="flex flex-col gap-1.5 items-start min-w-[200px] max-w-[290px]">
+                              {/* Upper Line: Primary Trigger */}
                               <span 
                                 className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border whitespace-nowrap shadow-xs ${primary.cls}`} 
                                 title={primary.desc}
                               >
                                 {primary.label}
                               </span>
-                              {remainingCount > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelectWork(work.work_id);
-                                  }}
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 whitespace-nowrap cursor-pointer transition-colors shadow-xs"
-                                  title={moreTooltip}
-                                >
-                                  +{remainingCount} more
-                                </button>
+
+                              {/* Lower Line: Secondary Trigger + (Tertiary or +N more badge) */}
+                              {secondary && (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span 
+                                    className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border whitespace-nowrap shadow-xs ${secondary.cls}`} 
+                                    title={secondary.desc}
+                                  >
+                                    {secondary.label}
+                                  </span>
+
+                                  {total === 3 && tertiary && (
+                                    <span 
+                                      className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border whitespace-nowrap shadow-xs ${tertiary.cls}`} 
+                                      title={tertiary.desc}
+                                    >
+                                      {tertiary.label}
+                                    </span>
+                                  )}
+
+                                  {remainingCount > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSelectWork(work.work_id);
+                                      }}
+                                      className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 whitespace-nowrap cursor-pointer transition-colors shadow-xs"
+                                      title={moreTooltip}
+                                    >
+                                      +{remainingCount} more
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );

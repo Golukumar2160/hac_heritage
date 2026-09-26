@@ -44,6 +44,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   const svgRef = useRef(null);
+  const districtSectionRef = useRef(null);
 
   // Dynamic Session & Role Scoping
   const sessionUser = currentUser || (typeof api !== 'undefined' && api.getCurrentUser ? api.getCurrentUser() : null);
@@ -102,13 +103,21 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
     };
   }, [currentRole, sessionUser, selectedState, states.length]);
 
-  const handleSelectState = (stateName) => {
+  const handleSelectState = (stateName, shouldScroll = true) => {
     setSelectedState(stateName);
     setLoadingDistricts(true);
     api.getMapDistricts(stateName)
       .then((data) => setDistricts(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error loading district map data:', err))
       .finally(() => setLoadingDistricts(false));
+
+    if (shouldScroll) {
+      setTimeout(() => {
+        if (districtSectionRef.current) {
+          districtSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
   };
 
   // Load States Aggregates (Re-fetches on activeRole switch)
@@ -122,7 +131,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
             const upExists = data.find(s => s.state === 'Uttar Pradesh');
             const defaultState = upExists ? 'Uttar Pradesh' : data[0].state;
             setSelectedState(defaultState);
-            handleSelectState(defaultState);
+            handleSelectState(defaultState, false);
           }
         }
       })
@@ -360,7 +369,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
                           ₹{fundsRiskCr} Cr
                         </div>
                         <div className="text-xs text-slate-400 mt-0.5">
-                          Score: <span className="font-bold text-violet-300">{s.avg_risk_score}</span>
+                          Score: <span className="font-bold text-violet-300">{Number(s.avg_risk_score || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -594,7 +603,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
                 <div className="font-bold text-white flex items-center justify-between border-b border-slate-800 pb-1.5">
                   <span className="text-sm">{hoveredState.state}</span>
                   <span className="text-xs font-mono text-violet-300 px-2 py-0.5 rounded bg-violet-950/80 border border-violet-800">
-                    Score: {hoveredState.avg_risk_score || 'N/A'}
+                    Score: {hoveredState.avg_risk_score ? Number(hoveredState.avg_risk_score).toFixed(2) : 'N/A'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
@@ -655,7 +664,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
       </div>
 
       {/* ── DISTRICT BREAKDOWN TABLE BELOW MAP (AS CONFIRMED IN A2) ──────── */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
+      <div 
+        ref={districtSectionRef}
+        id="district-breakdown-section"
+        className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5 scroll-mt-24 transition-all duration-300"
+      >
         
         {/* State Overview Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
@@ -678,7 +691,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
               {currentStateObj.critical_pct || 0}% Critical Schemes Ratio
             </span>
             <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800">
-              Avg Risk: {Number(currentStateObj.avg_risk_score || 0).toFixed(1)}
+              Avg Risk: {Number(currentStateObj.avg_risk_score || 0).toFixed(2)}
             </span>
           </div>
         </div>
@@ -781,7 +794,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
                           ₹{(amt / 10000000).toFixed(2)} Cr
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-cyan-400">
-                          {Number(d.avg_risk_score || 0).toFixed(1)}
+                          {Number(d.avg_risk_score || 0).toFixed(2)}
                         </td>
                       </tr>
                     );

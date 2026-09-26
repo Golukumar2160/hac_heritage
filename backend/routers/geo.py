@@ -95,8 +95,9 @@ def get_state_map_data(user: Optional[dict] = Depends(get_current_user_optional)
 
     records = grouped.sort_values("avg_risk_score", ascending=False).to_dict(orient="records")
 
-    # 2. Annotate in_scope flag for each jurisdiction based on RBAC
+    # 2. Annotate in_scope flag for each jurisdiction based on RBAC and ensure clean 2-decimal floats
     for r in records:
+        r["avg_risk_score"] = round(float(r.get("avg_risk_score", 0)), 2)
         st_name = r.get("state", "")
         if role in ("ministry", "anon") or not user_state:
             r["in_scope"] = True
@@ -123,8 +124,10 @@ def get_district_map_data(
         avg_risk_score=("risk_score", "mean"),
     ).reset_index()
 
-    grouped["avg_risk_score"] = grouped["avg_risk_score"].round(1)
-    return grouped.sort_values("critical_count", ascending=False).to_dict(orient="records")
+    dist_records = grouped.sort_values("critical_count", ascending=False).to_dict(orient="records")
+    for r in dist_records:
+        r["avg_risk_score"] = round(float(r.get("avg_risk_score", 0)), 2)
+    return dist_records
 
 
 @router.get("/api/map/gps-points", tags=["Geospatial"])
