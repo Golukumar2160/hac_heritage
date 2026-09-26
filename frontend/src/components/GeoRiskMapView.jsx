@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   MapPin, 
   Layers, 
-  ShieldAlert, 
   TrendingUp, 
   ChevronRight,
   Filter,
@@ -18,8 +17,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Search,
-  Building2,
-  Sparkles
+  Building2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { 
@@ -793,30 +791,6 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
             </table>
           </div>
         </div>
-
-        {/* ── METHODOLOGY BRIEFING ────────────────────────── */}
-        <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-            <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              Choropleth Boundary Intelligence
-            </h5>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Bharat-Drishti utilizes an administrative boundary choropleth aggregating all 98,649 works across 36 states and union territories, calibrated against official CAG expenditure schedules.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-            <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
-              Sovereign District &amp; State Audit Protocol
-            </h5>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Multi-tier vigilance scoring correlates district-level allocations against execution timelines and contractor concentration, enabling senior administrators and citizens to pinpoint irregularities instantly.
-            </p>
-          </div>
-        </div>
-
       </div>
 
     </div>

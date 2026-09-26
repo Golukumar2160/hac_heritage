@@ -44,6 +44,7 @@ import {
   ArrowRight,
   ChevronRight,
   Building2,
+  Landmark,
   MapPin,
   Vote,
   UserCheck,
@@ -779,10 +780,33 @@ export default function App() {
         </Suspense>
 
         {/* Platform Sovereign Footer */}
-        <footer className="mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#070b18]/95 backdrop-blur-xl py-3.5 text-xs transition-colors">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8">
-            {/* Executive Official Vigilance Console Strip */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] font-mono">
+        <footer className="mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#070b18]/95 backdrop-blur-xl py-5 text-xs transition-colors">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-3.5">
+            {/* Top Tier: Brand, Console Status & Institutional Badges */}
+            {/* Brand and Description */}
+            <div className="flex items-center space-x-3">
+              <div className="relative w-8 h-8 rounded-xl p-0.5 flex-shrink-0 border border-violet-500/30 bg-violet-500/10 flex items-center justify-center">
+                <Landmark className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-white dark:border-[#070b18]" style={{ boxShadow: '0 0 6px rgba(52,211,153,0.8)' }} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-display font-black text-slate-900 dark:text-white text-sm tracking-wide">
+                    BHARAT-DRISHTI
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE VIGILANCE
+                  </span>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 font-medium">
+                  Autonomous AI-Powered Vigilance &amp; Forensic Audit Network for MoSPI's MPLADS
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Sub-bar: Executive Official Vigilance Console Strip */}
+            <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/70 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] font-mono">
               <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">© 2026 Government of India</span>
                 <span className="text-slate-300 dark:text-slate-600">•</span>
@@ -817,13 +841,6 @@ export default function App() {
                     Benford's Law Forensics
                   </span>
                 </button>
-                <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
-                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  Sovereign Telemetry Active
-                </span>
-                <span className="text-slate-300 dark:text-slate-600 hidden lg:inline">•</span>
-                <span className="whitespace-nowrap hidden lg:inline">CVC &amp; CAG Admissible Audit Trail</span>
               </div>
             </div>
           </div>
