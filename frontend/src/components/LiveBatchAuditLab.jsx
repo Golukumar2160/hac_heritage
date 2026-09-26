@@ -65,11 +65,6 @@ export default function LiveBatchAuditLab({ onSelectWork }) {
     }
   };
 
-  // Auto-run demo benchmark on mount if no data exists
-  useEffect(() => {
-    handleRunBenchmark();
-  }, []);
-
   // Keyboard shortcut: close modal on ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -287,6 +282,7 @@ ${
     setError(null);
     setSelectedBatchWork(null);
     setSelectedModelFilter(null);
+    setSearchQuery('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -339,31 +335,33 @@ ${
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/30 uppercase tracking-wider">
-              PILOT HACKATHON MODULE // 5-MODEL BATCH AUDIT ENGINE
+              STATUTORY AUDIT ENGINE // MoSPI MPLADS
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display mt-1 tracking-tight flex items-center gap-2">
-            <span>Live Batch CSV Audit Lab</span>
-            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 font-mono font-normal">
-              Zero-Shot Inference Ready
+            <span>Bulk Project Audit &amp; Anomaly Scanner</span>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+              Automated Risk Evaluation
             </span>
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
-            Upload raw portal CSVs matching the Ministry schema. Every single row is evaluated through all five algorithmic &amp; ML engines, outputting a calibrated 0–100 risk score and clear layman reasons for every project.
+            Upload official MPLADS project or expenditure CSV files. Every record is automatically evaluated against statutory guidelines (GFR 2017 &amp; Scheme Norms), contractor monopolies, and financial anomalies, generating an instant 0–100 risk score with plain-language explanations.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={handleDownloadSample}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-xs"
-            title="Download Ministry Standard Sample CSV Template"
-          >
-            <Download className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-            <span>Sample Benchmark CSV</span>
-          </button>
-        </div>
+        {auditData && (
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleClearBatch}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors shadow-xs cursor-pointer"
+              title="Remove all evaluated records & history"
+            >
+              <Trash2 className="w-4 h-4 text-rose-500" />
+              <span>Clear History ({auditData.results?.length || 0})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Interactive Drag & Drop Uploader */}
@@ -409,53 +407,66 @@ ${
             </p>
           </div>
 
-          {/* Direct Action Trigger: Convert All Works */}
+          {/* Direct Action Trigger */}
           <div className="flex items-center gap-2 pt-1 flex-wrap justify-center" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => {
-                if (file) {
-                  handleFileUpload(file);
-                } else if (fileInputRef.current) {
-                  fileInputRef.current.click();
-                }
-              }}
-              disabled={loading}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-mono font-bold text-xs shadow-md shadow-emerald-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>
-                {auditData?.kpis?.total_works
-                  ? `⚡ Convert All (${auditData.kpis.total_works} Works Evaluated)`
-                  : '⚡ Convert All Works in CSV'}
-              </span>
-            </button>
+            {auditData ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (file) {
+                      handleFileUpload(file);
+                    } else if (fileInputRef.current) {
+                      fileInputRef.current.click();
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-mono font-bold text-xs shadow-md shadow-emerald-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span>Re-Evaluate Batch ({auditData?.kpis?.total_works || 0} Works)</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
-            >
-              Select Another CSV
-            </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                >
+                  Select Another CSV
+                </button>
 
-            {auditData && (
-              <button
-                type="button"
-                onClick={handleClearBatch}
-                className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-mono text-xs border border-rose-500/30 transition-all cursor-pointer flex items-center gap-1.5"
-                title="Clear current batch records"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>{lang === 'hi' ? 'सभी रिकॉर्ड हटाएं' : 'Clear Batch'}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleClearBatch}
+                  className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-mono text-xs border border-rose-500/30 transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Remove all evaluated records & history"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{lang === 'hi' ? 'सभी रिकॉर्ड हटाएं' : 'Clear History'}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-xs shadow-md shadow-violet-500/25 flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Select / Browse CSV File</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleRunBenchmark}
+                  disabled={loading}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Play className="w-3 h-3 text-violet-500" />
+                  <span>Run Demo Benchmark (15 Works)</span>
+                </button>
+              </>
             )}
-          </div>
-
-          <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 pt-1">
-            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">Auto-Detect Headers</span>
-            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">5 ML Models</span>
-            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">Supports Multi-CSV Merging</span>
           </div>
         </div>
 
@@ -474,8 +485,11 @@ ${
         </div>
       )}
 
-      {/* Mode & Language Selector Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#070b18] border border-slate-700/80 shadow-inner">
+      {/* Results Section (Only shown when audit data exists) */}
+      {auditData && (
+        <>
+          {/* Mode & Language Selector Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#070b18] border border-slate-700/80 shadow-inner">
         {/* Left: View Mode Toggle */}
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
           <button
@@ -528,39 +542,6 @@ ${
         </div>
       </div>
 
-      {/* Citizen 0-100 Score Explainer Guide (Shown in Citizen Mode) */}
-      {viewMode === 'citizen' && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-[#060a18] via-[#09142e] to-[#060a18] border border-cyan-500/30 text-xs space-y-2.5 shadow-lg">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-cyan-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              {lang === 'hi' ? '0 से 100 जोखिम स्कोर का अर्थ (आम नागरिक मार्गदर्शिका)' : '0 to 100 Risk Score Guide (What this means for your tax money)'}
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              {lang === 'hi' ? '5 एआई मॉडल एवं सीएजी ऑडिट नियमों पर आधारित' : 'Evaluated by 5 algorithmic AI models & CAG rules'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-[11px] font-mono">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-              <span className="font-black text-xs block">🟢 0 - 35 // CLEAN</span>
-              <span>{lang === 'hi' ? 'ईमानदार एवं सत्यापित कार्य (पूर्णतः नियम-सम्मत)' : 'Verified Honest Work (Milestones match sanction)'}</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300">
-              <span className="font-black text-xs block">🟡 36 - 54 // CAUTION</span>
-              <span>{lang === 'hi' ? 'धीमा कार्य या आंशिक भौतिक प्रगति' : 'Work Delayed / Partial Progress Gap'}</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300">
-              <span className="font-black text-xs block">🟠 55 - 74 // HIGH RISK</span>
-              <span>{lang === 'hi' ? 'ठेकेदार एकाधिकार या बजट से अधिक खर्च' : 'Contractor Monopoly or Suspicious Drain'}</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
-              <span className="font-black text-xs block">🔴 75 - 100 // CRITICAL</span>
-              <span>{lang === 'hi' ? 'गंभीर भ्रष्टाचार / बिना काम पूरा हुए 100% भुगतान' : 'Tender Bypassed / Paid Before Completion'}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* AUDITOR SECTION: CONCISE SUMMARY OF EVERY MODEL (SHOWN IN AUDITOR MODE)   */}
@@ -870,6 +851,15 @@ ${
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
+
+          <button
+            onClick={handleClearBatch}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-mono font-bold border border-rose-500/30 transition-colors cursor-pointer shadow-xs shrink-0"
+            title="Remove all evaluated records & history"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear History</span>
+          </button>
         </div>
       </div>
 
@@ -1172,6 +1162,8 @@ ${
             );
           })}
         </div>
+      )}
+        </>
       )}
 
       {/* ========================================================================= */}

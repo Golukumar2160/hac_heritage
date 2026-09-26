@@ -312,7 +312,7 @@ export default function App() {
   const tabTitles = {
     overview: 'Command Centre',
     alerts: 'Live Anomaly Radar',
-    batch_audit: 'Live Batch CSV Audit Lab',
+    batch_audit: 'Bulk Project Audit & Anomaly Scanner',
     early_warning: 'Early Warning & Predictive Forecast',
     map: 'Geospatial Risk Map',
     vendors: 'Contractor Syndicates & Cartels',
@@ -458,10 +458,10 @@ export default function App() {
                   : (theme === 'light' ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(139,92,246,0.3)'),
                 color: activeTab === 'batch_audit' ? '#ffffff' : (theme === 'light' ? '#6d28d9' : '#c4b5fd')
               }}
-              title="Launch Live Batch CSV Audit Lab"
+              title="Launch Bulk Project Audit & Anomaly Scanner"
             >
               <UploadCloud className={`w-3.5 h-3.5 ${activeTab === 'batch_audit' ? 'text-white' : 'text-violet-500'}`} />
-              <span className="font-mono text-xs font-bold hidden sm:inline">UPLOAD CSV AUDIT</span>
+              <span className="font-mono text-xs font-bold hidden sm:inline">BULK PROJECT AUDIT</span>
             </button>
 
             {/* Trigger Background ML Pipeline (Official Roles) */}

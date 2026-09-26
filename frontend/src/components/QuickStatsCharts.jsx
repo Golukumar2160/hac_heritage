@@ -168,13 +168,13 @@ function QuickStatsCharts({ kpis }) {
         <div>
           <div className="flex items-center gap-2.5">
             <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-display">
-              {activeView === 'stratification' ? 'Vigilance Risk Stratification' : 'Macro Expenditure & March Rush Forecast'}
+              {activeView === 'stratification' ? 'Vigilance Risk Stratification' : 'Expenditure Trends & Fiscal Year-End Surge Forecast'}
             </h4>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
             {activeView === 'stratification' 
               ? 'Distribution of public works categorized by multi-factor algorithmic fraud risk scores'
-              : 'Multi-year time-series analysis and seasonal March year-end fund rush expenditure projections'}
+              : 'Multi-year time-series tracking monthly fund releases and predicting fiscal year-end budget surges (GFR Rule 56)'}
           </p>
         </div>
 
@@ -199,7 +199,7 @@ function QuickStatsCharts({ kpis }) {
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>March Rush Forecast</span>
+            <span>Spending Surge Forecast</span>
           </button>
         </div>
       </div>
@@ -299,45 +299,45 @@ function QuickStatsCharts({ kpis }) {
             <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-amber-500" />
-                March Surge Multiplier
+                Year-End Surge Factor
               </span>
               <div className="text-xl font-black font-mono text-amber-500 mt-1">
                 {summary.march_surge_multiplier ? `${summary.march_surge_multiplier}x` : '1.2x'}
               </div>
-              <div className="text-[10px] text-slate-500 mt-0.5">PAC Audit Surge Index</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">March spike vs normal (PAC Norms)</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Activity className="w-3.5 h-3.5 text-blue-500" />
-                Monthly Burn Velocity
+                Monthly Disbursement Rate
               </span>
               <div className="text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
                 ₹{summary.base_monthly_burn_rate_cr || '62.35'} Cr
               </div>
-              <div className="text-[10px] text-slate-500 mt-0.5">Baseline disbursement</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Average baseline monthly release</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
-                Next Qtr Projected
+                Upcoming Qtr Outlay
               </span>
               <div className="text-xl font-black font-mono text-indigo-400 mt-1">
                 ₹{summary.projected_next_quarter_cr || '193.20'} Cr
               </div>
-              <div className="text-[10px] text-slate-500 mt-0.5">3-Month Outlay Forecast</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">3-Month ML Outlay Projection</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                6-Month Target
+                6-Month Projected Outflow
               </span>
               <div className="text-xl font-black font-mono text-emerald-400 mt-1">
                 ₹{summary.next_6m_projected_disbursements_cr || '409.31'} Cr
               </div>
-              <div className="text-[10px] text-slate-500 mt-0.5">Linear + Seasonal Regression</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Linear + Seasonal ML Forecast</div>
             </div>
           </div>
 
