@@ -887,22 +887,7 @@ ${
 
       {/* ========================================================================= */}
       {/* MAIN RESULTS SECTION: ROW-BY-ROW AUDIT CARDS WITH SCORE & LAYMAN REASONS */}
-      {/* ========================================================================= */}
-      {auditData && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono text-emerald-400">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="font-bold text-slate-900 dark:text-emerald-300">
-              {lang === 'hi' 
-                ? `सफलतापूर्वक रूपांतरण संपन्न: CSV के सभी ${kpis.total_works || results.length} कार्यों का 5 AI मॉडल्स द्वारा विश्लेषण पूर्ण` 
-                : `100% Converted: All ${kpis.total_works || results.length} Works Across Entire CSV Evaluated Through All 5 AI Models`}
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-500 dark:text-emerald-400/80">
-            {auditData.filename || 'Uploaded CSV'} // {results.length} records active
-          </span>
-        </div>
-      )}
+
 
       {filteredResults.length === 0 ? (
         <div className="py-16 text-center text-slate-500 dark:text-slate-400 font-mono text-xs">
