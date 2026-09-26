@@ -64,6 +64,7 @@ jobs:
 
       - name: Stage 5 - Run MLflow 30-Day Retraining Pipeline Tests (test_mlflow_pipeline.py)
         run: |
+          pip install -r requirements-pipeline.txt
           python -m unittest tests/test_mlflow_pipeline.py
 
   frontend-ci:
