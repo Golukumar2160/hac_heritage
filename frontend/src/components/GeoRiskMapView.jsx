@@ -8,9 +8,6 @@ import {
   Flame,
   Globe,
   Crosshair,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
   Info,
   ExternalLink,
   FileText,
@@ -414,33 +411,8 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
               ))}
             </div>
 
-            {/* Zoom Controls */}
+            {/* GPS Ground Pin Toggle */}
             <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setZoomLevel(prev => Math.min(prev + 0.25, 2))}
-                title="Zoom In"
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={() => setZoomLevel(prev => Math.max(prev - 0.25, 1))}
-                title="Zoom Out"
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={() => setZoomLevel(1)}
-                title="Reset View"
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-
-              {/* GPS Ground Pin Toggle */}
               <button
                 onClick={() => setShowGpsPins(!showGpsPins)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
