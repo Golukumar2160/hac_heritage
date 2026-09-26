@@ -10,7 +10,9 @@ import {
   Lock,
   Search,
   ShieldAlert,
-  Eye
+  Eye,
+  Filter,
+  ChevronDown
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -185,20 +187,21 @@ export default function AuditLedgerView({ onSelectWork }) {
           />
         </div>
 
-        <div className="flex items-center space-x-2 text-sm w-full sm:w-auto overflow-x-auto">
-          {['all', 'TREASURY_HOLD_RECOMMENDED', 'INSPECTION_ORDERED', 'ESCALATED', 'DISMISSED'].map((act) => (
-            <button
-              key={act}
-              onClick={() => setActionFilter(act)}
-              className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-xs sm:text-sm ${
-                actionFilter === act
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
-              }`}
-            >
-              {act === 'all' ? 'All Actions' : act === 'TREASURY_HOLD_RECOMMENDED' ? '🚨 Treasury Hold' : act.replace('_', ' ')}
-            </button>
-          ))}
+        <div className="relative w-full sm:w-64">
+          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500 dark:text-violet-400 pointer-events-none" />
+          <select
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            className="w-full pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm font-semibold tracking-wide bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700/80 hover:border-violet-500/60 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all appearance-none cursor-pointer shadow-sm"
+            aria-label="Filter by Auditor Action"
+          >
+            <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Actions</option>
+            <option value="TREASURY_HOLD_RECOMMENDED" className="bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-300">🚨 Treasury Hold</option>
+            <option value="INSPECTION_ORDERED" className="bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-300">🔍 Inspection Ordered</option>
+            <option value="ESCALATED" className="bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-300">⚠️ Escalated</option>
+            <option value="DISMISSED" className="bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-300">✅ Dismissed</option>
+          </select>
+          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
       </div>
 
