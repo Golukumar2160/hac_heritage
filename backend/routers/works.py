@@ -469,7 +469,10 @@ def _compute_work_completion(work_id: str) -> dict:
 
 
 # ── Core Vision & ELA Forensic Executor ───────────────────────────────────────
-_work_vision_audit_cache: dict = {}
+# LRU-capped cache: stores at most 50 vision audit results to prevent unbounded memory growth
+from collections import OrderedDict
+_work_vision_audit_cache: OrderedDict = OrderedDict()
+_VISION_CACHE_MAX = 50
 
 def _execute_work_vision_audit(work_id: str, sample_file: Optional[str] = None):
     """Internal executor for Vision Auditor & ELA tamper forensics."""
@@ -591,6 +594,9 @@ def _execute_work_vision_audit(work_id: str, sample_file: Optional[str] = None):
     audit_res["sample_note"] = sample_note
     audit_res["available_samples"] = available_samples
 
+    # LRU eviction: remove oldest entry if cache is at capacity
+    if len(_work_vision_audit_cache) >= _VISION_CACHE_MAX:
+        _work_vision_audit_cache.popitem(last=False)
     _work_vision_audit_cache[cache_key] = audit_res
     return audit_res
 

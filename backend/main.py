@@ -90,8 +90,10 @@ ALLOWED_ORIGINS = settings.ALLOWED_ORIGINS
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Modern Starlette/FastAPI lifespan context manager pre-warming analytical caches and liveness probes."""
+    import gc
     try:
         from backend.core.data_cache import get_cached_flags, get_cached_allocations
+        # Always load the core dataset into cache at startup (needed for any request)
         get_cached_flags()
         get_cached_allocations()
 
@@ -99,21 +101,31 @@ async def lifespan(app: FastAPI):
         from backend.core.database import is_supabase_alive
         is_supabase_alive()
 
-        # Pre-compute heavy analytical caches (Trends, SC/ST, Vendors & Maps) in background thread
-        def _prewarm_analytics():
-            try:
-                from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis, get_vendor_leaderboard
-                from backend.routers.geo import get_filter_options, get_state_map_data
-                get_sc_st_compliance_data()
-                get_trend_analysis(user=None)
-                get_vendor_leaderboard(limit=50, user=None)
-                get_filter_options()
-                get_state_map_data(user=None)
-            except Exception as e:
-                logger.warning(f"Analytics pre-warm notice: {e}")
+        # Pre-compute heavy analytical caches ONLY in development mode.
+        # In production (Render free tier, 512 MB), defer to lazy on-demand caching
+        # to avoid 50-80 MB startup spike that triggers OOM during worker initialization.
+        is_prod = os.getenv("ENVIRONMENT", "development").lower() in ("production", "prod")
+        if not is_prod:
+            def _prewarm_analytics():
+                try:
+                    from backend.routers.works import get_sc_st_compliance_data, get_trend_analysis, get_vendor_leaderboard
+                    from backend.routers.geo import get_filter_options, get_state_map_data
+                    get_sc_st_compliance_data()
+                    get_trend_analysis(user=None)
+                    get_vendor_leaderboard(limit=50, user=None)
+                    get_filter_options()
+                    get_state_map_data(user=None)
+                except Exception as e:
+                    logger.warning(f"Analytics pre-warm notice: {e}")
 
-        threading.Thread(target=_prewarm_analytics, daemon=True).start()
-        logger.info("[*] In-memory datasets & analytics pre-warmed successfully via lifespan.")
+            threading.Thread(target=_prewarm_analytics, daemon=True).start()
+            logger.info("[*] In-memory datasets & analytics pre-warmed successfully via lifespan.")
+        else:
+            logger.info("[*] Production mode: analytics caches will be computed lazily on first request (OOM-safe).")
+
+        # Force GC after startup to reclaim any temporary allocation overhead
+        gc.collect()
+
     except Exception as _e:
         logger.warning(f"[!] Lifespan cache warmup warning: {_e}")
     yield
