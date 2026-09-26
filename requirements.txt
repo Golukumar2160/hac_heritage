@@ -1,4 +1,9 @@
 # BHARAT-DRISHTI Production Requirements (Python 3.11+)
+# ─────────────────────────────────────────────────────
+# IMPORTANT: sentence-transformers (PyTorch), xgboost, and mlflow are intentionally
+# EXCLUDED from this file. They are pipeline-only tools used in pipelines/fraud_models.py
+# which runs as an offline subprocess, NEVER inside the Uvicorn web server process.
+# Install those via: pip install -r requirements-pipeline.txt (local / Render background worker only)
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pydantic>=2.9.0
@@ -13,10 +18,8 @@ numpy>=1.26.0
 scikit-learn>=1.5.0
 scipy>=1.13.0
 joblib>=1.4.0
-xgboost>=2.0.0
 networkx>=3.2
 plotly>=5.20.0
-mlflow>=2.16.0
 
 # Database & Cloud Connectivity
 psycopg2-binary>=2.9.9
@@ -32,5 +35,4 @@ reportlab>=4.2.0
 
 # AI & LLM Integration
 google-genai>=0.1.1
-sentence-transformers>=3.0.0
 requests>=2.32.0

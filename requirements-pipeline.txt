@@ -1,0 +1,17 @@
+# BHARAT-DRISHTI Pipeline-Only Requirements
+# ──────────────────────────────────────────
+# DO NOT install these in the production Docker container (Render web service).
+# These are ONLY for running pipelines/fraud_models.py locally or in a separate
+# background worker environment with adequate RAM (4 GB+ recommended).
+#
+# Install locally with:  pip install -r requirements-pipeline.txt
+# Then run:             python pipelines/fraud_models.py
+
+# These are already in requirements.txt and will be present:
+# pandas, numpy, scikit-learn, scipy, joblib, networkx
+
+# Pipeline-exclusive heavy dependencies:
+xgboost>=2.0.0
+mlflow>=2.16.0
+sentence-transformers>=3.0.0
+# Note: sentence-transformers pulls PyTorch (~800 MB). Ensure 4 GB+ RAM available.
