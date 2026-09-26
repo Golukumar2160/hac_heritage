@@ -411,21 +411,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
               ))}
             </div>
 
-            {/* GPS Ground Pin Toggle */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowGpsPins(!showGpsPins)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
-                  showGpsPins
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-                }`}
-                title="Toggle Vision AI & OCR verified physical GPS project coordinates"
-              >
-                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{showGpsPins ? `GPS Pins (${gpsPoints.length})` : 'Show Pins'}</span>
-              </button>
-            </div>
+
 
           </div>
 
