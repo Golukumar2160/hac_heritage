@@ -110,17 +110,17 @@ export default function AuditLedgerView({ onSelectWork }) {
           <div className="flex items-center space-x-2 mb-1">
             <span className="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5" />
-              Write-Ahead-Log (WAL) Cryptographic Integrity
+              Digitally Sealed Record
             </span>
             <span className="px-2 py-0.5 text-xs font-mono rounded bg-slate-800 text-slate-300 border border-slate-700">
-              Anti-Tamper Ledger
+              Tamper-Proof Audit Trail
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white font-display">
-            Statutory Anti-Tampering Audit Action Ledger
+            Official Audit Action Register
           </h2>
           <p className="text-sm text-slate-300 mt-1 leading-relaxed">
-            Every dismissal, escalation, or inspection order recorded by auditors is permanently logged with mandatory 50+ character justification.
+            Transparent and permanent log of all inspection orders, payment holds, and clearances recorded by vigilance authorities.
           </p>
         </div>
 

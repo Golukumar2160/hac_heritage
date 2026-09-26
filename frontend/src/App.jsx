@@ -319,7 +319,7 @@ export default function App() {
     visual_forensics: 'Visual & Media Forensics Lab',
     ocr: 'Visual & Media Forensics Lab',
     phash: 'Visual & Media Forensics Lab',
-    audit: 'Statutory Audit Ledger',
+    audit: 'Official Audit Action Register',
     validation: 'Model Validation & ROC',
     citizen_overview: 'District Fraud Watch',
     citizen_alerts: 'District Anomaly Radar',
