@@ -15,7 +15,7 @@ import {
   Cpu,
   Download,
   FileSearch,
-  DollarSign,
+  IndianRupee,
   Users,
   Compass,
   Eye,
@@ -1141,7 +1141,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                                     <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
                                       <div className="flex items-center justify-between font-semibold">
                                         <span className="text-slate-300 flex items-center gap-1">
-                                          <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                                          <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
                                           Task 1: Financial Audit
                                         </span>
                                         {hasMismatch ? (
@@ -1320,7 +1320,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                               <div className="p-3 rounded-lg bg-slate-900 border border-rose-500/40 space-y-1.5">
                                 <div className="flex items-center justify-between font-semibold">
                                   <span className="text-slate-300 flex items-center gap-1">
-                                    <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                                    <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
                                     Task 1: Financial Gap
                                   </span>
                                   <span className="text-xs text-rose-400 font-mono font-bold">MISMATCH FLAGGED</span>

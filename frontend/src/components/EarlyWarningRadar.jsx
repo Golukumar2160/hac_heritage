@@ -8,7 +8,7 @@ import {
   Filter, 
   ArrowRight, 
   Calendar, 
-  DollarSign, 
+  IndianRupee, 
   Building2, 
   MapPin, 
   Activity, 
@@ -175,7 +175,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Forward-looking predictive telemetry: Scheme abandonment likelihood and parliamentary unspent balance exhaustion.
+                Early detection of stalled public infrastructure works and projected unspent fund balances before tenure expiry.
               </p>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-            <span>Abandonment Radar ({earlyWorks.length})</span>
+            <span>Stalled Works Radar ({earlyWorks.length})</span>
           </button>
 
           <button
@@ -217,14 +217,14 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">At-Risk Works Flagged</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Stalled &amp; Delayed Works</div>
                 <div className="text-2xl font-black text-rose-400 font-mono mt-0.5">
                   {totalAtRiskWorksCount.toLocaleString('en-IN')}
                 </div>
                 <div className="text-[10px] text-slate-500">
                   {totalAtRiskWorksCount > earlyWorks.length
-                    ? `Top ${earlyWorks.length} prioritized • Prob < ${(threshold * 100).toFixed(0)}%`
-                    : `Threshold: Prob < ${(threshold * 100).toFixed(0)}%`}
+                    ? `Top ${earlyWorks.length} prioritized • Progress pace < ${(threshold * 100).toFixed(0)}%`
+                    : `Progress pace threshold < ${(threshold * 100).toFixed(0)}%`}
                 </div>
               </div>
               <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -234,24 +234,24 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Funds in Jeopardy</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Total Funds at Risk</div>
                 <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
                   ₹{totalFundsAtRiskCr.toFixed(2)} Cr
                 </div>
-                <div className="text-[10px] text-slate-500">Sanctioned Outlay at Risk</div>
+                <div className="text-[10px] text-slate-500">Sanctioned Outlay in Stalled Works</div>
               </div>
               <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <DollarSign className="w-5 h-5" />
+                <IndianRupee className="w-5 h-5" />
               </div>
             </div>
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Average Completion Likelihood</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Expected Completion Pace</div>
                 <div className="text-2xl font-black text-sky-400 font-mono mt-0.5">
                   {avgCompletionProb.toFixed(1)}%
                 </div>
-                <div className="text-[10px] text-slate-500">Model 6 Logistic Regression</div>
+                <div className="text-[10px] text-slate-500">Milestone Delivery Velocity</div>
               </div>
               <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
                 <Percent className="w-5 h-5" />
@@ -260,11 +260,11 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Statutory Standard</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Governing Audit Standard</div>
                 <div className="text-xs font-bold text-slate-200 mt-1">
                   GFR Rule 144 &amp; Para 3.12
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-0.5">Ground Verification Trigger</div>
+                <div className="text-[10px] text-emerald-400 mt-0.5">Physical Field Audit Trigger</div>
               </div>
               <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <CheckCircle className="w-5 h-5" />
@@ -301,16 +301,16 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
               {/* Threshold Filter */}
               <div className="flex items-center space-x-1.5 text-xs font-mono text-slate-400">
-                <span>Cutoff:</span>
+                <span>Filter by Risk:</span>
                 {[
-                  { val: 0.30, label: '< 30% (Critical)' },
-                  { val: 0.40, label: '< 40% (Default)' },
-                  { val: 0.50, label: '< 50% (High)' },
+                  { val: 0.30, label: 'Critical Only' },
+                  { val: 0.40, label: 'High Risk (Default)' },
+                  { val: 0.50, label: 'All At-Risk Works' },
                 ].map((t) => (
                   <button
                     key={t.val}
                     onClick={() => setThreshold(t.val)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-semibold border ${
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
                       threshold === t.val
                         ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
                         : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -370,7 +370,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                       <th className="py-3 px-4">Scheme Identification</th>
                       <th className="py-3 px-4">Location</th>
                       <th className="py-3 px-4">Sanctioned / Spent</th>
-                      <th className="py-3 px-4">Model 6 Completion Likelihood</th>
+                      <th className="py-3 px-4">Completion Forecast</th>
                       <th className="py-3 px-4">Projected Delay / Target Date</th>
                       <th className="py-3 px-4">Vigilance Status</th>
                       <th className="py-3 px-4 text-right">Dossier</th>
@@ -419,7 +419,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                               <span className={`font-bold ${isCritical ? 'text-rose-400' : 'text-amber-400'}`}>
                                 {probPct}%
                               </span>
-                              <span className="text-[10px] text-slate-500">AUC: 0.956</span>
+                              <span className="text-[10px] text-slate-500">High Confidence</span>
                             </div>
                             <div className="w-32 bg-slate-800 h-2 rounded-full overflow-hidden">
                               <div 

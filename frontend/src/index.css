@@ -483,13 +483,43 @@ html.light .text-purple-300 {
 /* Ensure solid action buttons, badges & colored text remain vibrant and legible */
 html.light button[class*="bg-gradient"],
 html.light button[class*="from-violet-"],
-html.light [class*="bg-violet-600"],
-html.light [class*="bg-indigo-600"],
-html.light [class*="bg-rose-600"],
-html.light [class*="bg-emerald-600"],
-html.light [class*="bg-amber-600"],
+html.light [class~="bg-violet-600"],
+html.light [class~="bg-indigo-600"],
+html.light [class~="bg-rose-600"],
+html.light [class~="bg-emerald-600"],
+html.light [class~="bg-amber-600"],
 html.light button.btn-solid-action,
 html.light .badge-solid {
+  color: #ffffff !important;
+}
+
+/* View Toggle Segmented Controls (Light & Dark Mode) */
+html.light .toggle-pill-active {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+html.light .toggle-pill-inactive {
+  background-color: transparent !important;
+  color: #64748b !important;
+  border: 1px solid transparent !important;
+}
+html.light .toggle-pill-inactive:hover {
+  color: #0f172a !important;
+}
+html.dark .toggle-pill-active {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35) !important;
+}
+html.dark .toggle-pill-inactive {
+  background-color: transparent !important;
+  color: #94a3b8 !important;
+  border: 1px solid transparent !important;
+}
+html.dark .toggle-pill-inactive:hover {
   color: #ffffff !important;
 }
 

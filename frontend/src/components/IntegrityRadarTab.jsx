@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Users,
   Camera,
@@ -182,7 +182,7 @@ export default function IntegrityRadarTab({ workObj = {}, dupEvidence = [] }) {
   const axisBreakdown = [
     {
       name: 'Financial Discipline',
-      icon: DollarSign,
+      icon: IndianRupee,
       score: financialDiscipline,
       sourceCol: 'anomaly_score_pct',
       rawVal: rawAnomalyPct.toFixed(1) + '% anomaly percentile',

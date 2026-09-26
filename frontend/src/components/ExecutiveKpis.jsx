@@ -39,8 +39,6 @@ export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'minist
       glowColor: 'rgba(139, 92, 246, 0.22)',
       borderColor: 'rgba(139, 92, 246, 0.35)',
       topBorderColor: 'linear-gradient(90deg, #c4b5fd, #8b5cf6)',
-      badge: '100% AUDITED',
-      badgeClass: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/35',
       iconColor: 'text-violet-500 dark:text-violet-400',
     },
     {
@@ -52,8 +50,6 @@ export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'minist
       glowColor: 'rgba(99, 102, 241, 0.22)',
       borderColor: 'rgba(99, 102, 241, 0.35)',
       topBorderColor: 'linear-gradient(90deg, #a5b4fc, #6366f1)',
-      badge: 'LIVE EXPENDITURE',
-      badgeClass: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/35',
       iconColor: 'text-indigo-500 dark:text-indigo-400',
     },
     {
@@ -65,8 +61,6 @@ export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'minist
       glowColor: 'rgba(244, 63, 94, 0.25)',
       borderColor: 'rgba(244, 63, 94, 0.35)',
       topBorderColor: 'linear-gradient(90deg, #fda4af, #f43f5e)',
-      badge: 'VULNERABILITY',
-      badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35',
       iconColor: 'text-rose-500 dark:text-rose-400',
       isDanger: true,
       onClick: () => onFilterTier && onFilterTier('critical'),
@@ -80,8 +74,6 @@ export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'minist
       glowColor: 'rgba(245, 158, 11, 0.25)',
       borderColor: 'rgba(245, 158, 11, 0.35)',
       topBorderColor: 'linear-gradient(90deg, #fde047, #f59e0b)',
-      badge: 'TIER-1',
-      badgeClass: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35',
       iconColor: 'text-amber-500 dark:text-amber-400',
       onClick: () => onFilterTier && onFilterTier('critical'),
     },
@@ -115,9 +107,11 @@ export default function ExecutiveKpis({ kpis, onFilterTier, activeRole = 'minist
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">
                   {card.title}
                 </span>
-                <span className={`px-2 py-0.5 text-xs font-mono font-bold rounded-md border ${card.badgeClass}`}>
-                  {card.badge}
-                </span>
+                {card.badge && (
+                  <span className={`px-2 py-0.5 text-xs font-mono font-bold rounded-md border ${card.badgeClass}`}>
+                    {card.badge}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-baseline justify-between">

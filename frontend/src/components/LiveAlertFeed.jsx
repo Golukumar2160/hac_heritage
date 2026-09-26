@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Search, 
   Filter, 
@@ -6,6 +6,8 @@ import {
   FileSearch, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  Check,
   RefreshCw,
   Image as ImageIcon,
   Building2,
@@ -18,6 +20,20 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
+const ANOMALY_TYPES = [
+  { id: 'all', label: 'Any Flag', icon: Filter },
+  { id: 'prohibited', label: 'Clause 4.1 Prohibited', icon: Ban },
+  { id: 'text_duplicate', label: 'Semantic Duplicate', icon: Copy },
+  { id: 'stalling', label: 'Clause 3.10 Stalled (>45d)', icon: Timer },
+  { id: 'premature_tranche', label: 'Clause 4.3 Tranche Gate', icon: AlertOctagon },
+  { id: 'split_tender', label: 'GFR Split Tender', icon: FileSearch },
+  { id: 'stalled', label: 'Stalled (>1y)', icon: Clock },
+  { id: 'duplicate', label: 'Duplicate Works', icon: ImageIcon },
+  { id: 'missing_photo', label: 'Missing Photo', icon: CameraOff },
+  { id: 'overspend', label: 'Cost Overrun', icon: TrendingDown },
+  { id: 'vendor', label: 'Vendor Monopoly', icon: Building2 },
+];
+
 export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activeRole = 'ministry' }) {
   const [flags, setFlags] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -27,8 +43,21 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
   const [stateFilter, setStateFilter] = useState('all');
   const [states, setStates] = useState([]);
   const [triggerFilter, setTriggerFilter] = useState('all');
+  const [isAnomalyDropdownOpen, setIsAnomalyDropdownOpen] = useState(false);
+  const anomalyDropdownRef = useRef(null);
   const [page, setPage] = useState(1);
   const pageSize = 20;
+
+  // Handle clicking outside to close anomaly dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (anomalyDropdownRef.current && !anomalyDropdownRef.current.contains(e.target)) {
+        setIsAnomalyDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Load States for dropdown & re-fetch when activeRole changes
   useEffect(() => {
@@ -135,13 +164,95 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
     );
   };
 
+  const getWorkViolations = (work) => {
+    const list = [];
+    if (work.rule_prohibited_work) {
+      list.push({
+        label: '🚫 Cl. 4.1 Prohibited',
+        desc: 'Clause 4.1/5.2 Violation: Prohibited public expenditure (Religious / Memorial / Private / Commercial asset)',
+        cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
+      });
+    }
+    if (work.rule_premature_tranche) {
+      list.push({
+        label: '⚖️ Cl. 4.3 Tranche Gate',
+        desc: 'Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)',
+        cls: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+      });
+    }
+    if (work.rule_split_tender) {
+      list.push({
+        label: '✂️ GFR Split Tender',
+        desc: 'GFR 2017 Rules 149/155: Evasion of ₹5L/₹10L tender threshold',
+        cls: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
+      });
+    }
+    if (work.is_duplicate) {
+      list.push({
+        label: '📸 Duplicate pHash',
+        desc: 'Perceptual Hashing (pHash): Duplicate image detected across distinct projects',
+        cls: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30'
+      });
+    }
+    if (work.rule_text_duplicate) {
+      list.push({
+        label: '📑 Semantic Duplicate',
+        desc: 'GFR 144: High semantic textual similarity with other project in same MP jurisdiction',
+        cls: 'bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30'
+      });
+    }
+    if (work.rule_sanction_stalling) {
+      list.push({
+        label: `⏱️ Cl. 3.10 Delay (${Math.round(work.days_to_sanction || 0)}d)`,
+        desc: 'Clause 3.10: District Authority sanction delayed beyond 45-day statutory SLA',
+        cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+      });
+    }
+    if (work.work_vendor_flag) {
+      list.push({
+        label: '🏢 Monopoly',
+        desc: 'Single vendor concentration or cartel pattern detected',
+        cls: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30'
+      });
+    }
+    if (work.rule_stalled_execution) {
+      list.push({
+        label: '⏳ Stalled (>1y)',
+        desc: 'Disbursed public funds but stalled >1 year',
+        cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+      });
+    }
+    if (work.rule_missing_photo) {
+      list.push({
+        label: '⚠️ Missing Photo',
+        desc: 'Missing mandatory site inspection evidence photo',
+        cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
+      });
+    }
+    if (work.rule_overspend) {
+      list.push({
+        label: '💸 Overspend',
+        desc: 'Expenditure exceeds sanctioned amount',
+        cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+      });
+    }
+    if (list.length === 0) {
+      list.push({
+        label: 'ML Statistical Anomaly',
+        desc: 'Unsupervised Isolation Forest & statistical outlier flag',
+        cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+      });
+    }
+    return list;
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="space-y-4 font-sans">
       
       {/* Search & Filter Command Ribbon */}
-      <div className="glass-panel p-5 rounded-2xl space-y-3.5 border border-slate-200/80 dark:border-white/[0.06]">
+      <div className="glass-panel p-5 rounded-2xl space-y-3.5 border border-slate-200/80 dark:border-white/[0.06] relative z-20">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           
           {/* Search Input */}
@@ -228,48 +339,79 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
             ))}
           </div>
 
-          {/* Trigger Tags */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mr-1">Anomaly Type:</span>
-            {[
-              { id: 'all', label: 'Any Flag', icon: null },
-              { id: 'prohibited', label: 'Clause 4.1 Prohibited', icon: Ban },
-              { id: 'text_duplicate', label: 'Semantic Duplicate', icon: Copy },
-              { id: 'stalling', label: 'Clause 3.10 Stalled (>45d)', icon: Timer },
-              { id: 'premature_tranche', label: 'Clause 4.3 Tranche Gate', icon: AlertOctagon },
-              { id: 'split_tender', label: 'GFR Split Tender', icon: FileSearch },
-              { id: 'stalled', label: 'Stalled (>1y)', icon: Clock },
-              { id: 'duplicate', label: 'Duplicate Works', icon: ImageIcon },
-              { id: 'missing_photo', label: 'Missing Photo', icon: CameraOff },
-              { id: 'overspend', label: 'Cost Overrun', icon: TrendingDown },
-              { id: 'vendor', label: 'Vendor Monopoly', icon: Building2 },
-            ].map((trig) => {
-              const Icon = trig.icon;
-              return (
-                <button
-                  key={trig.id}
-                  onClick={() => {
-                    setTriggerFilter(trig.id);
-                    setPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-                    triggerFilter === trig.id
-                      ? 'bg-violet-600 text-white font-semibold shadow-sm'
-                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-black/20 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-white/5'
-                  }`}
-                >
-                  {Icon && <Icon className={`w-3.5 h-3.5 ${triggerFilter === trig.id ? 'text-white' : 'text-violet-600 dark:text-violet-300'}`} />}
-                  {trig.label}
-                </button>
-              );
-            })}
+          {/* Anomaly Type Scrollable Dropdown Filter */}
+          <div className="relative z-30" ref={anomalyDropdownRef}>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                Anomaly Type:
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsAnomalyDropdownOpen(!isAnomalyDropdownOpen)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer border ${
+                  triggerFilter !== 'all'
+                    ? 'bg-violet-600 text-white border-violet-500 shadow-md shadow-violet-500/25 font-bold'
+                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-violet-400 dark:hover:border-violet-600 shadow-sm'
+                }`}
+              >
+                {(() => {
+                  const curr = ANOMALY_TYPES.find(a => a.id === triggerFilter) || ANOMALY_TYPES[0];
+                  const Icon = curr.icon || Filter;
+                  return (
+                    <>
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${triggerFilter !== 'all' ? 'text-white' : 'text-violet-600 dark:text-violet-400'}`} />
+                      <span className="truncate max-w-[170px] sm:max-w-none">{curr.label}</span>
+                    </>
+                  );
+                })()}
+                <ChevronDown className={`w-3.5 h-3.5 ml-0.5 transition-transform duration-200 ${isAnomalyDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Scrollable Popover Menu */}
+            {isAnomalyDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-72 max-h-64 overflow-y-auto rounded-xl p-1.5 shadow-2xl z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-2 duration-150 custom-scrollbar">
+                <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800/80 mb-1 flex items-center justify-between">
+                  <span>Filter by Anomaly Type</span>
+                  <span className="text-[9px] text-slate-500">11 filters</span>
+                </div>
+                <div className="space-y-0.5">
+                  {ANOMALY_TYPES.map((trig) => {
+                    const Icon = trig.icon || Filter;
+                    const isSelected = triggerFilter === trig.id;
+                    return (
+                      <button
+                        key={trig.id}
+                        type="button"
+                        onClick={() => {
+                          setTriggerFilter(trig.id);
+                          setPage(1);
+                          setIsAnomalyDropdownOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors text-left cursor-pointer ${
+                          isSelected
+                            ? 'bg-violet-600 text-white font-semibold shadow-sm'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-violet-600 dark:text-violet-400'}`} />
+                          <span className="truncate">{trig.label}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-white ml-2" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
       </div>
 
       {/* Table Feed / Results Card */}
-      <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/[0.06]">
+      <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/[0.06] relative z-10">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -381,79 +523,40 @@ export default function LiveAlertFeed({ onSelectWork, initialTier = 'all', activ
                         )}
                       </td>
 
-                      {/* Anomaly Triggers & Model 5 Ensemble Signals */}
-                      <td className="py-4 px-4">
-                        <div className="w-full flex items-center gap-1 text-[10px] font-mono text-slate-400 mb-1.5" title="Model 5 Weighted Ensemble 4-Signal Percentiles: Anomaly (35%), Vendor (30%), Compliance (20%), Timeline (15%)">
-                          <span className="px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30" title="Layer 1/2 Isolation Forest Percentile">
-                            A:{Math.round(work.anomaly_score_pct || 0)}%
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Layer 3 Vendor Cartel Percentile">
-                            V:{Math.round(work.vendor_score_pct || 0)}%
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Layer 3 Statutory Compliance Percentile">
-                            C:{Math.round(work.compliance_score_pct || 0)}%
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Layer 4 Timeline Delay Percentile">
-                            T:{Math.round(work.timeline_score_pct || 0)}%
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 max-w-xs">
-                          {work.rule_prohibited_work && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-600/30 text-rose-300 border border-rose-500/60 shadow-sm" title="Clause 4.1/5.2 Violation: Prohibited public expenditure (Religious / Memorial / Private / Commercial asset)">
-                              🚫 Cl. 4.1 Prohibited
-                            </span>
-                          )}
-                          {work.rule_text_duplicate && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-pink-500/20 text-pink-300 border border-pink-500/40" title="GFR 144: High semantic textual similarity with other project in same MP jurisdiction">
-                              📑 Semantic Duplicate
-                            </span>
-                          )}
-                          {work.rule_sanction_stalling && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40" title="Clause 3.10: District Authority sanction delayed beyond 45-day statutory SLA">
-                              ⏱️ Cl. 3.10 Delay ({Math.round(work.days_to_sanction || 0)}d)
-                            </span>
-                          )}
-                          {work.rule_premature_tranche && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40" title="Clause 4.3: Tranche 2 released <=7 days of Tranche 1 (75% utilization gate bypassed)">
-                              ⚖️ Cl. 4.3 Tranche Gate
-                            </span>
-                          )}
-                          {work.rule_split_tender && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40" title="GFR 2017 Rules 149/155: Evasion of ₹5L/₹10L tender threshold">
-                              ✂️ GFR Split Tender
-                            </span>
-                          )}
-                          {work.rule_stalled_execution && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40" title="Disbursed public funds but stalled >1 year">
-                              ⏳ Stalled (&gt;1y)
-                            </span>
-                          )}
-                          {work.is_duplicate && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
-                              📸 Duplicate pHash
-                            </span>
-                          )}
-                          {work.rule_missing_photo && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                              ⚠️ Missing Photo
-                            </span>
-                          )}
-                          {work.rule_overspend && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              💸 Overspend
-                            </span>
-                          )}
-                          {work.work_vendor_flag && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/40">
-                              🏢 Monopoly
-                            </span>
-                          )}
-                          {!work.rule_prohibited_work && !work.rule_text_duplicate && !work.rule_sanction_stalling && !work.rule_premature_tranche && !work.rule_split_tender && !work.rule_stalled_execution && !work.is_duplicate && !work.rule_missing_photo && !work.rule_overspend && !work.work_vendor_flag && (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400">
-                              ML Statistical Anomaly
-                            </span>
-                          )}
-                        </div>
+                      {/* Violation Triggers (Option 1: Primary Badge + Pill) */}
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const violations = getWorkViolations(work);
+                          const primary = violations[0];
+                          const remainingCount = violations.length - 1;
+                          const moreTooltip = remainingCount > 0 
+                            ? `Additional flags (${remainingCount}): ${violations.slice(1).map(v => v.label.replace(/[^\w\s\.\(\)\>\-]/g, '').trim()).join(', ')}. Click to inspect case.`
+                            : undefined;
+
+                          return (
+                            <div className="flex items-center gap-1.5 flex-nowrap">
+                              <span 
+                                className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border whitespace-nowrap shadow-xs ${primary.cls}`} 
+                                title={primary.desc}
+                              >
+                                {primary.label}
+                              </span>
+                              {remainingCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectWork(work.work_id);
+                                  }}
+                                  className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 whitespace-nowrap cursor-pointer transition-colors shadow-xs"
+                                  title={moreTooltip}
+                                >
+                                  +{remainingCount} more
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Action Button */}

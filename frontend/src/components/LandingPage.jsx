@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   BarChart3, Brain, FileText, Users, ArrowRight, AlertTriangle,
   CheckCircle2, Database, Settings, Search, X, Mail, MapPin,
@@ -249,7 +249,13 @@ export default function LandingPage({ onLoginSuccess, onOpenAuthModal, theme = "
       {/* FOOTER */}
       <footer className="w-full bg-white border-t border-slate-100 py-7">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-          <p>© 2026 Bharat Drishti • Ministry of Statistics &amp; Programme Implementation (MoSPI)</p>
+          <div className="flex items-center gap-2 font-mono flex-wrap">
+            <span className="font-semibold text-slate-700">© 2026 Government of India</span>
+            <span>•</span>
+            <span className="text-[#054631] font-bold">Official Vigilance Console</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="text-slate-500 hidden sm:inline">Ministry of Statistics &amp; Programme Implementation</span>
+          </div>
           <div className="flex items-center gap-5">
             <button onClick={() => setShowHowItWorksModal(true)} className="hover:text-slate-900 transition-colors">How It Works</button>
             <button onClick={() => setShowContactModal(true)} className="hover:text-slate-900 transition-colors">Contact</button>

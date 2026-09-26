@@ -5,7 +5,6 @@ import {
   Network, 
   Image as ImageIcon, 
   History, 
-  CheckCircle, 
   Sparkles, 
   LogOut, 
   ChevronRight, 
@@ -15,7 +14,6 @@ import {
   Clock,
   QrCode,
   UploadCloud,
-  Scale,
   Award
 } from 'lucide-react';
 import emblemLogo from '../assets/logo_dark.jpg';
@@ -109,16 +107,6 @@ export default function Sidebar({
       id: 'audit',
       label: 'Statutory Audit Ledger',
       icon: History,
-    },
-    {
-      id: 'validation',
-      label: 'Model Accuracy & ROC',
-      icon: CheckCircle,
-    },
-    {
-      id: 'benford',
-      label: "Benford's Law Forensics",
-      icon: Scale,
     },
     {
       id: 'quotas',

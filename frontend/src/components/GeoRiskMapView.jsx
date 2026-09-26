@@ -95,11 +95,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
       };
     }
     return {
-      badge: 'National Geospatial Vigilance Grid',
-      title: 'Geographic Vulnerability Distribution & Risk Clusters',
-      desc: 'Interactive multi-tier vector map of India mapping 98,649 MPLADS schemes across all 36 States & Union Territories.',
-      jurisdictionLabel: 'Audited States',
-      jurisdictionVal: `${states.length || 36} Jurisdictions`,
+      badge: 'National Geospatial Risk Grid',
+      title: 'All-India Geospatial Risk Map',
+      desc: 'Interactive state-wise risk map tracking 98,649 MPLADS schemes across all 36 States & Union Territories.',
+      jurisdictionLabel: 'Audited Regions',
+      jurisdictionVal: `${states.length || 36} States & UTs`,
       scopeBannerText: null
     };
   }, [currentRole, sessionUser, selectedState, states.length]);
@@ -241,7 +241,7 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
             </span>
             <span className="px-2 py-0.5 text-xs font-mono rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              100% Offline Vector Projection
+              Verified Digital Boundary
             </span>
             {roleConfig.scopeBannerText && (
               <span className="px-2.5 py-0.5 text-xs font-mono rounded bg-violet-900/40 text-violet-200 border border-violet-700 font-semibold">
@@ -265,11 +265,11 @@ export default function GeoRiskMapView({ onSelectWork, activeRole = 'ministry', 
             <div className="text-base font-extrabold text-white mt-0.5">{roleConfig.jurisdictionVal}</div>
           </div>
           <div className="px-4 py-2 rounded-xl bg-rose-950/40 border border-rose-800/60">
-            <div className="text-xs text-rose-300 uppercase font-semibold">Critical Schemes</div>
+            <div className="text-xs text-rose-300 uppercase font-semibold">Critical Works</div>
             <div className="text-base font-extrabold text-rose-400 mt-0.5">{nationalKpis.totalCrit.toLocaleString()} Flags</div>
           </div>
           <div className="px-4 py-2 rounded-xl bg-amber-950/40 border border-amber-800/60">
-            <div className="text-xs text-amber-300 uppercase font-semibold">Capital at Risk</div>
+            <div className="text-xs text-amber-300 uppercase font-semibold">Funds at Risk</div>
             <div className="text-base font-extrabold text-amber-400 mt-0.5">₹{nationalKpis.totalFundsCr} Cr</div>
           </div>
         </div>

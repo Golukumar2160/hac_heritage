@@ -54,7 +54,8 @@ import {
   ShieldCheck,
   UploadCloud,
   Sun,
-  Moon
+  Moon,
+  Lock
 } from 'lucide-react';
 
 export default function App() {
@@ -589,16 +590,6 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 font-mono text-xs self-start sm:self-auto">
-                  <button
-                    onClick={() => setActiveTab('validation')}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>ACCURACY: 100% STATUTORY / 83.7% ML</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
 
               {/* Executive KPIs Grid */}
@@ -645,20 +636,14 @@ export default function App() {
           {/* OFFICIAL TAB 2: LIVE ALERTS FEED */}
           {!isCitizen && activeTab === 'alerts' && (
             <div className="space-y-4">
-              <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white font-display flex items-center gap-2.5">
-                    <ShieldAlert className="w-5 h-5 text-rose-400" />
-                    Live Statutory Vigilance &amp; Anomaly Queue
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                    Filter, search, and audit schemes across all 5-layers of the AI detection ensemble.
-                  </p>
-                </div>
-                <span className="text-xs font-mono px-3.5 py-2 rounded-xl flex items-center gap-2 self-start sm:self-auto" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', color: 'rgba(196,181,253,0.9)' }}>
-                  <span className="w-2 h-2 rounded-full animate-pulse bg-violet-400" />
-                  <span>Sub-20ms SQL Indexing Active</span>
-                </span>
+              <div className="glass-panel p-6 rounded-2xl border border-slate-200/80 dark:border-white/[0.06]">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                  <ShieldAlert className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+                  Live Statutory Vigilance &amp; Anomaly Queue
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Filter, search, and audit schemes across all 5-layers of the AI detection ensemble.
+                </p>
               </div>
 
               <LiveAlertFeed 
@@ -794,25 +779,79 @@ export default function App() {
         )}
         </Suspense>
 
-        {/* Platform Footer */}
-        <footer className="mt-auto py-6 text-xs text-slate-400" style={{ borderTop: '1px solid rgba(139,92,246,0.15)', background: 'linear-gradient(180deg, rgba(8,12,24,0.7) 0%, rgba(4,8,16,0.95) 100%)' }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Platform Sovereign Footer */}
+        <footer className="mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#070b18]/95 backdrop-blur-xl py-5 text-xs transition-colors">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-3.5">
+            {/* Top Tier: Brand, Console Status & Institutional Badges */}
+            {/* Brand and Description */}
             <div className="flex items-center space-x-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(52,211,153,0.8)' }} />
+              <div className="relative w-8 h-8 rounded-xl p-0.5 flex-shrink-0 border border-violet-500/30 bg-violet-500/10 flex items-center justify-center">
+                <Landmark className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-white dark:border-[#070b18]" style={{ boxShadow: '0 0 6px rgba(52,211,153,0.8)' }} />
+              </div>
               <div>
-                <span className="font-display font-bold text-white text-sm tracking-wide">BHARAT-DRISHTI</span>
-                <span className="text-slate-400 text-xs ml-2 hidden sm:inline">• National MPLADS AI Vigilance &amp; Autonomous Audit System</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-display font-black text-slate-900 dark:text-white text-sm tracking-wide">
+                    BHARAT-DRISHTI
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE VIGILANCE
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20 font-semibold">
+                    PS 26102
+                  </span>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 font-medium">
+                  Autonomous AI-Powered Vigilance &amp; Forensic Audit Network for MoSPI's MPLADS
+                </p>
               </div>
             </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-xs">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900/90 text-slate-300 border border-slate-800">MoSPI DIID Directorate</span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900/90 text-slate-300 border border-slate-800">GFR 2017 &amp; CAG Standards</span>
-              <span className="px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 border border-violet-500/30 font-bold">Command Centre v3.0</span>
-            </div>
 
-            <div className="text-slate-400 font-mono text-xs text-center md:text-right">
-              <span>© 2026 Government of India • Official Vigilance Console</span>
+            {/* Bottom Sub-bar: Executive Official Vigilance Console Strip */}
+            <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/70 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] font-mono">
+              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">© 2026 Government of India</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-violet-600 dark:text-violet-300 font-bold px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/20 shadow-xs">
+                  Official Vigilance Console
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-slate-500 dark:text-slate-400">MoSPI</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] flex-wrap md:flex-nowrap">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('validation')}
+                  className="flex items-center gap-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 transition-colors cursor-pointer group"
+                  title="View Official MeitY & MoSPI Algorithmic Governance, ROC Curves & Benford Ground-Truth Certification"
+                >
+                  <Lock className="w-3 h-3 text-violet-500 group-hover:text-violet-400 shrink-0" />
+                  <span className="underline decoration-slate-300 dark:decoration-slate-700 underline-offset-2 group-hover:decoration-violet-500">
+                    AI Benchmark Report
+                  </span>
+                </button>
+                <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('benford')}
+                  className="flex items-center gap-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors cursor-pointer group"
+                  title="View Benford's Law (χ² test & MAD) First-Digit Anomaly Forensics on Expenditure Decimals"
+                >
+                  <Scale className="w-3 h-3 text-amber-500 group-hover:text-amber-400 shrink-0" />
+                  <span className="underline decoration-slate-300 dark:decoration-slate-700 underline-offset-2 group-hover:decoration-amber-500">
+                    Benford's Law Forensics
+                  </span>
+                </button>
+                <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
+                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  Sovereign Telemetry Active
+                </span>
+                <span className="text-slate-300 dark:text-slate-600 hidden lg:inline">•</span>
+                <span className="whitespace-nowrap hidden lg:inline">CVC &amp; CAG Admissible Audit Trail</span>
+              </div>
             </div>
           </div>
         </footer>
