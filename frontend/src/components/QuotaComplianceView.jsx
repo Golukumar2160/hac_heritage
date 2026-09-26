@@ -13,7 +13,6 @@ import {
   BookOpen,
   ArrowDownRight,
   TrendingDown,
-  Info,
   ExternalLink
 } from 'lucide-react';
 
@@ -140,15 +139,6 @@ export default function QuotaComplianceView({ onSelectWork, onSelectMp }) {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-violet-400' : ''}`} />
             Re-Audit Quotas
           </button>
-        </div>
-      </div>
-
-      {/* Statutory Mandate Note */}
-      <div className="p-4 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs text-blue-300 flex items-start gap-3">
-        <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-        <div>
-          <span className="font-semibold text-blue-200">Statutory Grounding (Clause 3.2 of MoSPI MPLADS Guidelines): </span>
-          MPs are mandated to recommend works of at least 15% of their annual allocation for areas inhabited by Scheduled Caste population, and 7.5% for areas inhabited by Scheduled Tribe population. Non-earmarking constitutes a procedural statutory non-compliance.
         </div>
       </div>
 
