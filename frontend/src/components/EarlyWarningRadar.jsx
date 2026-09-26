@@ -481,11 +481,11 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Total Unspent Balances</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Unused Development Funds</div>
                 <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
                   ₹{totalUnspentIdleCr.toFixed(2)} Cr
                 </div>
-                <div className="text-[10px] text-slate-500">Across {totalConstituenciesAnalyzed} MPs / Constituencies</div>
+                <div className="text-[10px] text-slate-500">Sitting idle across {totalConstituenciesAnalyzed} MP Constituencies</div>
               </div>
               <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <Landmark className="w-5 h-5" />
@@ -494,11 +494,11 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Lapse Alert Constituencies</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">At-Risk Constituencies (Funds May Expire)</div>
                 <div className="text-2xl font-black text-rose-400 font-mono mt-0.5">
                   {highLapseRiskCount}
                 </div>
-                <div className="text-[10px] text-rose-400 font-semibold">Exhaustion Horizon &gt; 36 Months</div>
+                <div className="text-[10px] text-rose-400 font-semibold">Spending too slow • &gt; 3 Years Backlog</div>
               </div>
               <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
                 <AlertTriangle className="w-5 h-5" />
@@ -507,11 +507,11 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Statutory Provision</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Governing Finance Rule</div>
                 <div className="text-xs font-bold text-slate-200 mt-1">
                   GFR Rule 230(8)
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Idle Grants-in-Aid Recovery</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Unused public grants must be returned</div>
               </div>
               <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
                 <Building2 className="w-5 h-5" />
@@ -520,11 +520,11 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
 
             <div className="p-4 rounded-xl glass-panel border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Forecasting Model</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">AI Spending Prediction</div>
                 <div className="text-xs font-bold text-cyan-300 mt-1">
-                  Burn Velocity vs Tenure Horizon
+                  Spending Speed vs 5-Year Term
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">60-Month Parliamentary Tenure</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Calculates if full budget will finish in time</div>
               </div>
               <div className="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                 <Activity className="w-5 h-5" />
@@ -625,10 +625,10 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                       <th className="py-3 px-4">State</th>
                       <th className="py-3 px-4">Allocated / Spent</th>
                       <th className="py-3 px-4">Unspent Balance</th>
-                      <th className="py-3 px-4">Monthly Burn Rate</th>
-                      <th className="py-3 px-4">Projected Exhaustion Horizon</th>
-                      <th className="py-3 px-4">Tenure-End Idle Projection</th>
-                      <th className="py-3 px-4">Lapse Risk</th>
+                      <th className="py-3 px-4">Monthly Spending Speed</th>
+                      <th className="py-3 px-4">Time Needed to Finish Funds</th>
+                      <th className="py-3 px-4">Projected Money Left at Term End</th>
+                      <th className="py-3 px-4">Fund Expiry Risk</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-sans">
@@ -668,7 +668,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                               <span>{c.exhaustion_months > 60 ? '> 60 Months (Severe)' : `${c.exhaustion_months} Months`}</span>
                             </div>
                             <div className="text-[10px] text-slate-500">
-                              Based on past disbursement velocity
+                              Based on past spending speed
                             </div>
                           </td>
 
@@ -676,7 +676,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                             <div className={`font-bold ${Number(c.projected_unspent_at_tenure_end_cr) > 5 ? 'text-rose-400' : 'text-slate-300'}`}>
                               ₹{c.projected_unspent_at_tenure_end_cr} Cr Idle
                             </div>
-                            <div className="text-[10px] text-slate-500">at 5-year tenure close</div>
+                            <div className="text-[10px] text-slate-500">left unused when 5-yr term ends</div>
                           </td>
 
                           <td className="py-3 px-4">
@@ -687,7 +687,7 @@ export default function EarlyWarningRadar({ onSelectWork, activeRole }) {
                                   ? 'bg-amber-950/80 text-amber-300 border-amber-700' 
                                   : 'bg-emerald-950/80 text-emerald-300 border-emerald-700'
                             }`}>
-                              {c.lapse_risk === 'HIGH' ? 'HIGH_LAPSE_RISK' : c.lapse_risk === 'MODERATE' ? 'MODERATE_RISK' : 'OPTIMAL_BURN'}
+                              {c.lapse_risk === 'HIGH' ? 'HIGH LAPSE RISK' : c.lapse_risk === 'MODERATE' ? 'MODERATE DELAY' : 'ON TRACK'}
                             </span>
                           </td>
                         </tr>

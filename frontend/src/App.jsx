@@ -34,12 +34,12 @@ const ViewLoader = () => (
     <span className="text-xs font-mono text-slate-400 tracking-wider uppercase">Loading Sovereign Analytics...</span>
   </div>
 );
-import { 
-  ShieldAlert, 
-  Sparkles, 
-  Activity, 
-  FileText, 
-  Layers, 
+import {
+  ShieldAlert,
+  Sparkles,
+  Activity,
+  FileText,
+  Layers,
   AlertTriangle,
   ArrowRight,
   ChevronRight,
@@ -269,7 +269,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <>
-        <LandingPage 
+        <LandingPage
           onLoginSuccess={handleAuthSuccess}
           onOpenAuthModal={openAuthModal}
           theme={theme}
@@ -328,21 +328,21 @@ export default function App() {
   };
 
   return (
-    <div 
-      className={`min-h-screen flex flex-col font-sans relative transition-colors duration-300 ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-[#050810] text-slate-100'}`} 
-      style={{ 
-        background: theme === 'light' 
-          ? 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)' 
-          : 'linear-gradient(180deg, #050810 0%, #060a14 50%, #050810 100%)', 
-        color: theme === 'light' ? '#0f172a' : '#cbd5e1' 
+    <div
+      className={`min-h-screen flex flex-col font-sans relative transition-colors duration-300 ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-[#050810] text-slate-100'}`}
+      style={{
+        background: theme === 'light'
+          ? 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)'
+          : 'linear-gradient(180deg, #050810 0%, #060a14 50%, #050810 100%)',
+        color: theme === 'light' ? '#0f172a' : '#cbd5e1'
       }}
     >
-      
+
       {/* Subtle Sovereign Watermark Ashoka Chakra (Non-distracting, serene background watermark) */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 overflow-hidden select-none opacity-90">
-        <AshokaChakra 
-          size={780} 
-          opacity={theme === 'light' ? 0.045 : 0.05} 
+        <AshokaChakra
+          size={780}
+          opacity={theme === 'light' ? 0.045 : 0.05}
           showCyberRings={false}
           theme={theme}
           watermark={true}
@@ -365,7 +365,7 @@ export default function App() {
 
       {/* Main Content Area (Offset by compact icon sidebar width on desktop) */}
       <div className="md:pl-20 flex-1 flex flex-col min-h-screen w-full transition-all duration-300 relative z-10">
-        
+
         {/* Top Operational Utility Bar */}
         <header className="sticky top-0 z-30 px-4 sm:px-8 py-3 flex items-center justify-between transition-colors duration-300" style={{
           background: theme === 'light' ? 'rgba(255, 255, 255, 0.94)' : 'rgba(5, 8, 16, 0.88)',
@@ -398,51 +398,50 @@ export default function App() {
             </div>
 
             {/* Scoped Authority Indicator Badge (Locked to User's Role, No Switcher Options) */}
-            <div 
+            <div
               className="flex items-center space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-mono font-bold tracking-wide shadow-xs"
               style={{
                 background: activeRole === 'state' ? 'rgba(6,182,212,0.18)' :
-                            activeRole === 'district' ? 'rgba(16,185,129,0.18)' :
-                            activeRole === 'mp' ? 'rgba(245,158,11,0.18)' :
-                            activeRole === 'citizen' ? 'rgba(20,184,166,0.18)' :
-                            'rgba(139,92,246,0.18)',
+                  activeRole === 'district' ? 'rgba(16,185,129,0.18)' :
+                    activeRole === 'mp' ? 'rgba(245,158,11,0.18)' :
+                      activeRole === 'citizen' ? 'rgba(20,184,166,0.18)' :
+                        'rgba(139,92,246,0.18)',
                 border: activeRole === 'state' ? '1px solid rgba(6,182,212,0.4)' :
-                        activeRole === 'district' ? '1px solid rgba(16,185,129,0.4)' :
-                        activeRole === 'mp' ? '1px solid rgba(245,158,11,0.4)' :
-                        activeRole === 'citizen' ? '1px solid rgba(20,184,166,0.4)' :
+                  activeRole === 'district' ? '1px solid rgba(16,185,129,0.4)' :
+                    activeRole === 'mp' ? '1px solid rgba(245,158,11,0.4)' :
+                      activeRole === 'citizen' ? '1px solid rgba(20,184,166,0.4)' :
                         '1px solid rgba(139,92,246,0.4)',
                 color: activeRole === 'state' ? '#67e8f9' :
-                       activeRole === 'district' ? '#6ee7b7' :
-                       activeRole === 'mp' ? '#fcd34d' :
-                       activeRole === 'citizen' ? '#5eead4' :
-                       '#c4b5fd'
+                  activeRole === 'district' ? '#6ee7b7' :
+                    activeRole === 'mp' ? '#fcd34d' :
+                      activeRole === 'citizen' ? '#5eead4' :
+                        '#c4b5fd'
               }}
               title={`Authenticated Session: ${currentUser?.name || 'Official'} (${(activeRole || 'ministry').toUpperCase()})`}
             >
               {activeRole === 'state' ? <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" /> :
-               activeRole === 'district' ? <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> :
-               activeRole === 'mp' ? <Vote className="w-3.5 h-3.5 text-amber-400 shrink-0" /> :
-               activeRole === 'citizen' ? <UserCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" /> :
-               <Landmark className="w-3.5 h-3.5 text-violet-400 shrink-0" />}
+                activeRole === 'district' ? <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> :
+                  activeRole === 'mp' ? <Vote className="w-3.5 h-3.5 text-amber-400 shrink-0" /> :
+                    activeRole === 'citizen' ? <UserCheck className="w-3.5 h-3.5 text-teal-400 shrink-0" /> :
+                      <Landmark className="w-3.5 h-3.5 text-violet-400 shrink-0" />}
               <span>
                 {activeRole === 'state' ? `State (${currentUser?.state ? (currentUser.state.length > 12 ? currentUser.state.slice(0, 10) + '..' : currentUser.state) : 'UP'})` :
-                 activeRole === 'district' ? `DM (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
-                 activeRole === 'mp' ? `Hon MP (${currentUser?.name ? currentUser.name.split(' ').slice(0, 2).join(' ') : 'Javed'})` :
-                 activeRole === 'citizen' ? `Citizen (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
-                 'Central MoSPI'}
+                  activeRole === 'district' ? `DM (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
+                    activeRole === 'mp' ? `Hon MP (${currentUser?.name ? currentUser.name.split(' ').slice(0, 2).join(' ') : 'Javed'})` :
+                      activeRole === 'citizen' ? `Citizen (${currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || 'Pilibhit'})` :
+                        'Central MoSPI'}
               </span>
-              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold ${
-                activeRole === 'state' ? 'bg-cyan-800/80 text-cyan-100' :
-                activeRole === 'district' ? 'bg-emerald-800/80 text-emerald-100' :
-                activeRole === 'mp' ? 'bg-amber-800/80 text-amber-100' :
-                activeRole === 'citizen' ? 'bg-teal-800/80 text-teal-100' :
-                'bg-violet-800/80 text-violet-100'
-              }`}>
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold ${activeRole === 'state' ? 'bg-cyan-800/80 text-cyan-100' :
+                  activeRole === 'district' ? 'bg-emerald-800/80 text-emerald-100' :
+                    activeRole === 'mp' ? 'bg-amber-800/80 text-amber-100' :
+                      activeRole === 'citizen' ? 'bg-teal-800/80 text-teal-100' :
+                        'bg-violet-800/80 text-violet-100'
+                }`}>
                 {activeRole === 'state' ? (kpis?.total_works ? `${(kpis.total_works / 1000).toFixed(1)}k` : '19.9k') :
-                 activeRole === 'district' ? (kpis?.total_works ? `${kpis.total_works}` : '293') :
-                 activeRole === 'mp' ? (kpis?.total_works ? `${kpis.total_works}` : '178') :
-                 activeRole === 'citizen' ? 'Public' :
-                 '98.6k'}
+                  activeRole === 'district' ? (kpis?.total_works ? `${kpis.total_works}` : '293') :
+                    activeRole === 'mp' ? (kpis?.total_works ? `${kpis.total_works}` : '178') :
+                      activeRole === 'citizen' ? 'Public' :
+                        '98.6k'}
               </span>
             </div>
 
@@ -472,8 +471,8 @@ export default function App() {
                 disabled={pipelineRunning}
                 className="flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 group disabled:opacity-50"
                 style={{
-                  background: pipelineRunning 
-                    ? 'rgba(99,102,241,0.25)' 
+                  background: pipelineRunning
+                    ? 'rgba(99,102,241,0.25)'
                     : (theme === 'light' ? '#f8fafc' : 'rgba(99,102,241,0.15)'),
                   border: '1px solid rgba(99,102,241,0.35)',
                   color: theme === 'light' ? '#4f46e5' : '#a5b4fc'
@@ -516,7 +515,7 @@ export default function App() {
 
         {/* Main Body Content */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 space-y-6" style={{ position: 'relative' }}>
-          
+
           {/* Toast Notification */}
           {toastMessage && (
             <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl glass-panel-glow border border-violet-500/40 text-sm font-semibold text-violet-200 shadow-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-5">
@@ -526,257 +525,257 @@ export default function App() {
           )}
 
           <Suspense fallback={<ViewLoader />}>
-          {/* CITIZEN VIEWS */}
-          {isCitizen && (activeTab === 'citizen_overview' || activeTab === 'overview') && (
-            <CitizenDashboard
-              key={`citizen-dash-${currentUser?.username || 'usr'}`}
-              currentUser={currentUser}
-              district={selectedDistrict}
-              onDistrictChange={setSelectedDistrict}
-              state={selectedState}
-              onStateChange={setSelectedState}
-              onSelectWork={setSelectedWorkId}
-              onNavigateTab={setActiveTab}
-              theme={theme}
-            />
-          )}
+            {/* CITIZEN VIEWS */}
+            {isCitizen && (activeTab === 'citizen_overview' || activeTab === 'overview') && (
+              <CitizenDashboard
+                key={`citizen-dash-${currentUser?.username || 'usr'}`}
+                currentUser={currentUser}
+                district={selectedDistrict}
+                onDistrictChange={setSelectedDistrict}
+                state={selectedState}
+                onStateChange={setSelectedState}
+                onSelectWork={setSelectedWorkId}
+                onNavigateTab={setActiveTab}
+                theme={theme}
+              />
+            )}
 
-          {isCitizen && (activeTab === 'citizen_alerts' || activeTab === 'alerts') && (
-            <CitizenAnomalyFeed
-              key={`citizen-feed-${currentUser?.username || 'usr'}`}
-              district={selectedDistrict}
-              onDistrictChange={setSelectedDistrict}
-              state={selectedState}
-              onStateChange={setSelectedState}
-              onSelectWork={setSelectedWorkId}
-            />
-          )}
+            {isCitizen && (activeTab === 'citizen_alerts' || activeTab === 'alerts') && (
+              <CitizenAnomalyFeed
+                key={`citizen-feed-${currentUser?.username || 'usr'}`}
+                district={selectedDistrict}
+                onDistrictChange={setSelectedDistrict}
+                state={selectedState}
+                onStateChange={setSelectedState}
+                onSelectWork={setSelectedWorkId}
+              />
+            )}
 
-          {isCitizen && activeTab === 'citizen_plaques' && (
-            <CitizenPlaqueView
-              key={`citizen-plaque-${currentUser?.username || 'usr'}`}
-              district={selectedDistrict}
-              onDistrictChange={setSelectedDistrict}
-              state={selectedState}
-              onStateChange={setSelectedState}
-              onSelectWork={setSelectedWorkId}
-            />
-          )}
+            {isCitizen && activeTab === 'citizen_plaques' && (
+              <CitizenPlaqueView
+                key={`citizen-plaque-${currentUser?.username || 'usr'}`}
+                district={selectedDistrict}
+                onDistrictChange={setSelectedDistrict}
+                state={selectedState}
+                onStateChange={setSelectedState}
+                onSelectWork={setSelectedWorkId}
+              />
+            )}
 
-          {/* OFFICIAL TAB 1: COMMAND CENTRE */}
-          {!isCitizen && activeTab === 'overview' && (
-            <div className="space-y-6">
-              
-              {/* Command Centre Telemetry Banner */}
-              <div className="glass-panel px-6 py-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200/80 dark:border-white/[0.06]">
-                <div className="flex items-center space-x-3.5">
-                  <span className="flex h-2.5 w-2.5 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 bg-emerald-400"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <div>
-                    <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                      {activeRole === 'state' ? `STATE NODAL COMMAND (${(currentUser?.state || 'UTTAR PRADESH').toUpperCase()})` :
-                       activeRole === 'district' ? `DISTRICT ENFORCEMENT COMMAND (${(currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || currentUser?.district || 'PILIBHIT').toUpperCase()})` :
-                       activeRole === 'mp' ? `CONSTITUENCY INTEGRITY MONITOR (${(currentUser?.name || "HON'BLE MP").toUpperCase()})` :
-                       'NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)'}
+            {/* OFFICIAL TAB 1: COMMAND CENTRE */}
+            {!isCitizen && activeTab === 'overview' && (
+              <div className="space-y-6">
+
+                {/* Command Centre Telemetry Banner */}
+                <div className="glass-panel px-6 py-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200/80 dark:border-white/[0.06]">
+                  <div className="flex items-center space-x-3.5">
+                    <span className="flex h-2.5 w-2.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 bg-emerald-400"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {activeRole === 'state' ? `State planning authority oversight across districts in ${currentUser?.state || 'the state'} under vigilance` :
-                       activeRole === 'district' ? `District Magistrate statutory powers: Tranche freezes, contractor show-causes, ground inspections` :
-                       activeRole === 'mp' ? `Development delivery tracking & Clause 3.2 mandatory SC (15%) and ST (7.5%) fund earmarking` :
-                       'Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)'}
-                    </p>
+                    <div>
+                      <span className="font-mono text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-wide">
+                        {activeRole === 'state' ? `STATE NODAL COMMAND (${(currentUser?.state || 'UTTAR PRADESH').toUpperCase()})` :
+                          activeRole === 'district' ? `DISTRICT ENFORCEMENT COMMAND (${(currentUser?.ida?.replace(/\(.*?\)/g, '')?.replace(/_IDA/g, '')?.trim() || currentUser?.district || 'PILIBHIT').toUpperCase()})` :
+                            activeRole === 'mp' ? `CONSTITUENCY INTEGRITY MONITOR (${(currentUser?.name || "HON'BLE MP").toUpperCase()})` :
+                              'NATIONAL COMMAND ACTIVE (MoSPI CENTRAL)'}
+                      </span>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {activeRole === 'state' ? `State planning authority oversight across districts in ${currentUser?.state || 'the state'} under vigilance` :
+                          activeRole === 'district' ? `District Magistrate statutory powers: Tranche freezes, contractor show-causes, ground inspections` :
+                            activeRole === 'mp' ? `Development delivery tracking & Clause 3.2 mandatory SC (15%) and ST (7.5%) fund earmarking` :
+                              'Continuous telemetry across 543 Lok Sabha and 245 Rajya Sabha MP allocations (98,649 works, ₹5,880 Cr)'}
+                      </p>
+                    </div>
                   </div>
+
+                </div>
+
+                {/* Executive KPIs Grid */}
+                <ExecutiveKpis key={`kpi-${activeRole}`} kpis={kpis} onFilterTier={handleFilterTier} activeRole={activeRole} />
+
+                {/* Visual Analytics & Breakdown */}
+                <QuickStatsCharts key={`stats-${activeRole}`} kpis={kpis} />
+
+                {/* Live Flagged Feeds Preview Section */}
+                <div className="glass-panel p-6 rounded-2xl space-y-4" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
+                        <ShieldAlert className="w-5 h-5 text-rose-400" />
+                        Priority Action Radar
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                        Works flagged with critical composite risk (Score ≥ 85.0) requiring statutory review.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setActiveTab('alerts')}
+                      className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                      style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)', color: 'rgba(196,181,253,0.95)' }}
+                    >
+                      <span>View Complete Alert Queue</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Embedded Mini Feed */}
+                  <LiveAlertFeed
+                    key={`mini-feed-${activeRole}`}
+                    activeRole={activeRole}
+                    onSelectWork={setSelectedWorkId}
+                    initialTier="critical"
+                  />
                 </div>
 
               </div>
+            )}
 
-              {/* Executive KPIs Grid */}
-              <ExecutiveKpis key={`kpi-${activeRole}`} kpis={kpis} onFilterTier={handleFilterTier} activeRole={activeRole} />
-
-              {/* Visual Analytics & Breakdown */}
-              <QuickStatsCharts key={`stats-${activeRole}`} kpis={kpis} />
-
-              {/* Live Flagged Feeds Preview Section */}
-              <div className="glass-panel p-6 rounded-2xl space-y-4" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-white font-display flex items-center gap-2">
-                      <ShieldAlert className="w-5 h-5 text-rose-400" />
-                      Priority Action Radar
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                      Works flagged with critical composite risk (Score ≥ 85.0) requiring statutory review.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setActiveTab('alerts')}
-                    className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-                    style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)', color: 'rgba(196,181,253,0.95)' }}
-                  >
-                    <span>View Complete Alert Queue</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+            {/* OFFICIAL TAB 2: LIVE ALERTS FEED */}
+            {!isCitizen && activeTab === 'alerts' && (
+              <div className="space-y-4">
+                <div className="glass-panel p-6 rounded-2xl border border-slate-200/80 dark:border-white/[0.06]">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                    <ShieldAlert className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+                    Live Statutory Vigilance &amp; Anomaly Queue
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Filter, search, and audit schemes across all 5-layers of the AI detection ensemble.
+                  </p>
                 </div>
 
-                {/* Embedded Mini Feed */}
-                <LiveAlertFeed 
-                  key={`mini-feed-${activeRole}`} 
-                  activeRole={activeRole} 
-                  onSelectWork={setSelectedWorkId} 
-                  initialTier="critical" 
+                <LiveAlertFeed
+                  key={`feed-${activeRole}`}
+                  activeRole={activeRole}
+                  onSelectWork={setSelectedWorkId}
+                  initialTier={initialTier}
                 />
               </div>
+            )}
 
-            </div>
-          )}
+            {/* TAB: LIVE BATCH CSV AUDIT LAB (MULTI-MODEL ZERO-SHOT EVALUATION) */}
+            {activeTab === 'batch_audit' && (
+              <LiveBatchAuditLab onSelectWork={setSelectedWorkId} />
+            )}
 
-          {/* OFFICIAL TAB 2: LIVE ALERTS FEED */}
-          {!isCitizen && activeTab === 'alerts' && (
-            <div className="space-y-4">
-              <div className="glass-panel p-6 rounded-2xl border border-slate-200/80 dark:border-white/[0.06]">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                  <ShieldAlert className="w-5 h-5 text-rose-500 dark:text-rose-400" />
-                  Live Statutory Vigilance &amp; Anomaly Queue
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Filter, search, and audit schemes across all 5-layers of the AI detection ensemble.
-                </p>
-              </div>
-
-              <LiveAlertFeed 
-                key={`feed-${activeRole}`} 
-                activeRole={activeRole} 
-                onSelectWork={setSelectedWorkId} 
-                initialTier={initialTier} 
+            {/* OFFICIAL TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}
+            {!isCitizen && activeTab === 'early_warning' && (
+              <EarlyWarningRadar
+                key={`early-warning-${activeRole}`}
+                onSelectWork={setSelectedWorkId}
+                activeRole={activeRole}
               />
-            </div>
-          )}
+            )}
 
-          {/* TAB: LIVE BATCH CSV AUDIT LAB (MULTI-MODEL ZERO-SHOT EVALUATION) */}
-          {activeTab === 'batch_audit' && (
-            <LiveBatchAuditLab onSelectWork={setSelectedWorkId} />
-          )}
+            {/* OFFICIAL TAB: MODEL ACCURACY & VALIDATION */}
+            {!isCitizen && activeTab === 'validation' && (
+              <ModelValidationView onSelectWork={setSelectedWorkId} />
+            )}
 
-          {/* OFFICIAL TAB: EARLY WARNING RADAR & CONSTITUENCY FORECAST */}
-          {!isCitizen && activeTab === 'early_warning' && (
-            <EarlyWarningRadar 
-              key={`early-warning-${activeRole}`}
-              onSelectWork={setSelectedWorkId} 
-              activeRole={activeRole} 
-            />
-          )}
+            {/* OFFICIAL TAB: BENFORD'S LAW FORENSICS */}
+            {!isCitizen && activeTab === 'benford' && (
+              <BenfordView onSelectWork={setSelectedWorkId} />
+            )}
 
-          {/* OFFICIAL TAB: MODEL ACCURACY & VALIDATION */}
-          {!isCitizen && activeTab === 'validation' && (
-            <ModelValidationView onSelectWork={setSelectedWorkId} />
-          )}
+            {/* OFFICIAL TAB: MOSPI CLAUSE 3.2 SC/ST QUOTA MONITOR */}
+            {!isCitizen && activeTab === 'quotas' && (
+              <QuotaComplianceView
+                onSelectWork={setSelectedWorkId}
+                onSelectMp={setSelectedMpName}
+              />
+            )}
 
-          {/* OFFICIAL TAB: BENFORD'S LAW FORENSICS */}
-          {!isCitizen && activeTab === 'benford' && (
-            <BenfordView onSelectWork={setSelectedWorkId} />
-          )}
+            {/* VISUAL & MEDIA FORENSICS LAB (COMBINED PHASH, TAMPER ELA & OCR) */}
+            {(activeTab === 'visual_forensics' || activeTab === 'phash' || activeTab === 'ocr') && (
+              <VisualForensicsLab onSelectWork={setSelectedWorkId} />
+            )}
 
-          {/* OFFICIAL TAB: MOSPI CLAUSE 3.2 SC/ST QUOTA MONITOR */}
-          {!isCitizen && activeTab === 'quotas' && (
-            <QuotaComplianceView 
-              onSelectWork={setSelectedWorkId} 
-              onSelectMp={setSelectedMpName}
-            />
-          )}
+            {/* OFFICIAL TAB 6: CONTRACTOR SYNDICATES & CARTELS */}
+            {!isCitizen && activeTab === 'vendors' && (
+              <VendorNetworkView
+                key={`vendors-${activeRole}`}
+                activeRole={activeRole}
+                onSelectWork={setSelectedWorkId}
+              />
+            )}
 
-          {/* VISUAL & MEDIA FORENSICS LAB (COMBINED PHASH, TAMPER ELA & OCR) */}
-          {(activeTab === 'visual_forensics' || activeTab === 'phash' || activeTab === 'ocr') && (
-            <VisualForensicsLab onSelectWork={setSelectedWorkId} />
-          )}
+            {/* TAB 7: GEOSPATIAL MAP */}
+            {(activeTab === 'map' || activeTab === 'citizen_map') && (
+              <GeoRiskMapView
+                key={`map-${activeRole}-${currentUser?.username || 'usr'}`}
+                activeRole={activeRole}
+                currentUser={currentUser}
+                onSelectWork={setSelectedWorkId}
+              />
+            )}
 
-          {/* OFFICIAL TAB 6: CONTRACTOR SYNDICATES & CARTELS */}
-          {!isCitizen && activeTab === 'vendors' && (
-            <VendorNetworkView 
-              key={`vendors-${activeRole}`} 
-              activeRole={activeRole} 
-              onSelectWork={setSelectedWorkId} 
-            />
-          )}
-
-          {/* TAB 7: GEOSPATIAL MAP */}
-          {(activeTab === 'map' || activeTab === 'citizen_map') && (
-            <GeoRiskMapView 
-              key={`map-${activeRole}-${currentUser?.username || 'usr'}`} 
-              activeRole={activeRole} 
-              currentUser={currentUser}
-              onSelectWork={setSelectedWorkId} 
-            />
-          )}
-
-          {/* OFFICIAL TAB 8: IMMUTABLE AUDIT LEDGER */}
-          {!isCitizen && activeTab === 'audit' && (
-            <AuditLedgerView 
-              key={`audit-${activeRole}`} 
-              activeRole={activeRole} 
-              onSelectWork={setSelectedWorkId} 
-            />
-          )}
+            {/* OFFICIAL TAB 8: IMMUTABLE AUDIT LEDGER */}
+            {!isCitizen && activeTab === 'audit' && (
+              <AuditLedgerView
+                key={`audit-${activeRole}`}
+                activeRole={activeRole}
+                onSelectWork={setSelectedWorkId}
+              />
+            )}
           </Suspense>
 
         </main>
 
         <Suspense fallback={null}>
-        {/* Forensic Case File Modal (Deep-Dive Drawer) */}
-        {selectedWorkId && (
-          isCitizen ? (
-            <CitizenCaseModal
-              workId={selectedWorkId}
-              onClose={() => {
-                setSelectedWorkId(null);
-                const url = new URL(window.location.href);
-                url.searchParams.delete('verify');
-                url.searchParams.delete('work_id');
-                window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
-              }}
-              onFeedbackSubmitted={() => {
-                showToast(`Citizen report for #${selectedWorkId} registered with district vigilance.`);
-                loadKpis();
+          {/* Forensic Case File Modal (Deep-Dive Drawer) */}
+          {selectedWorkId && (
+            isCitizen ? (
+              <CitizenCaseModal
+                workId={selectedWorkId}
+                onClose={() => {
+                  setSelectedWorkId(null);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('verify');
+                  url.searchParams.delete('work_id');
+                  window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+                }}
+                onFeedbackSubmitted={() => {
+                  showToast(`Citizen report for #${selectedWorkId} registered with district vigilance.`);
+                  loadKpis();
+                }}
+              />
+            ) : (
+              <CaseFileModal
+                workId={selectedWorkId}
+                onClose={() => {
+                  setSelectedWorkId(null);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('verify');
+                  url.searchParams.delete('work_id');
+                  window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+                }}
+                onActionLogged={() => {
+                  showToast(`Auditor action for #${selectedWorkId} permanently sealed.`);
+                  loadKpis();
+                }}
+              />
+            )
+          )}
+
+          {/* MoSPI Secretary AI Briefing Modal (Statutory central authorities only) */}
+          {!isCitizen && showSecretaryBriefing && (
+            <SecretaryBriefingModal
+              onClose={() => setShowSecretaryBriefing(false)}
+            />
+          )}
+
+          {/* MP Parliamentary Profile & Analytical Drilldown Modal */}
+          {selectedMpName && (
+            <MpProfileModal
+              mpName={selectedMpName}
+              onClose={() => setSelectedMpName(null)}
+              onSelectWork={(workId) => {
+                setSelectedMpName(null);
+                setSelectedWorkId(workId);
               }}
             />
-          ) : (
-            <CaseFileModal
-              workId={selectedWorkId}
-              onClose={() => {
-                setSelectedWorkId(null);
-                const url = new URL(window.location.href);
-                url.searchParams.delete('verify');
-                url.searchParams.delete('work_id');
-                window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
-              }}
-              onActionLogged={() => {
-                showToast(`Auditor action for #${selectedWorkId} permanently sealed.`);
-                loadKpis();
-              }}
-            />
-          )
-        )}
-
-        {/* MoSPI Secretary AI Briefing Modal (Statutory central authorities only) */}
-        {!isCitizen && showSecretaryBriefing && (
-          <SecretaryBriefingModal
-            onClose={() => setShowSecretaryBriefing(false)}
-          />
-        )}
-
-        {/* MP Parliamentary Profile & Analytical Drilldown Modal */}
-        {selectedMpName && (
-          <MpProfileModal
-            mpName={selectedMpName}
-            onClose={() => setSelectedMpName(null)}
-            onSelectWork={(workId) => {
-              setSelectedMpName(null);
-              setSelectedWorkId(workId);
-            }}
-          />
-        )}
+          )}
         </Suspense>
 
         {/* Platform Sovereign Footer */}

@@ -198,7 +198,10 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
   const rawRisk = Number(workObj?.risk_score_100 ?? (workObj?.risk_score != null ? (Number(workObj.risk_score) <= 1.0 ? Number(workObj.risk_score) * 100 : Number(workObj.risk_score)) : 0));
   const score100 = rawRisk;
   const progressPct = Number(workObj?.progress_pct || 0);
-  const isCritical = score100 >= 85.0;
+  const tierUpper = String(workObj?.risk_label || workObj?.risk_tier || '').toUpperCase();
+  const isCritical = tierUpper === 'CRITICAL' || (!tierUpper && score100 >= 85.0);
+  const isHigh = tierUpper === 'HIGH' || (!tierUpper && score100 >= 61.4);
+  const isMed = tierUpper === 'MEDIUM' || tierUpper === 'MED' || (!tierUpper && score100 >= 48.4);
 
   const anomalyPct = Number(workObj?.anomaly_score_pct ?? (Number(workObj?.anomaly_score || 0.82) <= 1 ? Number(workObj?.anomaly_score || 0.82) * 100 : Number(workObj?.anomaly_score || 82)));
   const vendorPct = Number(workObj?.vendor_score_pct ?? (Number(workObj?.work_vendor_score || workObj?.vendor_score || 0.74) <= 1 ? Number(workObj?.work_vendor_score || workObj?.vendor_score || 0.74) * 100 : Number(workObj?.work_vendor_score || workObj?.vendor_score || 74)));
@@ -311,11 +314,11 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                   isCritical ? 'bg-rose-950/40 border-rose-500/40' : 'bg-slate-900/80 border-slate-800'
                 }`}>
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Model 5 Forensic Risk</div>
-                  <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${isCritical ? 'text-rose-400' : score100 >= 60 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  <div className={`text-xl sm:text-2xl font-extrabold font-mono mt-1 ${isCritical ? 'text-rose-400' : isHigh ? 'text-amber-400' : isMed ? 'text-violet-400' : 'text-emerald-400'}`}>
                     {score100.toFixed(1)} / 100
                   </div>
                   <div className="text-xs font-bold font-mono text-slate-300 uppercase mt-0.5">
-                    {workObj?.risk_tier || (isCritical ? 'CRITICAL' : score100 >= 60 ? 'HIGH' : score100 >= 35 ? 'MEDIUM' : 'LOW')}
+                    {tierUpper || (isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : isMed ? 'MEDIUM' : 'LOW')}
                   </div>
                 </div>
               </div>
@@ -623,9 +626,9 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                           </span>
                         </div>
                         <h4 className="text-base font-bold text-white mt-1">
-                          Composite Forensic Risk: <span className={isCritical ? 'text-rose-400' : score100 >= 60 ? 'text-amber-400' : 'text-emerald-400'}>{score100.toFixed(1)} / 100</span>
+                          Composite Forensic Risk: <span className={isCritical ? 'text-rose-400' : isHigh ? 'text-amber-400' : isMed ? 'text-violet-400' : 'text-emerald-400'}>{score100.toFixed(1)} / 100</span>
                           <span className="ml-2 text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                            {workObj?.risk_tier || (isCritical ? 'CRITICAL' : score100 >= 60 ? 'HIGH' : score100 >= 35 ? 'MEDIUM' : 'LOW')}
+                            {tierUpper || (isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : isMed ? 'MEDIUM' : 'LOW')}
                           </span>
                         </h4>
                       </div>
@@ -638,7 +641,7 @@ export default function CaseFileModal({ workId, onClose, onActionLogged }) {
                     <div className="relative w-full bg-slate-800 h-3 rounded-full overflow-hidden">
                       <div 
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isCritical ? 'bg-rose-500' : score100 >= 60 ? 'bg-amber-400' : 'bg-emerald-500'
+                          isCritical ? 'bg-rose-500' : isHigh ? 'bg-amber-400' : isMed ? 'bg-violet-400' : 'bg-emerald-500'
                         }`}
                         style={{ width: `${Math.min(100, Math.max(3, score100))}%` }}
                       />
