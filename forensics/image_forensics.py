@@ -47,12 +47,41 @@ PHASH_VAULT_FILE = os.path.join(THIS_DIR, "phash_vault.json")
 
 os.makedirs(EXTRACTED_DIR, exist_ok=True)
 
+def is_valid_evidence_photo(w: int, h: int, filename: str = "") -> bool:
+    """
+    Filters out scanner app promotional watermark banners (e.g. 'Scanned with OKEN Scanner',
+    'CamScanner' footer strips) and thin horizontal/vertical rule lines.
+    Genuine construction photographs and certificate scans have substantial dimensions
+    and natural aspect ratios.
+    """
+    if h < 150 or w < 200:
+        return False
+    # Filter out extreme aspect ratio banner strips (e.g. 642x81 which is 7.9:1)
+    aspect = max(w, h) / max(min(w, h), 1)
+    if aspect > 3.0:
+        return False
+    # Explicitly block known scanner app watermark filenames
+    fn_lower = filename.lower()
+    if any(k in fn_lower for k in ["oken", "camscanner", "watermark", "banner_logo"]):
+        return False
+    return True
+
 def load_phash_vault() -> list:
     """Load persistent visual fingerprint vault with two-factor pHash + dHash support."""
     if os.path.exists(PHASH_VAULT_FILE):
         try:
             with open(PHASH_VAULT_FILE, "r", encoding="utf-8") as f:
                 vault = json.load(f)
+            # Filter out scanner promotional watermarks (e.g. OKEN Scanner / CamScanner banners)
+            cleaned_vault = []
+            for it in vault:
+                w = it.get("width") or 0
+                h = it.get("height") or 0
+                fn = it.get("filename", "")
+                if not is_valid_evidence_photo(w, h, fn):
+                    continue
+                cleaned_vault.append(it)
+            vault = cleaned_vault
             # Auto-backfill dhash if missing and file exists
             updated = False
             for it in vault:
@@ -73,7 +102,7 @@ def load_phash_vault() -> list:
                     else:
                         it["dhash"] = it.get("phash")
                         updated = True
-            if updated:
+            if updated or len(vault) != len(cleaned_vault):
                 save_phash_vault(vault)
             return vault
         except Exception as e:
@@ -657,7 +686,12 @@ def resolve_file_metadata(filename: str, meta_by_wid: dict) -> dict:
     }
 
 def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[str] = None):
-    target_dir = input_dir if input_dir and os.path.isdir(input_dir) else IMAGES_DIR
+    if input_dir and os.path.isdir(input_dir):
+        target_dir = input_dir
+    else:
+        pdf_dir = os.path.join(IMAGES_DIR, "downloaded_pdfs")
+        target_dir = pdf_dir if os.path.isdir(pdf_dir) else IMAGES_DIR
+
     print("=" * 70)
     print("  AI DOCUMENT & IMAGE FORENSICS PIPELINE — MPLADS 2026")
     print(f"  Target Folder: {os.path.abspath(target_dir)}")
@@ -685,7 +719,9 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
     extracted_images_index = []
     
     print("\n🔍 Extracting & Indexing Embedded High-Resolution Evidence Photos...")
-    for pdf_name in pdf_files:
+    for idx, pdf_name in enumerate(pdf_files):
+        if (idx + 1) % 25 == 0 or idx == 0 or idx == len(pdf_files) - 1:
+            print(f"  [{idx+1}/{len(pdf_files)}] Ingesting {pdf_name}...")
         pdf_path = os.path.join(target_dir, pdf_name)
         pdf_meta = resolve_file_metadata(pdf_name, meta_by_wid)
         doc = None
@@ -694,11 +730,13 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
             # Step 1: PyMuPDF renders high-resolution 300 DPI image of Page 1 (certificate header & letterhead)
             try:
                 if len(doc) > 0:
-                    p1 = doc[0]
-                    pix = p1.get_pixmap(dpi=300)
                     render_filename = f"{os.path.splitext(pdf_name)[0]}_p1_rendered_300dpi.png"
                     render_path = os.path.join(EXTRACTED_DIR, render_filename)
-                    pix.save(render_path)
+                    if not os.path.exists(render_path):
+                        p1 = doc[0]
+                        pix = p1.get_pixmap(dpi=300)
+                        pix.save(render_path)
+                    
                     pil_rendered = Image.open(render_path)
                     extracted_images_index.append({
                         "source_pdf": pdf_name,
@@ -724,10 +762,15 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
                     ext = base_img["ext"]
                     out_filename = f"{os.path.splitext(pdf_name)[0]}_p{page_idx+1}_img{img_idx+1}.{ext}"
                     out_path = os.path.join(EXTRACTED_DIR, out_filename)
-                    with open(out_path, "wb") as f:
-                        f.write(base_img["image"])
+                    if not os.path.exists(out_path):
+                        with open(out_path, "wb") as f:
+                            f.write(base_img["image"])
 
                     pil_img = Image.open(io.BytesIO(base_img["image"]))
+                    w, h = pil_img.width, pil_img.height
+                    if not is_valid_evidence_photo(w, h, out_filename):
+                        continue
+
                     phash = str(imagehash.phash(pil_img))
                     dhash = str(imagehash.dhash(pil_img))
                     
@@ -883,7 +926,13 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
                     "verdict": verdict
                 })
 
-    print(f"  -> {len(duplicate_photo_flags)} duplicate photo pair(s) found.")
+    print(f"  -> {len(duplicate_photo_flags)} duplicate photo pair(s) found across full vault.")
+    try:
+        with open(OUT_DUPLICATES, "w", encoding="utf-8") as f:
+            json.dump(duplicate_photo_flags, f, indent=2, ensure_ascii=False)
+        print(f"  [✓] Flushed {len(duplicate_photo_flags)} duplicate flags to {OUT_DUPLICATES}")
+    except Exception as e_dup:
+        print(f"  [!] Note saving duplicates: {e_dup}")
 
     # 4. Deep Document OCR & Entity Verification
     print("\n📑 Running AI Neural OCR on Scanned Certificates...")
@@ -922,7 +971,7 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
 
     print(f"  -> Queued {len(images_to_ocr)} high-resolution document pages for Neural OCR.")
 
-    for pdf_source, img_filename, doc_type in images_to_ocr:
+    for ocr_idx, (pdf_source, img_filename, doc_type) in enumerate(images_to_ocr):
         img_path = (
             os.path.join(EXTRACTED_DIR, img_filename) if os.path.exists(os.path.join(EXTRACTED_DIR, img_filename))
             else (os.path.join(target_dir, img_filename) if os.path.exists(os.path.join(target_dir, img_filename))
@@ -931,7 +980,7 @@ def run_image_forensics(input_dir: Optional[str] = None, output_csv: Optional[st
         if not os.path.exists(img_path):
             continue
             
-        print(f"  Analyzing: {pdf_source} -> {img_filename} ({doc_type})...")
+        print(f"  [{ocr_idx+1}/{len(images_to_ocr)}] OCR: {pdf_source} -> {img_filename} ({doc_type})...")
         try:
             ocr_res, _ = ocr_engine(img_path)
             lines = [r[1] for r in ocr_res] if ocr_res else []

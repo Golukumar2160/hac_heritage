@@ -1,14 +1,11 @@
 {
   "file_name": "fraud_flags.csv",
-  "sha256_seal": "fd3050def5ca25e89f51227b5368df77614bd68a3345565d041a4e8e226aec0a",
+  "sha256_seal": "0c011dd2b7e09e21a132f3abdadddd563386d7a5e7fd63e2c748f71fefbc4f6b",
   "record_count": 98649,
-  "total_sanctioned_amount": 58805580837.75,
+  "total_sanctioned_amount": 58805580837.75001,
   "total_disbursed_amount": 40138231716.14,
-  "critical_risk_count": 16429,
-  "prohibited_works_count": 777,
-  "text_duplicate_works_count": 12357,
-  "sanction_stalling_works_count": 68903,
-  "sealed_at": "2026-09-24T04:40:25.594117+00:00",
+  "critical_risk_count": 16607,
+  "sealed_at": "2026-09-26T20:18:57.060930+00:00",
   "genesis_seal": "GENESIS_SEAL_GOVT_OF_INDIA_MPLADS_2026",
   "statutory_authority": "MoSPI DIID / Central Vigilance Commission"
 }
