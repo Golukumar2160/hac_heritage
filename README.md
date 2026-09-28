@@ -146,6 +146,12 @@ When presenting to judges, follow this flow to showcase the strongest features:
 
 ---
 
+## 🔮 Strategic Future Scope & National Roadmap
+
+For the comprehensive 36-month national implementation roadmap, inter-ministerial API integrations (PFMS, eSAKSHI, GeM, MCA21, GSTN, ISRO Bhuvan), next-gen AI/ML research frontiers (GNNs, SAM-Civil, Federated Learning), and sovereign economic ROI analysis, see **[FUTURE_SCOPE.md](FUTURE_SCOPE.md)**.
+
+---
+
 ## 👥 Team & Acknowledgments
 
 - Built with ❤️ for **Smart India Hackathon 2026**
